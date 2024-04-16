@@ -1,6 +1,7 @@
 import { map, merge } from "rxjs";
-import { createTapRecognizer } from "./tapRecognizer";
+import { TapRecognizer } from "./TapRecognizer";
 import { getCenterFromEvent } from "./utils";
+import { createPanRecognizer } from "./panRecognizer";
 
 export const createManager = ({
   container,
@@ -8,7 +9,7 @@ export const createManager = ({
   recognizers,
 }: {
   container: HTMLElement;
-  recognizers: ReturnType<typeof createTapRecognizer>[];
+  recognizers: TapRecognizer[];
   afterEventReceived?: (event: PointerEvent) => PointerEvent;
 }) => {
   // user api
@@ -28,12 +29,12 @@ export const createManager = ({
   //   // dragRecognizer,
   // ]
 
-  const recognizerInstances = recognizers.map((recognizer) =>
-    recognizer({ container, afterEventReceived }),
-  );
+  recognizers.forEach((recognizer) => {
+    recognizer.initialize({ container, afterEventReceived });
+  });
 
   const events$ = merge(
-    ...recognizerInstances.map((recognizer) => recognizer.events$),
+    ...recognizers.map((recognizer) => recognizer.events$),
   ).pipe(
     map((event) => ({
       ...event,

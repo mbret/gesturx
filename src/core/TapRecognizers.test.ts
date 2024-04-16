@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createTapRecognizer } from "./tapRecognizer";
+import { TapRecognizer } from "./TapRecognizers";
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs";
 
 const waitFor = (time: number) =>
