@@ -1,3 +1,3 @@
 export type GestureEvent = {
-    srcEvent: PointerEvent
-}
+  srcEvent: PointerEvent;
+};
