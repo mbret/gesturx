@@ -1,10 +1,10 @@
-import { defineConfig } from "vite";
-import dts from "vite-plugin-dts";
-import { resolve } from "path";
-import { name } from "../prose-reader/packages/enhancer-gesture/package.json";
-import externals from "rollup-plugin-node-externals";
+import { defineConfig } from "vite"
+import dts from "vite-plugin-dts"
+import { resolve } from "path"
+import { name } from "../prose-reader/packages/enhancer-gesture/package.json"
+import externals from "rollup-plugin-node-externals"
 
-const libName = name.replace(`@`, ``).replace(`/`, `-`);
+const libName = name.replace(`@`, ``).replace(`/`, `-`)
 
 export default defineConfig(({ mode }) => ({
   build: {
@@ -30,4 +30,4 @@ export default defineConfig(({ mode }) => ({
       entryRoot: "src",
     }),
   ],
-}));
+}))

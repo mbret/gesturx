@@ -11,32 +11,32 @@ import {
   share,
   switchMap,
   takeUntil,
-} from "rxjs";
-import { enrichEvent, getPointerEvents, isOUtsidePosThreshold } from "./utils";
-import { GestureEvent } from "./types";
-import { Recognizer } from "./Recognizer";
+} from "rxjs"
+import { enrichEvent, getPointerEvents, isOUtsidePosThreshold } from "./utils"
+import { GestureEvent } from "./types"
+import { Recognizer } from "./Recognizer"
 
-type CommonData = ReturnType<typeof enrichEvent> & GestureEvent;
+type CommonData = ReturnType<typeof enrichEvent> & GestureEvent
 
 export type PanEvent =
   | ({
-      type: "panStart";
+      type: "panStart"
       /**
        * Delay between the tap and the first moving
        */
-      delay: number;
+      delay: number
     } & CommonData)
   | ({ type: "panMove" } & CommonData)
-  | ({ type: "panEnd" } & CommonData);
+  | ({ type: "panEnd" } & CommonData)
 
 export class PanRecognizer extends Recognizer {
-  public events$: Observable<PanEvent>;
-  public start$: Observable<PanEvent>;
-  public end$: Observable<PanEvent>;
+  public events$: Observable<PanEvent>
+  public start$: Observable<PanEvent>
+  public end$: Observable<PanEvent>
 
   constructor(protected options: { posThreshold?: number }) {
-    super();
-    const { posThreshold = 20 } = options;
+    super()
+    const { posThreshold = 20 } = options
 
     this.events$ = this.initializedWithSubject.pipe(
       switchMap(({ container, afterEventReceived }) => {
@@ -49,11 +49,11 @@ export class PanRecognizer extends Recognizer {
         } = getPointerEvents({
           container,
           afterEventReceived,
-        });
+        })
 
         return pointerDown$.pipe(
           exhaustMap((initialPointerDownEvent) => {
-            const startTime = new Date().getTime();
+            const startTime = new Date().getTime()
 
             const panReleased$ = merge(
               pointerUp$,
@@ -62,11 +62,11 @@ export class PanRecognizer extends Recognizer {
               // another pointer down means we put more fingers and we should stop the pan
               // in the future we should allow panning and pinching at the same time
               pointerDown$,
-            ).pipe(first());
+            ).pipe(first())
             // const firstMove$ = pointerMove$.pipe(first())
 
             // const pointerDownBuffer$ = merge(of(initialPointerDownEvent), pointerDown$).pipe(buffer(firstMove$), first(), share())
-            const pointerDownBuffer$ = of(initialPointerDownEvent);
+            const pointerDownBuffer$ = of(initialPointerDownEvent)
 
             const panStart$ = pointerDownBuffer$.pipe(
               // filter((events) => events.length === 1),
@@ -93,7 +93,7 @@ export class PanRecognizer extends Recognizer {
               ),
               share(),
               takeUntil(panReleased$),
-            );
+            )
 
             const panEnd$ = race(panStart$, panReleased$).pipe(
               switchMap((event) =>
@@ -113,7 +113,7 @@ export class PanRecognizer extends Recognizer {
                     )
                   : EMPTY,
               ),
-            );
+            )
 
             const panMove$ = panStart$.pipe(
               switchMap(() => pointerMove$),
@@ -129,18 +129,18 @@ export class PanRecognizer extends Recognizer {
                   }) satisfies PanEvent,
               ),
               takeUntil(panReleased$),
-            );
+            )
 
-            return merge(panStart$, panMove$, panEnd$);
+            return merge(panStart$, panMove$, panEnd$)
           }),
           share(),
-        );
+        )
       }),
-    );
+    )
 
     this.start$ = this.events$.pipe(
       filter((event) => event.type === "panStart"),
-    );
-    this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"));
+    )
+    this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
   }
 }

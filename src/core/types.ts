@@ -1,8 +1,8 @@
 export type GestureEvent = {
-  srcEvent: PointerEvent;
-};
+  srcEvent: PointerEvent
+}
 
 export type RecognizerInstanceParams = {
-  container: HTMLElement;
-  afterEventReceived?: (event: PointerEvent) => PointerEvent;
-};
+  container: HTMLElement
+  afterEventReceived?: (event: PointerEvent) => PointerEvent
+}
