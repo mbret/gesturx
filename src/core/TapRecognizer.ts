@@ -24,19 +24,19 @@ import {
   isOUtsidePosThreshold,
   trackActivePointers,
 } from "./utils";
-import { GestureEvent, RecognizerParams } from "./types";
-import { Recognizer } from "./Recognizer";
+import { GestureEvent } from "./types";
+import { Recognizer, RecognizerOptions } from "./Recognizer";
 
 export type TapEvent = GestureEvent & { type: "tap"; taps: number };
 
-type Options = RecognizerParams & {
+interface Options extends RecognizerOptions {
   // Maximum time in ms between multiple taps.
   multiTapThreshold?: number;
   // Maximum press time in ms.
   maximumPressTime?: number;
   maxTaps?: number;
   posThreshold?: number;
-};
+}
 
 export class TapRecognizer extends Recognizer {
   public events$: Observable<TapEvent>;

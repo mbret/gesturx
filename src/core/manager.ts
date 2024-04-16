@@ -1,7 +1,7 @@
 import { map, merge } from "rxjs";
 import { TapRecognizer } from "./TapRecognizer";
 import { getCenterFromEvent } from "./utils";
-import { createPanRecognizer } from "./panRecognizer";
+import { PanRecognizer } from "./PanRecognizer";
 
 export const createManager = ({
   container,
@@ -9,7 +9,7 @@ export const createManager = ({
   recognizers,
 }: {
   container: HTMLElement;
-  recognizers: TapRecognizer[];
+  recognizers: (TapRecognizer | PanRecognizer)[];
   afterEventReceived?: (event: PointerEvent) => PointerEvent;
 }) => {
   // user api

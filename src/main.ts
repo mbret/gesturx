@@ -1,19 +1,19 @@
 import { createManager } from "./core/manager";
-import { createPanRecognizer } from "./core/panRecognizer";
+import { PanRecognizer } from "./core/PanRecognizer";
 import { TapRecognizer } from "./core/TapRecognizer";
 import "./style.css";
 
 const container = document.querySelector<HTMLDivElement>("#app")!;
 
-// const panRecognizer = createPanRecognizer({});
+const panRecognizer = new PanRecognizer({});
 const tapRecognizer = new TapRecognizer({
   maxTaps: 3,
-  // failWith: [panRecognizer],
+  failWith: [panRecognizer],
 });
 
 const manager = createManager({
   container,
-  recognizers: [tapRecognizer],
+  recognizers: [tapRecognizer, panRecognizer],
 });
 
 manager.events$.subscribe(console.warn);
