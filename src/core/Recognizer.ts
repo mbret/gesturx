@@ -12,6 +12,7 @@ export interface RecognizerOptions {
 
 export interface RecognizerEvent {
   center: { x: number; y: number }
+  events: [PointerEvent, ...PointerEvent[]]
   /**
    * Delay between the tap and the first moving
    */
