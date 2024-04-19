@@ -11,7 +11,6 @@ import {
   of,
   scan,
   takeUntil,
-  tap,
 } from "rxjs"
 
 export function isDefined<T>(
@@ -23,26 +22,32 @@ export function isDefined<T>(
 export const hasAtLeastOneItem = <T>(events: T[]): events is [T, ...T[]] =>
   events.length > 0
 
-export const getCenterFromEvent = (
-  event: MouseEvent | TouchEvent | PointerEvent,
-) => ({
-  x:
-    "changedTouches" in event
-      ? event.changedTouches[0]?.pageX ?? 0
-      : event.clientX,
-  y:
-    "changedTouches" in event
-      ? event.changedTouches[0]?.pageY ?? 0
-      : event.clientY,
-})
+export const getCenterFromEvents = (events: PointerEvent[]) => {
+  const sum = events.reduce(
+    (acc, point) => {
+      acc.x += point.clientX
+      acc.y += point.clientY
+
+      return acc
+    },
+    { x: 0, y: 0 },
+  )
+
+  const numPoints = events.length || 1
+
+  return {
+    x: sum.x / numPoints,
+    y: sum.y / numPoints,
+  }
+}
 
 export function isOUtsidePosThreshold(
   startEvent: PointerEvent,
   endEvent: PointerEvent,
   posThreshold: number,
 ) {
-  const start = getCenterFromEvent(startEvent)
-  const end = getCenterFromEvent(endEvent)
+  const start = getCenterFromEvents([startEvent])
+  const end = getCenterFromEvents([endEvent])
 
   // Determines if the movement qualifies as a drag
   return (
@@ -130,7 +135,6 @@ export const trackActivePointers = ({
   container: HTMLElement
 }) => {
   const pointerUp$ = fromEvent<PointerEvent>(container, "pointerup")
-  // const pointerMove$ = fromEvent<PointerEvent>(container, "pointermove")
   const pointerLeave$ = fromEvent<PointerEvent>(container, "pointerleave")
   const pointerCancel$ = fromEvent<PointerEvent>(container, "pointercancel")
 
@@ -169,3 +173,58 @@ export const trackActivePointers = ({
     map((events) => Object.values(events).filter(isDefined)),
   )
 }
+
+/**
+ * Track all pointerEvent for active fingers
+ */
+export const trackFingers =
+  ({
+    pointerCancel$,
+    pointerLeave$,
+    pointerUp$,
+    pointerMove$,
+    trackMove,
+  }: {
+    pointerUp$: Observable<PointerEvent>
+    pointerLeave$: Observable<PointerEvent>
+    pointerCancel$: Observable<PointerEvent>
+    pointerMove$: Observable<PointerEvent>
+    trackMove: boolean
+  }) =>
+  (stream: Observable<PointerEvent>) => {
+    return stream.pipe(
+      mergeMap((pointerDown) => {
+        const pointerDownRelease$ = merge(
+          pointerUp$,
+          pointerLeave$,
+          pointerCancel$,
+        ).pipe(matchPointer(pointerDown))
+
+        const pointerDown$ = defer(() => of(pointerDown))
+
+        return merge(pointerDown$, trackMove ? pointerMove$ : NEVER).pipe(
+          matchPointer(pointerDown),
+          map((event) => ({ id: event.pointerId, event })),
+          takeUntil(pointerDownRelease$),
+          endWith({ id: pointerDown.pointerId, event: undefined }),
+        )
+      }),
+      scan(
+        (acc, { event, id }) => {
+          if (!event) {
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [id]: _deleted, ...rest } = acc
+
+            return rest
+          }
+
+          return {
+            ...acc,
+            [id]: event,
+          }
+        },
+        {} as Record<number, PointerEvent | undefined>,
+      ),
+      map((events) => Object.values(events).filter(isDefined)),
+    )
+  }

@@ -1,5 +1,5 @@
 import { Observable, ReplaySubject, map } from "rxjs"
-import { getCenterFromEvent } from "./utils"
+import { getCenterFromEvents } from "./utils"
 
 type InitializedWith = {
   container: HTMLElement
@@ -84,7 +84,7 @@ export const mapToRecognizerEvent = <
         delay,
         startTime,
         cumulatedAngle,
-        center: getCenterFromEvent(endEvent ?? startEvent),
+        center: getCenterFromEvents(events),
         events,
         ...event,
       } as unknown as Return

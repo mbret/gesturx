@@ -307,6 +307,7 @@ describe("TapGestureRecognizer", () => {
               x: 0,
               y: 0,
             })
+
             sendPointerEvent({
               container,
               identifier: 1,

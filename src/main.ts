@@ -18,16 +18,15 @@ const manager = createManager({
   recognizers: [tapRecognizer, panRecognizer, swipeRecognizer],
 })
 
-
 manager.events$.subscribe((e) => console.warn(e.type, e))
 
 // track fingers
-panRecognizer.fingers$.subscribe(fingers => {
+panRecognizer.fingers$.subscribe((fingers) => {
   const element = document.getElementById(`fingers`)
 
-    if (element) {
-      element.innerText = `fingers: ${fingers}`
-    }
+  if (element) {
+    element.innerText = `fingers: ${fingers}`
+  }
 })
 
 // box moving
@@ -42,8 +41,19 @@ manager.events$.subscribe((event) => {
   }
 })
 
+// track center
+manager.events$.subscribe((event) => {
+  const boxElement = document.getElementById(`boxCenter`)
+
+  if (boxElement) {
+    boxElement.style.left = `${event.center.x - boxElement.offsetWidth / 2}px`
+    boxElement.style.top = `${event.center.y - boxElement.offsetHeight / 2}px`
+  }
+})
+
 container.innerHTML = `
   <div id="fingers">fingers: 0</div>
   <div id="box">
   </div>
+  <div id="boxCenter">
 `

@@ -13,7 +13,6 @@ import {
   shareReplay,
   switchMap,
   takeUntil,
-  tap,
   timer,
   withLatestFrom,
 } from "rxjs"
@@ -23,7 +22,7 @@ import {
   getPointerEvents,
   hasAtLeastOneItem,
   isOUtsidePosThreshold,
-  trackActivePointers,
+  trackFingers,
 } from "./utils"
 import {
   Recognizer,
@@ -73,9 +72,17 @@ export class TapRecognizer extends Recognizer {
           })
 
         const pointerDown$ = fromPointerDown({ container, afterEventReceived })
-        const activePointers$ = trackActivePointers({ container }).pipe(
+        const activePointers$ = pointerDown$.pipe(
+          trackFingers({
+            pointerCancel$,
+            pointerLeave$,
+            pointerMove$,
+            pointerUp$,
+            trackMove: false,
+          }),
           shareReplay(1),
         )
+
         const hasMoreThanOneActivePointer$ = activePointers$.pipe(
           filter((pointers) => pointers.length > 1),
         )

@@ -3,11 +3,13 @@ import {
   exhaustMap,
   filter,
   first,
+  ignoreElements,
   map,
   merge,
   mergeMap,
   of,
   share,
+  skipUntil,
   switchMap,
   takeUntil,
   tap,
@@ -15,7 +17,9 @@ import {
 import {
   getPointerEvents,
   isOUtsidePosThreshold,
+  matchPointer,
   trackActivePointers,
+  trackFingers,
 } from "./utils"
 import { Recognizer, RecognizerEvent, mapToRecognizerEvent } from "./Recognizer"
 
@@ -61,22 +65,35 @@ export class PanRecognizer extends Recognizer {
               pointerCancel$,
               // another pointer down means we put more fingers and we should stop the pan
               // in the future we should allow panning and pinching at the same time
+              // pointerDown$,
+            ).pipe(
+              first(),
+              share(),
+            )
+
+            const pointerDowns$ = merge(
+              of(initialPointerDownEvent),
               pointerDown$,
-            ).pipe(first(), share())
+            )
 
-            const pointerDownBuffer$ = of(initialPointerDownEvent)
-
-            const panStart$ = pointerDownBuffer$.pipe(
-              switchMap(() => pointerMove$),
-              // we start pan only if the user started moving a certain distance
-              filter((pointerMoveEvent) =>
-                isOUtsidePosThreshold(
-                  initialPointerDownEvent,
-                  pointerMoveEvent,
-                  posThreshold,
+            const firstPointerDownMovingOutOfThreshold$ = pointerDowns$.pipe(
+              mergeMap((pointerDown) =>
+                pointerMove$.pipe(
+                  matchPointer(pointerDown),
+                  // we start pan only if the user started moving a certain distance
+                  filter((pointerMoveEvent) =>
+                    isOUtsidePosThreshold(
+                      pointerDown,
+                      pointerMoveEvent,
+                      posThreshold,
+                    ),
+                  ),
                 ),
               ),
               first(),
+            )
+
+            const panStart$ = firstPointerDownMovingOutOfThreshold$.pipe(
               map(() => ({
                 type: "panStart" as const,
                 startEvents: [initialPointerDownEvent],
@@ -99,20 +116,29 @@ export class PanRecognizer extends Recognizer {
               ),
             )
 
-            const panMove$ = panStart$.pipe(
-              mergeMap(() => pointerMove$),
-              map((moveEvent) => ({
+            const panMove$ = pointerDowns$.pipe(
+              trackFingers({
+                pointerCancel$,
+                pointerLeave$,
+                pointerUp$,
+                pointerMove$,
+                trackMove: true,
+              }),
+              skipUntil(panStart$),
+              map((events) => ({
                 type: "panMove" as const,
                 startEvents: [initialPointerDownEvent],
-                events: [moveEvent],
+                events,
                 startTime,
               })),
               takeUntil(panReleased$),
             )
 
-            return merge(panStart$, panMove$, panEnd$).pipe(
-              mapToRecognizerEvent,
-            )
+            return merge(
+              panStart$,
+              panMove$,
+              panEnd$,
+            ).pipe(mapToRecognizerEvent)
           }),
         )
       }),
@@ -125,7 +151,28 @@ export class PanRecognizer extends Recognizer {
     this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
 
     this.fingers$ = this.initializedWithSubject.pipe(
-      switchMap(({ container }) => trackActivePointers({ container })),
+      switchMap(({ container, afterEventReceived }) => {
+        const {
+          pointerCancel$,
+          pointerDown$,
+          pointerLeave$,
+          pointerMove$,
+          pointerUp$,
+        } = getPointerEvents({
+          container,
+          afterEventReceived,
+        })
+
+        return pointerDown$.pipe(
+          trackFingers({
+            pointerCancel$,
+            pointerLeave$,
+            pointerMove$,
+            pointerUp$,
+            trackMove: false,
+          }),
+        )
+      }),
       map((events) => events.length),
     )
   }
