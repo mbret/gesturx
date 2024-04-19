@@ -1,4 +1,4 @@
-import { Observable, filter, map } from "rxjs"
+import { Observable, filter, first, map, mergeMap } from "rxjs"
 import { Recognizer, RecognizerEvent } from "./Recognizer"
 import { PanRecognizer } from "./PanRecognizer"
 
@@ -25,13 +25,18 @@ export class SwipeRecognizer extends Recognizer {
     protected options: Params = {},
   ) {
     super()
-    const { escapeVelocity = 0.3 } = options
+    const { escapeVelocity = 0.4 } = options
 
-    this.events$ = panRecognizer.end$.pipe(
-      filter(
-        (event) =>
-          Math.abs(event.velocityX) >= escapeVelocity ||
-          Math.abs(event.velocityY) >= escapeVelocity,
+    this.events$ = panRecognizer.start$.pipe(
+      mergeMap(() =>
+        panRecognizer.end$.pipe(
+          first(),
+          filter(
+            (event) =>
+              Math.abs(event.velocityX) >= escapeVelocity ||
+              Math.abs(event.velocityY) >= escapeVelocity,
+          ),
+        ),
       ),
       map(({ type, ...rest }) => ({
         type: "swipe",
