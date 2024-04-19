@@ -138,7 +138,7 @@ export class TapRecognizer extends Recognizer {
               map((events) => ({
                 type: "tap" as const,
                 taps: events.length,
-                events: [events[0]],
+                startEvents: events,
                 startTime,
               })),
               mapToRecognizerEvent,

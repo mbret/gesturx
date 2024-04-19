@@ -12,7 +12,8 @@ export interface RecognizerOptions {
 
 export interface RecognizerEvent {
   center: { x: number; y: number }
-  events: [PointerEvent, ...PointerEvent[]]
+  startEvents: PointerEvent[]
+  events: PointerEvent[]
   /**
    * Delay between the user action and the event recognition
    */
@@ -41,18 +42,22 @@ export interface RecognizerEvent {
 }
 
 export const mapToRecognizerEvent = <
-  T extends { events: PointerEvent[]; startTime?: number },
+  T extends Partial<
+    Pick<RecognizerEvent, "startEvents" | "events" | "startTime">
+  >,
   R extends RecognizerEvent,
+  Return extends R & Omit<T, "startEvents" | "events" | "startTime">,
 >(
   stream: Observable<T>,
-): Observable<R & T> =>
+): Observable<Return> =>
   stream.pipe(
     map((event) => {
-      const startEvent = event.events[0]
+      const startEvent = (event.startEvents ?? [])[0]
+      const events = event.events ?? event.startEvents ?? []
 
       if (!startEvent) throw new Error("Missing events")
 
-      const endEvent = event.events[event.events.length - 1] ?? startEvent
+      const endEvent = events[(event.events?.length ?? 0) - 1] ?? startEvent
       const startX = startEvent.clientX
       const startY = startEvent.clientY
       const deltaX = endEvent.clientX - startX
@@ -80,8 +85,9 @@ export const mapToRecognizerEvent = <
         startTime,
         cumulatedAngle,
         center: getCenterFromEvent(endEvent ?? startEvent),
+        events,
         ...event,
-      } as R & T
+      } as unknown as Return
     }),
   )
 

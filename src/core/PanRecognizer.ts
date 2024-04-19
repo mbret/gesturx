@@ -79,7 +79,7 @@ export class PanRecognizer extends Recognizer {
               first(),
               map(() => ({
                 type: "panStart" as const,
-                events: [initialPointerDownEvent],
+                startEvents: [initialPointerDownEvent],
                 startTime,
               })),
               share(),
@@ -91,7 +91,8 @@ export class PanRecognizer extends Recognizer {
                 panReleased$.pipe(
                   map((endEvent) => ({
                     type: "panEnd" as const,
-                    events: [initialPointerDownEvent, endEvent],
+                    startEvents: [initialPointerDownEvent],
+                    events: [endEvent],
                     startTime,
                   })),
                 ),
@@ -102,7 +103,8 @@ export class PanRecognizer extends Recognizer {
               mergeMap(() => pointerMove$),
               map((moveEvent) => ({
                 type: "panMove" as const,
-                events: [initialPointerDownEvent, moveEvent],
+                startEvents: [initialPointerDownEvent],
+                events: [moveEvent],
                 startTime,
               })),
               takeUntil(panReleased$),
