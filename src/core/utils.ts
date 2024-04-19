@@ -141,13 +141,8 @@ export const trackActivePointers = ({
         pointerCancel$,
       ).pipe(matchPointer(pointerDown))
       const pointerDown$ = defer(() => of(pointerDown))
-      // const currentPointerMove$ = pointerMove$.pipe(
-      //   filter((pointerMoveEvent) => matchPointer(pointerMoveEvent, pointerDown)),
-      //   throttleTime(100, undefined, { trailing: true }),
-      // )
 
       return pointerDown$.pipe(
-        // mergeMap(() => merge(pointerDown$, currentPointerMove$)),
         mergeMap(() => merge(pointerDown$, NEVER)),
         map((event) => ({ id: event.pointerId, event })),
         takeUntil(pointerDownRelease$),

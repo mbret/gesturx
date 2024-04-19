@@ -70,7 +70,7 @@ describe("TapGestureRecognizer", () => {
 
   it("should detect a single tap", async () => {
     const multiTapThreshold = 5
-    const waitLongEnough$ = timer(multiTapThreshold * 2)
+    const waitLongEnough$ = timer(100)
     const recognizer = new TapRecognizer({ multiTapThreshold })
     recognizer.initialize({
       container,

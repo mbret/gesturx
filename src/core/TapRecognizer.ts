@@ -13,6 +13,7 @@ import {
   shareReplay,
   switchMap,
   takeUntil,
+  tap,
   timer,
   withLatestFrom,
 } from "rxjs"
@@ -55,7 +56,10 @@ export class TapRecognizer extends Recognizer {
       multiTapThreshold = 200,
       maximumPressTime = 250,
       maxTaps = 1,
-      posThreshold = 5,
+      // threshold should be high because of fingers size
+      // and potential margin due to it. clicks are nearly perfect
+      // not fingers.
+      posThreshold = 10,
       failWith,
     } = options
 
@@ -123,7 +127,6 @@ export class TapRecognizer extends Recognizer {
             const takeUntil$ = merge(
               failWith$,
               pointerCancel$,
-              pointerLeave$,
               hasMoreThanOneActivePointer$,
               subsequentPointersOutOfPositionThreshold$,
               waitedTooLong$,

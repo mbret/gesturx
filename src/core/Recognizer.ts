@@ -31,11 +31,13 @@ export interface RecognizerEvent {
   velocityY: number
   startTime: number
   /**
+   * represent the angle of gesture between start and latest event.
+   *
    *             (-90)
    * (+/-180) <-   |   -> (+/-0)
    *             (+90)
    */
-  angle: number
+  cumulatedAngle: number
 }
 
 export const mapToRecognizerEvent = <
@@ -67,7 +69,7 @@ export const mapToRecognizerEvent = <
       const velocityY = delay > 0 ? deltaY / delay : 0
 
       const radians = Math.atan2(deltaY, deltaX)
-      const angle = (radians * 180) / Math.PI
+      const cumulatedAngle = (radians * 180) / Math.PI
 
       return {
         deltaX,
@@ -76,7 +78,7 @@ export const mapToRecognizerEvent = <
         velocityY,
         delay,
         startTime,
-        angle,
+        cumulatedAngle,
         center: getCenterFromEvent(endEvent ?? startEvent),
         ...event,
       } as R & T

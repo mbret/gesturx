@@ -10,8 +10,13 @@ import {
   share,
   switchMap,
   takeUntil,
+  tap,
 } from "rxjs"
-import { getPointerEvents, isOUtsidePosThreshold } from "./utils"
+import {
+  getPointerEvents,
+  isOUtsidePosThreshold,
+  trackActivePointers,
+} from "./utils"
 import { Recognizer, RecognizerEvent, mapToRecognizerEvent } from "./Recognizer"
 
 interface CommonData extends RecognizerEvent {}
@@ -27,6 +32,7 @@ export class PanRecognizer extends Recognizer {
   public events$: Observable<PanEvent>
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>
+  public fingers$: Observable<number>
 
   constructor(protected options: { posThreshold?: number } = {}) {
     super()
@@ -56,7 +62,7 @@ export class PanRecognizer extends Recognizer {
               // another pointer down means we put more fingers and we should stop the pan
               // in the future we should allow panning and pinching at the same time
               pointerDown$,
-            ).pipe(first())
+            ).pipe(first(), share())
 
             const pointerDownBuffer$ = of(initialPointerDownEvent)
 
@@ -115,5 +121,10 @@ export class PanRecognizer extends Recognizer {
       filter((event) => event.type === "panStart"),
     )
     this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
+
+    this.fingers$ = this.initializedWithSubject.pipe(
+      switchMap(({ container }) => trackActivePointers({ container })),
+      map((events) => events.length),
+    )
   }
 }
