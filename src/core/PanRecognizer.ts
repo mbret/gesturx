@@ -106,9 +106,9 @@ export class PanRecognizer extends Recognizer {
               mapToRecognizerEvent,
             )
           }),
-          share(),
         )
       }),
+      share(),
     )
 
     this.start$ = this.events$.pipe(

@@ -1,4 +1,4 @@
-import { Observable, filter, first, map, mergeMap } from "rxjs"
+import { Observable, filter, first, map, mergeMap, share } from "rxjs"
 import { Recognizer, RecognizerEvent } from "./Recognizer"
 import { PanRecognizer } from "./PanRecognizer"
 
@@ -39,9 +39,10 @@ export class SwipeRecognizer extends Recognizer {
         ),
       ),
       map(({ type, ...rest }) => ({
-        type: "swipe",
+        type: "swipe" as const,
         ...rest,
       })),
+      share(),
     )
   }
 }

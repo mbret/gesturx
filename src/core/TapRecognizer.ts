@@ -144,11 +144,11 @@ export class TapRecognizer extends Recognizer {
 
             return tap$
           }),
-          share(),
         )
 
         return tap$
       }),
+      share(),
     )
   }
 }
