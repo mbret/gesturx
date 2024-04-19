@@ -24,7 +24,7 @@ import {
   isOUtsidePosThreshold,
   trackActivePointers,
 } from "./utils"
-import { Recognizer, RecognizerEvent, RecognizerOptions } from "./Recognizer"
+import { Recognizer, RecognizerEvent, RecognizerOptions, mapToRecognizerEvent } from "./Recognizer"
 
 export interface TapEvent extends RecognizerEvent {
   type: "tap"
@@ -53,19 +53,6 @@ export class TapRecognizer extends Recognizer {
       posThreshold = 5,
       failWith,
     } = options
-
-    const mapPointerEventToTapEvent = (
-      stream: Observable<[PointerEvent, ...PointerEvent[]]>,
-    ): Observable<TapEvent> =>
-      stream.pipe(
-        map((events) =>
-          this.mapToFinalEvent({
-            type: "tap",
-            srcEvent: events[0],
-            taps: events.length,
-          }),
-        ),
-      )
 
     this.events$ = this.initializedWithSubject.pipe(
       switchMap(({ container, afterEventReceived }) => {
@@ -139,7 +126,12 @@ export class TapRecognizer extends Recognizer {
             const tap$ = pointerDownsBuffered$.pipe(
               filter(hasAtLeastOneItem),
               filter((events) => events.length <= maxTaps),
-              mapPointerEventToTapEvent,
+              map((events) => ({
+                type: "tap" as const,
+                taps: events.length,
+                events: [events[0]],
+              })),
+              mapToRecognizerEvent,
               takeUntil(takeUntil$),
             )
 

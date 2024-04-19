@@ -12,19 +12,14 @@ import {
   switchMap,
   takeUntil,
 } from "rxjs"
-import { enrichEvent, getPointerEvents, isOUtsidePosThreshold } from "./utils"
-import { GestureEvent } from "./types"
-import { Recognizer } from "./Recognizer"
+import { getPointerEvents, isOUtsidePosThreshold } from "./utils"
+import { Recognizer, RecognizerEvent, mapToRecognizerEvent } from "./Recognizer"
 
-type CommonData = ReturnType<typeof enrichEvent> & GestureEvent
+interface CommonData extends RecognizerEvent {}
 
 export type PanEvent =
   | ({
       type: "panStart"
-      /**
-       * Delay between the tap and the first moving
-       */
-      delay: number
     } & CommonData)
   | ({ type: "panMove" } & CommonData)
   | ({ type: "panEnd" } & CommonData)
@@ -80,17 +75,12 @@ export class PanRecognizer extends Recognizer {
                 ),
               ),
               first(),
-              map(
-                () =>
-                  ({
-                    type: "panStart",
-                    ...enrichEvent({
-                      event: initialPointerDownEvent,
-                      startTime,
-                      startEvent: initialPointerDownEvent,
-                    }),
-                  }) satisfies PanEvent,
-              ),
+              map(() => ({
+                type: "panStart" as const,
+                events: [initialPointerDownEvent],
+                startTime,
+              })),
+              // mapToRecognizerEvent,
               share(),
               takeUntil(panReleased$),
             )
@@ -99,17 +89,11 @@ export class PanRecognizer extends Recognizer {
               switchMap((event) =>
                 event.type === "panStart"
                   ? panReleased$.pipe(
-                      map(
-                        (endEvent) =>
-                          ({
-                            type: "panEnd",
-                            ...enrichEvent({
-                              event: endEvent,
-                              startTime,
-                              startEvent: initialPointerDownEvent,
-                            }),
-                          }) satisfies PanEvent,
-                      ),
+                      map((endEvent) => ({
+                        type: "panEnd" as const,
+                        events: [initialPointerDownEvent, endEvent],
+                        startTime,
+                      })),
                     )
                   : EMPTY,
               ),
@@ -117,21 +101,17 @@ export class PanRecognizer extends Recognizer {
 
             const panMove$ = panStart$.pipe(
               switchMap(() => pointerMove$),
-              map(
-                (moveEvent) =>
-                  ({
-                    type: "panMove",
-                    ...enrichEvent({
-                      event: moveEvent,
-                      startTime,
-                      startEvent: initialPointerDownEvent,
-                    }),
-                  }) satisfies PanEvent,
-              ),
+              map((moveEvent) => ({
+                type: "panMove" as const,
+                events: [initialPointerDownEvent, moveEvent],
+                startTime,
+              })),
               takeUntil(panReleased$),
             )
 
-            return merge(panStart$, panMove$, panEnd$)
+            return merge(panStart$, panMove$, panEnd$).pipe(
+              mapToRecognizerEvent,
+            )
           }),
           share(),
         )

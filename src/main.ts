@@ -16,7 +16,7 @@ const manager = createManager({
   recognizers: [tapRecognizer, panRecognizer],
 })
 
-manager.events$.subscribe(console.warn)
+manager.events$.subscribe(e => console.warn(e.type, e))
 
 container.innerHTML = `
   <div class="container">

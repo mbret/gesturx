@@ -118,42 +118,6 @@ export const fromPointerDown = ({
     map(afterEventReceived),
   )
 
-export const enrichEvent = ({
-  event,
-  startTime,
-  startEvent,
-}: {
-  event: PointerEvent
-  startTime: number
-  startEvent: PointerEvent
-}) => {
-  const startX = startEvent.clientX
-  const startY = startEvent.clientY
-  const deltaX = event.clientX - startX
-  const deltaY = event.clientY - startY
-
-  // Calculate the change in time
-  const dt = Date.now() - startTime
-
-  // Avoid division by zero
-  // Calculate velocity in pixels per second
-  const velocityX = dt > 0 ? deltaX / dt : 0
-  const velocityY = dt > 0 ? deltaY / dt : 0
-
-  return {
-    srcEvent: event,
-    deltaX,
-    deltaY,
-    velocityX,
-    velocityY,
-    delay: new Date().getTime() - startTime,
-    center: {
-      x: event.x,
-      y: event.y,
-    },
-  }
-}
-
 /**
  * @todo test the strict stability
  * @important
