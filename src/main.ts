@@ -20,7 +20,19 @@ const manager = createManager({
 
 manager.events$.subscribe((e) => console.warn(e.type, e))
 
+// box moving
+manager.events$.subscribe((event) => {
+  if (event.type === "panMove") {
+    const boxElement = document.getElementById(`box`)
+
+    if (boxElement) {
+      boxElement.style.left = `${event.center.x - (boxElement.offsetWidth / 2)}px`
+      boxElement.style.top = `${event.center.y - (boxElement.offsetHeight / 2)}px`
+    }
+  }
+})
+
 container.innerHTML = `
-  <div class="container">
+  <div id="box">
   </div>
 `

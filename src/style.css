@@ -22,8 +22,21 @@ body {
 
 #app {
   display: flex;
-  padding: 2rem;
   justify-content: center;
   align-items: center;
   flex: 1;
+  position: relative;
+}
+
+.container {
+  position: relative;
+}
+
+#box {
+  height: 100px;
+  width: 100px;
+  background-color: red;
+  position: absolute;
+  left: 0;
+  top: 0;
 }
