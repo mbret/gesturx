@@ -1,13 +1,12 @@
 import {
-  EMPTY,
   Observable,
   exhaustMap,
   filter,
   first,
   map,
   merge,
+  mergeMap,
   of,
-  race,
   share,
   switchMap,
   takeUntil,
@@ -29,9 +28,9 @@ export class PanRecognizer extends Recognizer {
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>
 
-  constructor(protected options: { posThreshold?: number }) {
+  constructor(protected options: { posThreshold?: number } = {}) {
     super()
-    const { posThreshold = 20 } = options
+    const { posThreshold = 15 } = options
 
     this.events$ = this.initializedWithSubject.pipe(
       switchMap(({ container, afterEventReceived }) => {
@@ -58,13 +57,10 @@ export class PanRecognizer extends Recognizer {
               // in the future we should allow panning and pinching at the same time
               pointerDown$,
             ).pipe(first())
-            // const firstMove$ = pointerMove$.pipe(first())
 
-            // const pointerDownBuffer$ = merge(of(initialPointerDownEvent), pointerDown$).pipe(buffer(firstMove$), first(), share())
             const pointerDownBuffer$ = of(initialPointerDownEvent)
 
             const panStart$ = pointerDownBuffer$.pipe(
-              // filter((events) => events.length === 1),
               switchMap(() => pointerMove$),
               // we start pan only if the user started moving a certain distance
               filter((pointerMoveEvent) =>
@@ -80,27 +76,24 @@ export class PanRecognizer extends Recognizer {
                 events: [initialPointerDownEvent],
                 startTime,
               })),
-              // mapToRecognizerEvent,
               share(),
               takeUntil(panReleased$),
             )
 
-            const panEnd$ = race(panStart$, panReleased$).pipe(
-              switchMap((event) =>
-                event.type === "panStart"
-                  ? panReleased$.pipe(
-                      map((endEvent) => ({
-                        type: "panEnd" as const,
-                        events: [initialPointerDownEvent, endEvent],
-                        startTime,
-                      })),
-                    )
-                  : EMPTY,
+            const panEnd$ = panStart$.pipe(
+              mergeMap(() =>
+                panReleased$.pipe(
+                  map((endEvent) => ({
+                    type: "panEnd" as const,
+                    events: [initialPointerDownEvent, endEvent],
+                    startTime,
+                  })),
+                ),
               ),
             )
 
             const panMove$ = panStart$.pipe(
-              switchMap(() => pointerMove$),
+              mergeMap(() => pointerMove$),
               map((moveEvent) => ({
                 type: "panMove" as const,
                 events: [initialPointerDownEvent, moveEvent],

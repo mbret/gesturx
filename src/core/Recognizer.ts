@@ -14,13 +14,28 @@ export interface RecognizerEvent {
   center: { x: number; y: number }
   events: [PointerEvent, ...PointerEvent[]]
   /**
-   * Delay between the tap and the first moving
+   * Delay between the user action and the event recognition
    */
   delay: number
   deltaX: number
   deltaY: number
+  /**
+   * @important
+   * Can be negative, 0, positive
+   */
   velocityX: number
+  /**
+   * @important
+   * Can be negative, 0, positive
+   */
   velocityY: number
+  startTime: number
+  /**
+   *             (-90)
+   * (+/-180) <-   |   -> (+/-0)
+   *             (+90)
+   */
+  angle: number
 }
 
 export const mapToRecognizerEvent = <
@@ -32,26 +47,36 @@ export const mapToRecognizerEvent = <
   stream.pipe(
     map((event) => {
       const startEvent = event.events[0]
-      const endEvent = event.events[event.events.length - 1]
+
+      if (!startEvent) throw new Error("Missing events")
+
+      const endEvent = event.events[event.events.length - 1] ?? startEvent
       const startX = startEvent.clientX
       const startY = startEvent.clientY
-      const deltaX = (endEvent?.clientX ?? startX) - startX
-      const deltaY = (endEvent?.clientY ?? startY) - startY
+      const deltaX = endEvent.clientX - startX
+      const deltaY = endEvent.clientY - startY
 
       // Calculate the change in time
-      const dt = event.startTime ? Date.now() - event.startTime : 0
+      const now = Date.now()
+      const startTime = event.startTime ?? now
+      const delay = now - startTime
 
       // Avoid division by zero
       // Calculate velocity in pixels per second
-      const velocityX = dt > 0 ? deltaX / dt : 0
-      const velocityY = dt > 0 ? deltaY / dt : 0
+      const velocityX = delay > 0 ? deltaX / delay : 0
+      const velocityY = delay > 0 ? deltaY / delay : 0
+
+      const radians = Math.atan2(deltaY, deltaX)
+      const angle = (radians * 180) / Math.PI
 
       return {
         deltaX,
         deltaY,
         velocityX,
         velocityY,
-        delay: dt,
+        delay,
+        startTime,
+        angle,
         center: getCenterFromEvent(endEvent ?? startEvent),
         ...event,
       } as R & T

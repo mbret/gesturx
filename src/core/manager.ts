@@ -1,6 +1,7 @@
 import { merge } from "rxjs"
 import { TapRecognizer } from "./TapRecognizer"
 import { PanRecognizer } from "./PanRecognizer"
+import { SwipeRecognizer } from "./SwipeRecognizer"
 
 export const createManager = ({
   container,
@@ -8,7 +9,7 @@ export const createManager = ({
   recognizers,
 }: {
   container: HTMLElement
-  recognizers: (TapRecognizer | PanRecognizer)[]
+  recognizers: (TapRecognizer | PanRecognizer | SwipeRecognizer)[]
   afterEventReceived?: (event: PointerEvent) => PointerEvent
 }) => {
   recognizers.forEach((recognizer) => {

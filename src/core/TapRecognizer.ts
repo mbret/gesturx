@@ -24,7 +24,12 @@ import {
   isOUtsidePosThreshold,
   trackActivePointers,
 } from "./utils"
-import { Recognizer, RecognizerEvent, RecognizerOptions, mapToRecognizerEvent } from "./Recognizer"
+import {
+  Recognizer,
+  RecognizerEvent,
+  RecognizerOptions,
+  mapToRecognizerEvent,
+} from "./Recognizer"
 
 export interface TapEvent extends RecognizerEvent {
   type: "tap"
@@ -56,6 +61,7 @@ export class TapRecognizer extends Recognizer {
 
     this.events$ = this.initializedWithSubject.pipe(
       switchMap(({ container, afterEventReceived }) => {
+        const startTime = Date.now()
         const { pointerUp$, pointerLeave$, pointerCancel$, pointerMove$ } =
           getPointerEvents({
             container,
@@ -130,6 +136,7 @@ export class TapRecognizer extends Recognizer {
                 type: "tap" as const,
                 taps: events.length,
                 events: [events[0]],
+                startTime,
               })),
               mapToRecognizerEvent,
               takeUntil(takeUntil$),
