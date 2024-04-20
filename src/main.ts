@@ -29,19 +29,39 @@ panRecognizer.fingers$.subscribe((fingers) => {
   }
 })
 
-// box moving
+/**
+ * Moving a box on x,y axis.
+ * We track the deltaX/Y values.
+ */
+let latestBoxPosition = { x: 0, y: 0 }
 manager.events$.subscribe((event) => {
-  if (event.type === "panMove") {
+
+  if (
+    event.type === "panMove" ||
+    event.type === "panEnd" ||
+    event.type === "panStart"
+  ) {
     const boxElement = document.getElementById(`box`)
 
     if (boxElement) {
-      boxElement.style.left = `${event.center.x - boxElement.offsetWidth / 2}px`
-      boxElement.style.top = `${event.center.y - boxElement.offsetHeight / 2}px`
+      const domRect = boxElement.getBoundingClientRect()
+
+      if (event.type === "panStart") {
+        latestBoxPosition.x = domRect.left
+        latestBoxPosition.y = domRect.top
+      }
+
+      boxElement.style.left = `${latestBoxPosition.x + event.deltaX}px`
+      boxElement.style.top = `${latestBoxPosition.y + event.deltaY}px`
     }
   }
 })
 
-// track center
+/**
+ * track center.
+ * We use the center value, which indicate the true center
+ * no matter how many fingers
+ */
 manager.events$.subscribe((event) => {
   const boxElement = document.getElementById(`boxCenter`)
 

@@ -11,6 +11,9 @@ export interface RecognizerOptions {
 }
 
 export interface RecognizerEvent {
+  /**
+   * Center position for multi-touch, or just the single pointer.
+   */
   center: { x: number; y: number }
   startEvents: PointerEvent[]
   events: PointerEvent[]
