@@ -1,5 +1,4 @@
 import { describe, it, expect, beforeEach } from "vitest"
-import { TapRecognizer } from "./TapRecognizer"
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs"
 import { SwipeRecognizer } from "./SwipeRecognizer"
 import { PanRecognizer } from "./pan/PanRecognizer"

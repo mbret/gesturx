@@ -1,6 +1,16 @@
-import { Observable, filter, first, map, mergeMap, share } from "rxjs"
-import { Recognizer, RecognizerEvent } from "./Recognizer"
+import {
+  Observable,
+  exhaustMap,
+  filter,
+  first,
+  map,
+  share,
+  switchMap,
+  takeUntil,
+} from "rxjs"
+import { Recognizer } from "./Recognizer"
 import { PanRecognizer } from "./pan/PanRecognizer"
+import { RecognizerEvent } from "./RecognizerEventState"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "swipe"
@@ -20,29 +30,40 @@ type Params = {
 export class SwipeRecognizer extends Recognizer {
   public events$: Observable<SwipeEvent>
 
-  constructor(
-    protected panRecognizer: PanRecognizer,
-    protected options: Params = {},
-  ) {
+  constructor(protected options: Params = {}) {
     super()
-    const { escapeVelocity = 0.4 } = options
 
-    this.events$ = panRecognizer.start$.pipe(
-      mergeMap(() =>
-        panRecognizer.end$.pipe(
-          first(),
-          filter(
-            (event) =>
-              Math.abs(event.velocityX) >= escapeVelocity ||
-              Math.abs(event.velocityY) >= escapeVelocity,
+    const panRecognizer = new PanRecognizer()
+
+    const { escapeVelocity = 0.9 } = options
+
+    this.events$ = this.init$.pipe(
+      switchMap((initializedWith) => {
+        panRecognizer.initialize(initializedWith)
+
+        const hasMoreThanOneFinger$ = panRecognizer.events$.pipe(
+          filter(({ pointers }) => pointers.length > 1),
+        )
+
+        return panRecognizer.start$.pipe(
+          exhaustMap(() =>
+            panRecognizer.end$.pipe(
+              first(),
+              filter(
+                (event) =>
+                  Math.abs(event.velocityX) >= escapeVelocity ||
+                  Math.abs(event.velocityY) >= escapeVelocity,
+              ),
+              takeUntil(hasMoreThanOneFinger$),
+            ),
           ),
-        ),
-      ),
-      map(({ type, ...rest }) => ({
-        type: "swipe" as const,
-        ...rest,
-      })),
-      share(),
+          map(({ type, ...rest }) => ({
+            type: "swipe" as const,
+            ...rest,
+          })),
+          share(),
+        )
+      }),
     )
   }
 }

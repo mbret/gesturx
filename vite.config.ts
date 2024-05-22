@@ -3,6 +3,7 @@ import dts from "vite-plugin-dts"
 import { resolve } from "path"
 import { name } from "../prose-reader/packages/enhancer-gesture/package.json"
 import externals from "rollup-plugin-node-externals"
+import react from "@vitejs/plugin-react"
 
 const libName = name.replace(`@`, ``).replace(`/`, `-`)
 
@@ -18,6 +19,7 @@ export default defineConfig(({ mode }) => ({
     sourcemap: true,
   },
   plugins: [
+    react(),
     {
       enforce: `pre`,
       ...externals({

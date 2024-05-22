@@ -26,12 +26,12 @@ import {
 } from "./utils"
 import {
   Recognizer,
-  RecognizerEvent,
+  DeprecatedRecognizerEvent,
   RecognizerOptions,
-  mapToRecognizerEvent,
+  deprecatedMapToRecognizerEvent,
 } from "./Recognizer"
 
-export interface TapEvent extends RecognizerEvent {
+export interface TapEvent extends DeprecatedRecognizerEvent {
   type: "tap"
   taps: number
 }
@@ -62,7 +62,7 @@ export class TapRecognizer extends Recognizer {
       failWith,
     } = options
 
-    this.events$ = this.initializedWithSubject.pipe(
+    this.events$ = this.init$.pipe(
       switchMap(({ container, afterEventReceived }) => {
         const startTime = Date.now()
         const { pointerUp$, pointerLeave$, pointerCancel$, pointerMove$ } =
@@ -148,7 +148,7 @@ export class TapRecognizer extends Recognizer {
                 startEvents: events,
                 startTime,
               })),
-              mapToRecognizerEvent,
+              deprecatedMapToRecognizerEvent,
               takeUntil(takeUntil$),
             )
 

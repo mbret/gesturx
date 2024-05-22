@@ -3,34 +3,29 @@ import {
   exhaustMap,
   filter,
   first,
-  ignoreElements,
   map,
   merge,
   mergeMap,
   of,
   share,
+  shareReplay,
   skipUntil,
   switchMap,
   takeUntil,
-  tap,
+  withLatestFrom,
 } from "rxjs"
 import {
   getPointerEvents,
   isOUtsidePosThreshold,
   matchPointer,
-  trackActivePointers,
   trackFingers,
 } from "../utils"
-import { Recognizer, RecognizerEvent, mapToRecognizerEvent } from "../Recognizer"
+import { Recognizer, mapToRecognizerEvent } from "../Recognizer"
+import { RecognizerEventState, RecognizerEvent } from "../RecognizerEventState"
 
-interface CommonData extends RecognizerEvent {}
-
-export type PanEvent =
-  | ({
-      type: "panStart"
-    } & CommonData)
-  | ({ type: "panMove" } & CommonData)
-  | ({ type: "panEnd" } & CommonData)
+interface PanEvent extends RecognizerEvent {
+  type: "panStart" | "panMove" | "panEnd"
+}
 
 export class PanRecognizer extends Recognizer {
   public events$: Observable<PanEvent>
@@ -40,9 +35,10 @@ export class PanRecognizer extends Recognizer {
 
   constructor(protected options: { posThreshold?: number } = {}) {
     super()
+
     const { posThreshold = 15 } = options
 
-    this.events$ = this.initializedWithSubject.pipe(
+    this.events$ = this.init$.pipe(
       switchMap(({ container, afterEventReceived }) => {
         const {
           pointerCancel$,
@@ -57,23 +53,49 @@ export class PanRecognizer extends Recognizer {
 
         return pointerDown$.pipe(
           exhaustMap((initialPointerDownEvent) => {
+            const recognizerEvent = new RecognizerEventState()
             const startTime = new Date().getTime()
-
-            const panReleased$ = merge(
-              pointerUp$,
-              pointerLeave$,
-              pointerCancel$,
-              // another pointer down means we put more fingers and we should stop the pan
-              // in the future we should allow panning and pinching at the same time
-              // pointerDown$,
-            ).pipe(
-              first(),
-              share(),
-            )
 
             const pointerDowns$ = merge(
               of(initialPointerDownEvent),
               pointerDown$,
+            )
+
+            const pointerUpdate$ = merge(
+              pointerCancel$,
+              pointerDown$,
+              pointerLeave$,
+              pointerMove$,
+              pointerUp$,
+            )
+
+            const trackFingers$ = pointerDowns$.pipe(
+              trackFingers({
+                pointerCancel$,
+                pointerLeave$,
+                pointerUp$,
+                pointerMove$,
+                trackMove: true,
+              }),
+              shareReplay(),
+            )
+
+            /**
+             * We release when we detect a pointer leave and there are no more
+             * active fingers.
+             *
+             * @todo move to utils
+             */
+            const panReleased$ = merge(
+              pointerUp$,
+              pointerLeave$,
+              pointerCancel$,
+            ).pipe(
+              withLatestFrom(trackFingers$),
+              filter(([_, pointers]) => !pointers.length),
+              map(([event]) => event),
+              first(),
+              share(),
             )
 
             const firstPointerDownMovingOutOfThreshold$ = pointerDowns$.pipe(
@@ -97,7 +119,9 @@ export class PanRecognizer extends Recognizer {
               map(() => ({
                 type: "panStart" as const,
                 startEvents: [initialPointerDownEvent],
+                // latestActivePointers: [initialPointerDownEvent],
                 startTime,
+                event: initialPointerDownEvent,
               })),
               share(),
               takeUntil(panReleased$),
@@ -111,34 +135,31 @@ export class PanRecognizer extends Recognizer {
                     startEvents: [initialPointerDownEvent],
                     events: [endEvent],
                     startTime,
+                    event: endEvent,
                   })),
                 ),
               ),
             )
 
-            const panMove$ = pointerDowns$.pipe(
-              trackFingers({
-                pointerCancel$,
-                pointerLeave$,
-                pointerUp$,
-                pointerMove$,
-                trackMove: true,
-              }),
+            const panUpdate$ = pointerUpdate$.pipe(
               skipUntil(panStart$),
-              map((events) => ({
+              map((event) => ({
                 type: "panMove" as const,
                 startEvents: [initialPointerDownEvent],
-                events,
                 startTime,
+                event,
               })),
               takeUntil(panReleased$),
             )
 
-            return merge(
-              panStart$,
-              panMove$,
-              panEnd$,
-            ).pipe(mapToRecognizerEvent)
+            return merge(panStart$, panUpdate$, panEnd$).pipe(
+              withLatestFrom(trackFingers$),
+              map(([event, pointers]) => ({
+                ...event,
+                latestActivePointers: pointers,
+              })),
+              mapToRecognizerEvent(recognizerEvent),
+            )
           }),
         )
       }),
@@ -150,25 +171,16 @@ export class PanRecognizer extends Recognizer {
     )
     this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
 
-    this.fingers$ = this.initializedWithSubject.pipe(
+    this.fingers$ = this.init$.pipe(
       switchMap(({ container, afterEventReceived }) => {
-        const {
-          pointerCancel$,
-          pointerDown$,
-          pointerLeave$,
-          pointerMove$,
-          pointerUp$,
-        } = getPointerEvents({
+        const pointerEvents = getPointerEvents({
           container,
           afterEventReceived,
         })
 
-        return pointerDown$.pipe(
+        return pointerEvents.pointerDown$.pipe(
           trackFingers({
-            pointerCancel$,
-            pointerLeave$,
-            pointerMove$,
-            pointerUp$,
+            ...pointerEvents,
             trackMove: false,
           }),
         )

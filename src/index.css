@@ -5,7 +5,6 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -24,12 +23,13 @@ body {
   min-height: 100%;
 }
 
-#app {
+#root {
   display: flex;
   justify-content: center;
   align-items: center;
   flex: 1;
   position: relative;
+  overflow: hidden;
 }
 
 .container {

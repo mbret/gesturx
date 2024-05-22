@@ -189,6 +189,11 @@ export const trackFingers =
     pointerLeave$: Observable<PointerEvent>
     pointerCancel$: Observable<PointerEvent>
     pointerMove$: Observable<PointerEvent>
+    /**
+     * Setting this value to false will not update the list
+     * on pointer move. Use it if you only need to track number of active
+     * fingers.
+     */
     trackMove: boolean
   }) =>
   (stream: Observable<PointerEvent>) => {
@@ -202,12 +207,17 @@ export const trackFingers =
 
         const pointerDown$ = defer(() => of(pointerDown))
 
-        return merge(pointerDown$, trackMove ? pointerMove$ : NEVER).pipe(
+        const tracking$ = merge(
+          pointerDown$,
+          trackMove ? pointerMove$ : NEVER,
+        ).pipe(
           matchPointer(pointerDown),
           map((event) => ({ id: event.pointerId, event })),
           takeUntil(pointerDownRelease$),
           endWith({ id: pointerDown.pointerId, event: undefined }),
         )
+
+        return tracking$
       }),
       scan(
         (acc, { event, id }) => {
