@@ -20,8 +20,8 @@ import {
   matchPointer,
   trackActivePointers,
   trackFingers,
-} from "./utils"
-import { Recognizer, RecognizerEvent, mapToRecognizerEvent } from "./Recognizer"
+} from "../utils"
+import { Recognizer, RecognizerEvent, mapToRecognizerEvent } from "../Recognizer"
 
 interface CommonData extends RecognizerEvent {}
 

@@ -1,5 +1,5 @@
 import { createManager } from "./core/manager"
-import { PanRecognizer } from "./core/PanRecognizer"
+import { PanRecognizer } from "./core/pan/PanRecognizer"
 import { SwipeRecognizer } from "./core/SwipeRecognizer"
 import { TapRecognizer } from "./core/TapRecognizer"
 import "./style.css"

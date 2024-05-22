@@ -1,6 +1,6 @@
 import { Observable, filter, first, map, mergeMap, share } from "rxjs"
 import { Recognizer, RecognizerEvent } from "./Recognizer"
-import { PanRecognizer } from "./PanRecognizer"
+import { PanRecognizer } from "./pan/PanRecognizer"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "swipe"

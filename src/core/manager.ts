@@ -1,6 +1,6 @@
 import { merge } from "rxjs"
 import { TapRecognizer } from "./TapRecognizer"
-import { PanRecognizer } from "./PanRecognizer"
+import { PanRecognizer } from "./pan/PanRecognizer"
 import { SwipeRecognizer } from "./SwipeRecognizer"
 
 export const createManager = ({
