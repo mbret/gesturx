@@ -238,3 +238,33 @@ export const trackFingers =
       map((events) => Object.values(events).filter(isDefined)),
     )
   }
+
+/**
+ * Avoid division by zero
+ * Calculate velocity in pixels per second
+ */
+export const calculateVelocity = (
+  delay: number,
+  deltaX: number,
+  deltaY: number,
+) => {
+  const velocityX = delay > 0 ? deltaX / delay : 0
+  const velocityY = delay > 0 ? deltaY / delay : 0
+
+  return {
+    velocityX,
+    velocityY,
+  }
+}
+
+export const calculateAngle = (
+  deltaX: number,
+  deltaY: number,
+) => {
+  const radians = Math.atan2(deltaY, deltaX)
+  const angle = (radians * 180) / Math.PI
+
+  return {
+    angle,
+  }
+}

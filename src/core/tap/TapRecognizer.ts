@@ -1,6 +1,7 @@
 import {
   Observable,
   buffer,
+  combineLatest,
   debounceTime,
   exhaustMap,
   filter,
@@ -23,15 +24,15 @@ import {
   hasAtLeastOneItem,
   isOUtsidePosThreshold,
   trackFingers,
-} from "./utils"
+} from "../utils"
 import {
   Recognizer,
-  DeprecatedRecognizerEvent,
   RecognizerOptions,
-  deprecatedMapToRecognizerEvent,
-} from "./Recognizer"
+} from "../recognizer/Recognizer"
+import { RecognizerEvent } from "../recognizer/RecognizerEvent"
+import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
 
-export interface TapEvent extends DeprecatedRecognizerEvent {
+export interface TapEvent extends RecognizerEvent {
   type: "tap"
   taps: number
 }
@@ -64,7 +65,6 @@ export class TapRecognizer extends Recognizer {
 
     this.events$ = this.init$.pipe(
       switchMap(({ container, afterEventReceived }) => {
-        const startTime = Date.now()
         const { pointerUp$, pointerLeave$, pointerCancel$, pointerMove$ } =
           getPointerEvents({
             container,
@@ -139,20 +139,28 @@ export class TapRecognizer extends Recognizer {
               waitedTooLong$,
             )
 
-            const tap$ = pointerDownsBuffered$.pipe(
+            const rawEvent$ = pointerDownsBuffered$.pipe(
               filter(hasAtLeastOneItem),
               filter((events) => events.length <= maxTaps),
               map((events) => ({
                 type: "tap" as const,
                 taps: events.length,
-                startEvents: events,
-                startTime,
+                latestActivePointers: events,
+                event: events[0],
               })),
-              deprecatedMapToRecognizerEvent,
-              takeUntil(takeUntil$),
             )
 
-            return tap$
+            return combineLatest([
+              rawEvent$.pipe(mapToRecognizerEvent),
+              rawEvent$,
+            ]).pipe(
+              map(([recognizerEvent, { type, taps }]) => ({
+                ...recognizerEvent,
+                type,
+                taps,
+              })),
+              takeUntil(takeUntil$),
+            )
           }),
         )
 

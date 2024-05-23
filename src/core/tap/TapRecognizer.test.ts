@@ -278,8 +278,8 @@ describe("TapGestureRecognizer", () => {
 
     expect(values.length).toBe(2)
     expect(values).toMatchObject([
-      { type: "tap", taps: 1, events: [{ pointerId: 1 }] },
-      { type: "tap", taps: 1, events: [{ pointerId: 2 }] },
+      { type: "tap", taps: 1, pointers: [{ pointerId: 1 }] },
+      { type: "tap", taps: 1, pointers: [{ pointerId: 2 }] },
     ])
   })
 
@@ -390,7 +390,7 @@ describe("TapGestureRecognizer", () => {
 
     expect(values.length).toBe(1)
     expect(values).toMatchObject([
-      { type: "tap", taps: 1, events: [{ pointerId: 1 }] },
+      { type: "tap", taps: 1, pointers: [{ pointerId: 1 }] },
     ])
   })
 

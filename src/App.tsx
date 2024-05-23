@@ -1,7 +1,7 @@
 import { useEffect } from "react"
 import { PanRecognizer } from "./core/pan/PanRecognizer"
-import { SwipeRecognizer } from "./core/SwipeRecognizer"
-import { TapRecognizer } from "./core/TapRecognizer"
+import { SwipeRecognizer } from "./core/swipe/SwipeRecognizer"
+import { TapRecognizer } from "./core/tap/TapRecognizer"
 import { createManager } from "./core/manager"
 import { Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
@@ -24,7 +24,7 @@ function App() {
       recognizers: [tapRecognizer, panRecognizer, swipeRecognizer],
     })
 
-    const sub1 = manager.events$.subscribe((e) => {
+    const swipeSub = manager.events$.subscribe((e) => {
       if (e.type === "swipe") {
         // console.warn("swipe", e)
 
@@ -40,7 +40,23 @@ function App() {
                 />{" "}
               </Text>
               <Text display="flex" gap={4}>
-                Velocity: X: <b>{e.velocityX.toFixed(2)}</b> / Y: <b>{e.velocityY.toFixed(2)} </b>
+                Velocity: X: <b>{e.velocityX.toFixed(2)}</b> / Y:{" "}
+                <b>{e.velocityY.toFixed(2)} </b>
+              </Text>
+            </Stack>
+          ),
+        })
+      }
+    })
+
+    const clickSub = manager.events$.subscribe((e) => {
+      if (e.type === "tap") {
+        toast({
+          title: "Click",
+          description: (
+            <Stack>
+              <Text display="flex" gap={4}>
+                Taps: <b>{e.taps}</b>
               </Text>
             </Stack>
           ),
@@ -100,9 +116,10 @@ function App() {
 
     return () => {
       sub.unsubscribe()
-      sub1.unsubscribe()
+      swipeSub.unsubscribe()
       sub2.unsubscribe()
       sub3.unsubscribe()
+      clickSub.unsubscribe()
     }
   }, [])
 

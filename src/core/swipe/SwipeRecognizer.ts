@@ -8,9 +8,9 @@ import {
   switchMap,
   takeUntil,
 } from "rxjs"
-import { Recognizer } from "./Recognizer"
-import { PanRecognizer } from "./pan/PanRecognizer"
-import { RecognizerEvent } from "./RecognizerEventState"
+import { Recognizer } from "../recognizer/Recognizer"
+import { PanRecognizer } from "../pan/PanRecognizer"
+import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "swipe"
@@ -25,6 +25,7 @@ type Params = {
   numInputs?: number
   // @todo
   maxRestTime?: number
+  posThreshold?: number
 }
 
 export class SwipeRecognizer extends Recognizer {
@@ -33,9 +34,9 @@ export class SwipeRecognizer extends Recognizer {
   constructor(protected options: Params = {}) {
     super()
 
-    const panRecognizer = new PanRecognizer()
+    const { escapeVelocity = 0.9, posThreshold } = options
 
-    const { escapeVelocity = 0.9 } = options
+    const panRecognizer = new PanRecognizer({ posThreshold })
 
     this.events$ = this.init$.pipe(
       switchMap((initializedWith) => {
@@ -49,11 +50,12 @@ export class SwipeRecognizer extends Recognizer {
           exhaustMap(() =>
             panRecognizer.end$.pipe(
               first(),
-              filter(
-                (event) =>
+              filter((event) => {
+                return (
                   Math.abs(event.velocityX) >= escapeVelocity ||
-                  Math.abs(event.velocityY) >= escapeVelocity,
-              ),
+                  Math.abs(event.velocityY) >= escapeVelocity
+                )
+              }),
               takeUntil(hasMoreThanOneFinger$),
             ),
           ),

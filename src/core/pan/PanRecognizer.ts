@@ -1,5 +1,6 @@
 import {
   Observable,
+  combineLatest,
   exhaustMap,
   filter,
   first,
@@ -12,6 +13,7 @@ import {
   skipUntil,
   switchMap,
   takeUntil,
+  tap,
   withLatestFrom,
 } from "rxjs"
 import {
@@ -20,8 +22,9 @@ import {
   matchPointer,
   trackFingers,
 } from "../utils"
-import { Recognizer, mapToRecognizerEvent } from "../Recognizer"
-import { RecognizerEventState, RecognizerEvent } from "../RecognizerEventState"
+import { Recognizer } from "../recognizer/Recognizer"
+import { RecognizerEvent } from "../recognizer/RecognizerEvent"
+import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
 
 interface PanEvent extends RecognizerEvent {
   type: "panStart" | "panMove" | "panEnd"
@@ -53,9 +56,6 @@ export class PanRecognizer extends Recognizer {
 
         return pointerDown$.pipe(
           exhaustMap((initialPointerDownEvent) => {
-            const recognizerEvent = new RecognizerEventState()
-            const startTime = new Date().getTime()
-
             const pointerDowns$ = merge(
               of(initialPointerDownEvent),
               pointerDown$,
@@ -118,9 +118,6 @@ export class PanRecognizer extends Recognizer {
             const panStart$ = firstPointerDownMovingOutOfThreshold$.pipe(
               map(() => ({
                 type: "panStart" as const,
-                startEvents: [initialPointerDownEvent],
-                // latestActivePointers: [initialPointerDownEvent],
-                startTime,
                 event: initialPointerDownEvent,
               })),
               share(),
@@ -132,9 +129,6 @@ export class PanRecognizer extends Recognizer {
                 panReleased$.pipe(
                   map((endEvent) => ({
                     type: "panEnd" as const,
-                    startEvents: [initialPointerDownEvent],
-                    events: [endEvent],
-                    startTime,
                     event: endEvent,
                   })),
                 ),
@@ -145,20 +139,31 @@ export class PanRecognizer extends Recognizer {
               skipUntil(panStart$),
               map((event) => ({
                 type: "panMove" as const,
-                startEvents: [initialPointerDownEvent],
-                startTime,
                 event,
               })),
               takeUntil(panReleased$),
             )
 
-            return merge(panStart$, panUpdate$, panEnd$).pipe(
+            const rawEvent$ = merge(panStart$, panUpdate$, panEnd$).pipe(
               withLatestFrom(trackFingers$),
               map(([event, pointers]) => ({
                 ...event,
                 latestActivePointers: pointers,
               })),
-              mapToRecognizerEvent(recognizerEvent),
+              tap((e) => {
+                console.log(e.type)
+              }),
+              share(),
+            )
+
+            return combineLatest([
+              rawEvent$.pipe(mapToRecognizerEvent),
+              rawEvent$,
+            ]).pipe(
+              map(([recognizerEvent, { type }]) => ({
+                ...recognizerEvent,
+                type,
+              })),
             )
           }),
         )

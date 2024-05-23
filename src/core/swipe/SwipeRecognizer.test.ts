@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest"
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs"
 import { SwipeRecognizer } from "./SwipeRecognizer"
-import { PanRecognizer } from "./pan/PanRecognizer"
 
 const waitFor = (time: number) =>
   new Promise((resolve) => setTimeout(resolve, time))
@@ -104,12 +103,11 @@ describe("SwipeRecognizer", () => {
 
   it("should detect a swipe if above threshold", async () => {
     const waitLongEnough$ = timer(100)
-    const panRecognizer = new PanRecognizer({ posThreshold: 5 })
-    const recognizer = new SwipeRecognizer(panRecognizer, {
+    const recognizer = new SwipeRecognizer({
       escapeVelocity: 0.4,
+      posThreshold: 5
     })
 
-    panRecognizer.initialize({ container })
     recognizer.initialize({
       container,
     })
@@ -131,12 +129,11 @@ describe("SwipeRecognizer", () => {
 
   it("should not detect a swipe if below threshold", async () => {
     const waitLongEnough$ = timer(100)
-    const panRecognizer = new PanRecognizer({ posThreshold: 5 })
-    const recognizer = new SwipeRecognizer(panRecognizer, {
+    const recognizer = new SwipeRecognizer({
       escapeVelocity: 10,
+      posThreshold: 5
     })
 
-    panRecognizer.initialize({ container })
     recognizer.initialize({
       container,
     })
