@@ -50,7 +50,7 @@ function App() {
                 Direction:{" "}
                 <ArrowForwardIcon
                   boxSize={6}
-                  transform={`rotate(${e.cumulatedAngle}deg)`}
+                  transform={`rotate(${e.angle}deg)`}
                 />{" "}
               </Text>
               <Text display="flex" gap={4}>

@@ -11,9 +11,15 @@ import {
 import { Recognizer } from "../recognizer/Recognizer"
 import { PanRecognizer } from "../pan/PanRecognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
+import { calculateDegreeAngleBetweenPoints } from "../utils/geometry"
+import { isRecognizedAsSwipe } from "./isRecognizedAsSwipe"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "swipe"
+  /**
+   * Angle between first pointer and last one in degree
+   */
+  angle: number
 }
 
 type Params = {
@@ -47,22 +53,23 @@ export class SwipeRecognizer extends Recognizer {
         )
 
         return panRecognizer.start$.pipe(
-          exhaustMap(() =>
-            panRecognizer.end$.pipe(
+          exhaustMap((startEvent) => {
+            return panRecognizer.end$.pipe(
               first(),
-              filter((event) => {
-                return (
-                  Math.abs(event.velocityX) >= escapeVelocity ||
-                  Math.abs(event.velocityY) >= escapeVelocity
-                )
+              isRecognizedAsSwipe(escapeVelocity),
+              map(({ type, ...rest }) => {
+                return {
+                  type: "swipe" as const,
+                  angle: calculateDegreeAngleBetweenPoints(
+                    startEvent.event,
+                    rest.event,
+                  ),
+                  ...rest,
+                }
               }),
               takeUntil(hasMoreThanOneFinger$),
-            ),
-          ),
-          map(({ type, ...rest }) => ({
-            type: "swipe" as const,
-            ...rest,
-          })),
+            )
+          }),
           share(),
         )
       }),

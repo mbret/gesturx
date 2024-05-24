@@ -1,10 +1,41 @@
-export const calculateAngle = (deltaX: number, deltaY: number) => {
-  const radians = Math.atan2(deltaY, deltaX)
-  const angle = (radians * 180) / Math.PI
+export function calculateRadianAngleBetweenPoints(
+  pointerA: { x: number; y: number },
+  pointerB: { x: number; y: number },
+): number {
+  // Calculate the differences in coordinates
+  const deltaX = pointerB.x - pointerA.x
+  const deltaY = pointerB.y - pointerA.y
 
-  return {
-    angle,
-  }
+  // Calculate the angle in radians
+  const angleInRadians = Math.atan2(deltaY, deltaX)
+
+  // Return the angle in degrees
+  return angleInRadians
+}
+
+export function calculateDegreeAngleBetweenPoints(
+  pointerA: { x: number; y: number },
+  pointerB: { x: number; y: number },
+): number {
+  // Calculate the angle in radians
+  const angleInRadians = calculateRadianAngleBetweenPoints(pointerA, pointerB)
+
+  // Convert the angle to degrees (optional)
+  const angleInDegrees = angleInRadians * (180 / Math.PI)
+
+  // Return the angle in degrees
+  return angleInDegrees
+}
+
+function calculateCentroid(points: PointerEvent[]) {
+  let Cx = 0,
+    Cy = 0
+  points.forEach((point) => {
+    Cx += point.x
+    Cy += point.y
+  })
+
+  return { x: Cx / points.length, y: Cy / points.length }
 }
 
 export function calculateAngleDelta(
@@ -15,31 +46,20 @@ export function calculateAngleDelta(
     throw new Error("Initial and new points arrays must have the same length.")
   }
 
-  function calculateAngle(
-    point: PointerEvent,
-    centroid: { x: number; y: number },
-  ) {
-    return Math.atan2(point.y - centroid.y, point.x - centroid.x)
-  }
-
-  function calculateCentroid(points: PointerEvent[]) {
-    let Cx = 0,
-      Cy = 0
-    points.forEach((point) => {
-      Cx += point.x
-      Cy += point.y
-    })
-    return { x: Cx / points.length, y: Cy / points.length }
-  }
-
   const initialCentroid = calculateCentroid(initialPoints)
   const newCentroid = calculateCentroid(newPoints)
 
   let totalAngleDelta = 0
 
   for (let i = 0; i < initialPoints.length; i++) {
-    const initialAngle = calculateAngle(initialPoints[i]!, initialCentroid)
-    const newAngle = calculateAngle(newPoints[i]!, newCentroid)
+    const initialAngle = calculateRadianAngleBetweenPoints(
+      initialCentroid,
+      initialPoints[i]!,
+    )
+    const newAngle = calculateRadianAngleBetweenPoints(
+      newCentroid,
+      newPoints[i]!,
+    )
 
     let angleDelta = newAngle - initialAngle
 
