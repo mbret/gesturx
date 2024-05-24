@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
   build: {
     minify: false,
     lib: {
-      entry: resolve(__dirname, `src/index.ts`),
+      entry: resolve(__dirname, `src/core/index.ts`),
       name: "gesturx",
       fileName: "index",
     },
