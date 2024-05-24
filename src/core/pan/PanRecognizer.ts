@@ -13,7 +13,6 @@ import {
   skipUntil,
   switchMap,
   takeUntil,
-  tap,
   withLatestFrom,
 } from "rxjs"
 import {
@@ -21,7 +20,7 @@ import {
   isOUtsidePosThreshold,
   matchPointer,
   trackFingers,
-} from "../utils"
+} from "../utils/utils"
 import { Recognizer } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
@@ -150,9 +149,6 @@ export class PanRecognizer extends Recognizer {
                 ...event,
                 latestActivePointers: pointers,
               })),
-              tap((e) => {
-                console.log(e.type)
-              }),
               share(),
             )
 

@@ -1,10 +1,7 @@
 import { Observable, map, scan } from "rxjs"
 import { RecognizerEvent } from "./RecognizerEvent"
-import {
-  calculateAngle,
-  calculateVelocity,
-  getCenterFromEvents,
-} from "../utils"
+import { calculateVelocity, getCenterFromEvents } from "../utils/utils"
+import { calculateAngle, calculateAngleDelta } from "../utils/geometry"
 
 export interface RecognizerEventInput {
   event: PointerEvent
@@ -16,6 +13,7 @@ interface RecognizerEventState extends RecognizerEventInput {
   center: { x: number; y: number }
   deltaX: number
   deltaY: number
+  deltaPointersAngle: number
 }
 
 const calculateNewDelta = (
@@ -68,6 +66,16 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
             ? calculateNewDelta(newCenter, newCenter, prevDeltaX, prevDeltaY)
             : calculateNewDelta(newCenter, prevCenter, prevDeltaX, prevDeltaY)
 
+        const { degreesDelta: deltaPointersAngle } =
+          prevActivePointersNumber === currActivePointersNumber &&
+          prevActivePointersNumber >= 2 &&
+          currActivePointersNumber >= 2
+            ? calculateAngleDelta(
+                acc.latestActivePointers ?? [],
+                curr.latestActivePointers ?? [],
+              )
+            : { degreesDelta: 0 }
+
         return {
           startTime: acc.startTime ?? new Date().getTime(),
           ...acc,
@@ -75,13 +83,21 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
           center: newCenter,
           deltaX,
           deltaY,
+          deltaPointersAngle,
         }
       },
       {},
     ),
     map((data) => {
-      const { deltaX, deltaY, latestActivePointers, startTime, center, event } =
-        data
+      const {
+        deltaX,
+        deltaY,
+        latestActivePointers,
+        startTime,
+        center,
+        event,
+        deltaPointersAngle,
+      } = data
       const events = latestActivePointers ?? []
 
       // Calculate the change in time
@@ -90,15 +106,6 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
 
       const { velocityX, velocityY } = calculateVelocity(delay, deltaX, deltaY)
       const { angle } = calculateAngle(deltaX, deltaY)
-
-      console.log({
-        deltaX,
-        deltaY,
-        type: event.type,
-        center,
-        x: event.clientX,
-        y: event.clientY,
-      })
 
       return {
         deltaX,
@@ -111,6 +118,7 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
         pointers: events,
         startTime,
         event,
+        deltaPointersAngle,
       } satisfies RecognizerEvent
     }),
   )

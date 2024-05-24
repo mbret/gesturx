@@ -24,7 +24,7 @@ import {
   hasAtLeastOneItem,
   isOUtsidePosThreshold,
   trackFingers,
-} from "../utils"
+} from "../utils/utils"
 import {
   Recognizer,
   RecognizerOptions,

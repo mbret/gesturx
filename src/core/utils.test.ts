@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest"
-import { getCenterFromEvents } from "./utils"
+import { getCenterFromEvents } from "./utils/utils"
 
 describe("getCenterFromEvents", () => {
   it("calculates the correct center for a list of pointer events", () => {

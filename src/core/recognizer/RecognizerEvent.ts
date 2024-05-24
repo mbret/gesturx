@@ -31,4 +31,13 @@ export interface RecognizerEvent {
    *             (+90)
    */
   cumulatedAngle: number
+  /**
+   * Angle delta (in degrees) between pointers between this event
+   * and the previous one.
+   *
+   * @important
+   * - Will only register a delta if the previous event and current event
+   *   have the same amount of fingers
+   */
+  deltaPointersAngle: number
 }

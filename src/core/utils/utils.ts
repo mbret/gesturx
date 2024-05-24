@@ -256,15 +256,3 @@ export const calculateVelocity = (
     velocityY,
   }
 }
-
-export const calculateAngle = (
-  deltaX: number,
-  deltaY: number,
-) => {
-  const radians = Math.atan2(deltaY, deltaX)
-  const angle = (radians * 180) / Math.PI
-
-  return {
-    angle,
-  }
-}

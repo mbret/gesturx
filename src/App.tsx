@@ -1,19 +1,22 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { PanRecognizer } from "./core/pan/PanRecognizer"
 import { SwipeRecognizer } from "./core/swipe/SwipeRecognizer"
 import { TapRecognizer } from "./core/tap/TapRecognizer"
 import { createManager } from "./core/manager"
-import { Stack, Text, useToast } from "@chakra-ui/react"
+import { Box, Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
+import { RotateRecognizer } from "./core/rotate/RotateRecognizer"
 
 function App() {
   const toast = useToast()
+  const [boxAngle, setBoxAngle] = useState(0)
 
   useEffect(() => {
     const container = document.querySelector<HTMLDivElement>("#root")!
 
     const panRecognizer = new PanRecognizer()
     const swipeRecognizer = new SwipeRecognizer()
+    const rotateRecognizer = new RotateRecognizer()
     const tapRecognizer = new TapRecognizer({
       maxTaps: 3,
       failWith: [panRecognizer],
@@ -21,7 +24,18 @@ function App() {
 
     const manager = createManager({
       container,
-      recognizers: [tapRecognizer, panRecognizer, swipeRecognizer],
+      recognizers: [
+        tapRecognizer,
+        panRecognizer,
+        swipeRecognizer,
+        rotateRecognizer,
+      ],
+    })
+
+    const rotateSub = manager.events$.subscribe((e) => {
+      if (e.type === "rotate") {
+        setBoxAngle((state) => state + e.deltaPointersAngle)
+      }
     })
 
     const swipeSub = manager.events$.subscribe((e) => {
@@ -84,7 +98,7 @@ function App() {
         event.type === "panEnd" ||
         event.type === "panStart"
       ) {
-        const boxElement = document.getElementById(`box`)
+        const boxElement = document.getElementById(`boxContainer`)
 
         if (boxElement) {
           const domRect = boxElement.getBoundingClientRect()
@@ -120,13 +134,21 @@ function App() {
       sub2.unsubscribe()
       sub3.unsubscribe()
       clickSub.unsubscribe()
+      rotateSub.unsubscribe()
     }
   }, [])
 
   return (
     <>
       <div id="fingers">fingers: 0</div>
-      <div id="box"></div>
+      <Box id="boxContainer">
+        <div
+          id="box"
+          style={{
+            transform: `rotate(${boxAngle}deg)`,
+          }}
+        ></div>
+      </Box>
       <div id="boxCenter"></div>
     </>
   )
