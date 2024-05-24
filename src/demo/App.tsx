@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { PanRecognizer } from "./core/pan/PanRecognizer"
-import { SwipeRecognizer } from "./core/swipe/SwipeRecognizer"
-import { TapRecognizer } from "./core/tap/TapRecognizer"
-import { createManager } from "./core/manager"
+import { PanRecognizer } from "../core/pan/PanRecognizer"
+import { SwipeRecognizer } from "../core/swipe/SwipeRecognizer"
+import { TapRecognizer } from "../core/tap/TapRecognizer"
+import { createManager } from "../core/manager"
 import { Box, Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
-import { RotateRecognizer } from "./core/rotate/RotateRecognizer"
-import { DebugBox } from "./demo/DebugBox"
+import { RotateRecognizer } from "../core/rotate/RotateRecognizer"
+import { DebugBox } from "./DebugBox"
 
 function App() {
   const toast = useToast()
