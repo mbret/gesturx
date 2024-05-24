@@ -1,7 +1,7 @@
 import { Observable, map, scan } from "rxjs"
 import { RecognizerEvent } from "./RecognizerEvent"
-import { calculateVelocity, getCenterFromEvents } from "../utils/utils"
-import { calculateAngleDelta } from "../utils/geometry"
+import { calculateVelocity } from "../utils/utils"
+import { calculateAngleDelta, calculateCentroid } from "../utils/geometry"
 
 export interface RecognizerEventInput {
   event: PointerEvent
@@ -35,7 +35,7 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
   stream: Observable<T>,
 ): Observable<RecognizerEvent> => {
   const getCenterFromData = (data: T) =>
-    getCenterFromEvents(
+    calculateCentroid(
       !data.latestActivePointers.length
         ? [data.event]
         : data.latestActivePointers,

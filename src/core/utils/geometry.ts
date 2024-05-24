@@ -27,15 +27,23 @@ export function calculateDegreeAngleBetweenPoints(
   return angleInDegrees
 }
 
-function calculateCentroid(points: PointerEvent[]) {
-  let Cx = 0,
-    Cy = 0
-  points.forEach((point) => {
-    Cx += point.x
-    Cy += point.y
-  })
+export function calculateCentroid(points: PointerEvent[]) {
+  const sum = points.reduce(
+    (acc, point) => {
+      acc.x += point.clientX
+      acc.y += point.clientY
 
-  return { x: Cx / points.length, y: Cy / points.length }
+      return acc
+    },
+    { x: 0, y: 0 },
+  )
+
+  const numPoints = points.length || 1
+
+  return {
+    x: sum.x / numPoints,
+    y: sum.y / numPoints,
+  }
 }
 
 export function calculateAngleDelta(

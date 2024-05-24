@@ -12,6 +12,7 @@ import {
   scan,
   takeUntil,
 } from "rxjs"
+import { calculateCentroid } from "./geometry"
 
 export function isDefined<T>(
   arg: T | null | undefined,
@@ -22,32 +23,17 @@ export function isDefined<T>(
 export const hasAtLeastOneItem = <T>(events: T[]): events is [T, ...T[]] =>
   events.length > 0
 
-export const getCenterFromEvents = (events: PointerEvent[]) => {
-  const sum = events.reduce(
-    (acc, point) => {
-      acc.x += point.clientX
-      acc.y += point.clientY
-
-      return acc
-    },
-    { x: 0, y: 0 },
-  )
-
-  const numPoints = events.length || 1
-
-  return {
-    x: sum.x / numPoints,
-    y: sum.y / numPoints,
-  }
-}
+export const filterNotEmpty = <T>(
+  stream: Observable<T[]>,
+): Observable<[T, ...T[]]> => stream.pipe(filter(hasAtLeastOneItem))
 
 export function isOUtsidePosThreshold(
   startEvent: PointerEvent,
   endEvent: PointerEvent,
   posThreshold: number,
 ) {
-  const start = getCenterFromEvents([startEvent])
-  const end = getCenterFromEvents([endEvent])
+  const start = calculateCentroid([startEvent])
+  const end = calculateCentroid([endEvent])
 
   // Determines if the movement qualifies as a drag
   return (

@@ -21,14 +21,11 @@ import {
   fromFailWith,
   fromPointerDown,
   getPointerEvents,
-  hasAtLeastOneItem,
+  filterNotEmpty,
   isOUtsidePosThreshold,
   trackFingers,
 } from "../utils/utils"
-import {
-  Recognizer,
-  RecognizerOptions,
-} from "../recognizer/Recognizer"
+import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
 
@@ -140,7 +137,7 @@ export class TapRecognizer extends Recognizer {
             )
 
             const rawEvent$ = pointerDownsBuffered$.pipe(
-              filter(hasAtLeastOneItem),
+              filterNotEmpty,
               filter((events) => events.length <= maxTaps),
               map((events) => ({
                 type: "tap" as const,
