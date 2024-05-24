@@ -24,14 +24,6 @@ export interface RecognizerEvent {
   velocityY: number
   startTime: number
   /**
-   * represent the angle of gesture between start and latest event.
-   *
-   *             (-90)
-   * (+/-180) <-   |   -> (+/-0)
-   *             (+90)
-   */
-  cumulatedAngle: number
-  /**
    * Angle delta (in degrees) between pointers between this event
    * and the previous one.
    *

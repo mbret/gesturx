@@ -12,6 +12,7 @@ function App() {
   const toast = useToast()
   const [boxAngle, setBoxAngle] = useState(0)
   const [numberOfFingers, setNumberOfFingers] = useState(0)
+  const [rotation, setRotation] = useState(0)
 
   useEffect(() => {
     const container = document.querySelector<HTMLDivElement>("#root")!
@@ -37,13 +38,16 @@ function App() {
     const rotateSub = manager.events$.subscribe((e) => {
       if (e.type === "rotate") {
         setBoxAngle((state) => state + e.deltaAngle)
+        setRotation(e.angle)
+      }
+
+      if (e.type === "rotateEnd") {
+        setRotation(0)
       }
     })
 
     const swipeSub = manager.events$.subscribe((e) => {
       if (e.type === "swipe") {
-        // console.warn("swipe", e)
-
         toast({
           title: "Swipe",
           description: (
@@ -80,6 +84,10 @@ function App() {
       }
     })
 
+    /**
+     * To track active fingers, listen for the fingers$ observable on one of
+     * your pan recognizer which is configured in a way to track all fingers.
+     */
     const fingerTrackingSub = panRecognizer.fingers$.subscribe((fingers) => {
       setNumberOfFingers(fingers)
     })
@@ -139,7 +147,10 @@ function App() {
     <>
       <Stack position="absolute" right={0} top={0} pr={2} pt={2}>
         <DebugBox>fingers: {numberOfFingers}</DebugBox>
-        <DebugBox>rotation: 0</DebugBox>
+        <DebugBox>
+          rotation:{" "}
+          <ArrowForwardIcon boxSize={6} transform={`rotate(${rotation}deg)`} />{" "}
+        </DebugBox>
       </Stack>
       <Box id="boxContainer">
         <div

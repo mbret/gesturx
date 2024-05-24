@@ -1,7 +1,7 @@
 import { Observable, map, scan } from "rxjs"
 import { RecognizerEvent } from "./RecognizerEvent"
 import { calculateVelocity, getCenterFromEvents } from "../utils/utils"
-import { calculateAngle, calculateAngleDelta } from "../utils/geometry"
+import { calculateAngleDelta } from "../utils/geometry"
 
 export interface RecognizerEventInput {
   event: PointerEvent
@@ -105,7 +105,6 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
       const delay = now - startTime
 
       const { velocityX, velocityY } = calculateVelocity(delay, deltaX, deltaY)
-      const { angle } = calculateAngle(deltaX, deltaY)
 
       return {
         deltaX,
@@ -113,7 +112,6 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
         velocityX,
         velocityY,
         delay,
-        cumulatedAngle: angle,
         center,
         pointers: events,
         startTime,
