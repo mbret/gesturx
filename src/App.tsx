@@ -6,10 +6,12 @@ import { createManager } from "./core/manager"
 import { Box, Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
 import { RotateRecognizer } from "./core/rotate/RotateRecognizer"
+import { DebugBox } from "./demo/DebugBox"
 
 function App() {
   const toast = useToast()
   const [boxAngle, setBoxAngle] = useState(0)
+  const [numberOfFingers, setNumberOfFingers] = useState(0)
 
   useEffect(() => {
     const container = document.querySelector<HTMLDivElement>("#root")!
@@ -34,7 +36,7 @@ function App() {
 
     const rotateSub = manager.events$.subscribe((e) => {
       if (e.type === "rotate") {
-        setBoxAngle((state) => state + e.deltaPointersAngle)
+        setBoxAngle((state) => state + e.deltaAngle)
       }
     })
 
@@ -78,13 +80,8 @@ function App() {
       }
     })
 
-    // track fingers
-    const sub2 = panRecognizer.fingers$.subscribe((fingers) => {
-      const element = document.getElementById(`fingers`)
-
-      if (element) {
-        element.innerText = `fingers: ${fingers}`
-      }
+    const fingerTrackingSub = panRecognizer.fingers$.subscribe((fingers) => {
+      setNumberOfFingers(fingers)
     })
 
     /**
@@ -131,7 +128,7 @@ function App() {
     return () => {
       sub.unsubscribe()
       swipeSub.unsubscribe()
-      sub2.unsubscribe()
+      fingerTrackingSub.unsubscribe()
       sub3.unsubscribe()
       clickSub.unsubscribe()
       rotateSub.unsubscribe()
@@ -140,7 +137,10 @@ function App() {
 
   return (
     <>
-      <div id="fingers">fingers: 0</div>
+      <Stack position="absolute" right={0} top={0} pr={2} pt={2}>
+        <DebugBox>fingers: {numberOfFingers}</DebugBox>
+        <DebugBox>rotation: 0</DebugBox>
+      </Stack>
       <Box id="boxContainer">
         <div
           id="box"

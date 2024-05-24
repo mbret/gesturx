@@ -25,7 +25,7 @@ import { Recognizer } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
 
-interface PanEvent extends RecognizerEvent {
+export interface PanEvent extends RecognizerEvent {
   type: "panStart" | "panMove" | "panEnd"
 }
 
