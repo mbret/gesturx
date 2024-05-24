@@ -25,9 +25,9 @@ export default defineConfig(({ mode }) => {
       {
         enforce: `pre`,
         ...externals({
-          peerDeps: true,
-          deps: true,
-          devDeps: true,
+          peerDeps: libMode,
+          deps: libMode,
+          devDeps: libMode,
         }),
       },
       dts({
