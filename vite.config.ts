@@ -1,18 +1,15 @@
 import { defineConfig } from "vite"
 import dts from "vite-plugin-dts"
 import { resolve } from "path"
-import { name } from "../prose-reader/packages/enhancer-gesture/package.json"
 import externals from "rollup-plugin-node-externals"
 import react from "@vitejs/plugin-react"
-
-const libName = name.replace(`@`, ``).replace(`/`, `-`)
 
 export default defineConfig(({ mode }) => ({
   build: {
     minify: false,
     lib: {
       entry: resolve(__dirname, `src/index.ts`),
-      name: libName,
+      name: "gesturx",
       fileName: "index",
     },
     emptyOutDir: mode !== `development`,
