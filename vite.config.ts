@@ -7,11 +7,11 @@ import react from "@vitejs/plugin-react"
 export default defineConfig(({ mode }) => ({
   build: {
     minify: false,
-    lib: {
-      entry: resolve(__dirname, `src/core/index.ts`),
-      name: "gesturx",
-      fileName: "index",
-    },
+    // lib: {
+    //   entry: resolve(__dirname, `src/core/index.ts`),
+    //   name: "gesturx",
+    //   fileName: "index",
+    // },
     emptyOutDir: mode !== `development`,
     sourcemap: true,
   },
