@@ -29,7 +29,9 @@ export const createManager = ({
     recognizer.initialize({ container, afterEventReceived })
   })
 
-  const events$ = merge(...recognizers.map((recognizer) => recognizer.events$))
+  const events$ = merge(
+    ...recognizers.map((recognizer) => recognizer.events$),
+  ).pipe(share())
 
   return { events$ }
 }
