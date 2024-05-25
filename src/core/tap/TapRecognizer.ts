@@ -57,7 +57,7 @@ export class TapRecognizer extends Recognizer<Options> {
         const {
           multiTapThreshold = 200,
           maximumPressTime = 250,
-          maxTaps = 1,
+          maxTaps = 2,
           // threshold should be high because of fingers size
           // and potential margin due to it. clicks are nearly perfect
           // not fingers.
