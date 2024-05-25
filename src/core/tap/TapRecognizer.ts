@@ -25,6 +25,7 @@ import {
 import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
+import { fromPointerDown, getPointerEvents, trackFingers } from "../utils/events"
 
 export interface TapEvent extends RecognizerEvent {
   type: "tap"
@@ -113,7 +114,7 @@ export class TapRecognizer extends Recognizer {
             const subsequentPointersOutOfPositionThreshold$ =
               subsequentPointerEvents$.pipe(
                 filter((event) =>
-                  isOUtsidePosThreshold(
+                  isOutsidePosThreshold(
                     initialPointerEvent,
                     event,
                     posThreshold,

@@ -21,6 +21,7 @@ import {
 import { Recognizer } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
+import { getPointerEvents, matchPointer, trackFingers } from "../utils/events"
 
 export interface PanEvent extends RecognizerEvent {
   type: "panStart" | "panMove" | "panEnd"
@@ -100,7 +101,7 @@ export class PanRecognizer extends Recognizer {
                   matchPointer(pointerDown),
                   // we start pan only if the user started moving a certain distance
                   filter((pointerMoveEvent) =>
-                    isOUtsidePosThreshold(
+                    isOutsidePosThreshold(
                       pointerDown,
                       pointerMoveEvent,
                       posThreshold,
