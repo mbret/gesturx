@@ -16,10 +16,7 @@ import {
   withLatestFrom,
 } from "rxjs"
 import {
-  getPointerEvents,
-  isOUtsidePosThreshold,
-  matchPointer,
-  trackFingers,
+  isOutsidePosThreshold,
 } from "../utils/utils"
 import { Recognizer } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"

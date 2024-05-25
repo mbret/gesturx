@@ -19,11 +19,8 @@ import {
 } from "rxjs"
 import {
   fromFailWith,
-  fromPointerDown,
-  getPointerEvents,
   filterNotEmpty,
-  isOUtsidePosThreshold,
-  trackFingers,
+  isOutsidePosThreshold,
 } from "../utils/utils"
 import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"

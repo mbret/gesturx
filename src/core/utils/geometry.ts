@@ -1,6 +1,8 @@
+type Point = { x: number; y: number }
+
 export function calculateRadianAngleBetweenPoints(
-  pointerA: { x: number; y: number },
-  pointerB: { x: number; y: number },
+  pointerA: Point,
+  pointerB: Point,
 ): number {
   // Calculate the differences in coordinates
   const deltaX = pointerB.x - pointerA.x
@@ -14,8 +16,8 @@ export function calculateRadianAngleBetweenPoints(
 }
 
 export function calculateDegreeAngleBetweenPoints(
-  pointerA: { x: number; y: number },
-  pointerB: { x: number; y: number },
+  pointerA: Point,
+  pointerB: Point,
 ): number {
   // Calculate the angle in radians
   const angleInRadians = calculateRadianAngleBetweenPoints(pointerA, pointerB)
@@ -47,8 +49,8 @@ export function calculateCentroid(points: PointerEvent[]) {
 }
 
 export function calculateAngleDelta(
-  initialPoints: PointerEvent[],
-  newPoints: PointerEvent[],
+  initialPoints: Point[],
+  newPoints: Point[],
 ) {
   if (initialPoints.length !== newPoints.length) {
     throw new Error("Initial and new points arrays must have the same length.")
