@@ -12,6 +12,9 @@
     "test": "vitest",
     "coverage": "vitest run --coverage"
   },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
     "@chakra-ui/icons": "^2.1.1",
     "@chakra-ui/react": "^2.8.2",
