@@ -6,8 +6,6 @@ import { DebugBox } from "./DebugBox"
 import { useManager } from "./useManager"
 import { useTap } from "./useTap"
 
-const panRecognizer = new PanRecognizer()
-
 function App() {
   const toast = useToast()
   const [container, setContainer] = useState<HTMLElement | undefined>()
@@ -72,9 +70,14 @@ function App() {
      * To track active fingers, listen for the fingers$ observable on one of
      * your pan recognizer which is configured in a way to track all fingers.
      */
-    const fingerTrackingSub = panRecognizer.fingers$.subscribe((fingers) => {
-      setNumberOfFingers(fingers)
-    })
+    const fingerTrackingSub = manager.recognizers
+      .find(
+        (recognizer): recognizer is PanRecognizer =>
+          recognizer instanceof PanRecognizer,
+      )
+      ?.fingers$.subscribe((fingers) => {
+        setNumberOfFingers(fingers)
+      })
 
     /**
      * Moving a box on x,y axis.
@@ -120,7 +123,7 @@ function App() {
     return () => {
       sub.unsubscribe()
       swipeSub.unsubscribe()
-      fingerTrackingSub.unsubscribe()
+      fingerTrackingSub?.unsubscribe()
       sub3.unsubscribe()
       rotateSub.unsubscribe()
       pinchSub.unsubscribe()
