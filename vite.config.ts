@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
         }),
       },
       dts({
-        entryRoot: "src",
+        rollupTypes: true
       }),
     ],
   }
