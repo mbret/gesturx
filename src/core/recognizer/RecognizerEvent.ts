@@ -32,4 +32,8 @@ export interface RecognizerEvent {
    *   have the same amount of fingers
    */
   deltaPointersAngle: number
+  /**
+   * Average distance between all pointers
+   */
+  pointersAverageDistance: number
 }

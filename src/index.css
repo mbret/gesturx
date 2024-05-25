@@ -24,6 +24,11 @@ body {
 }
 
 #root {
+  flex: 1;
+  display: flex;
+}
+
+#container {
   display: flex;
   justify-content: center;
   align-items: center;

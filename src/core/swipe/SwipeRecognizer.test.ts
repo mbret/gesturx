@@ -32,6 +32,11 @@ describe("SwipeRecognizer", () => {
       bubbles: true,
     })
 
+    // @ts-ignore
+    event.x = x
+    // @ts-ignore
+    event.y = y
+    
     return event
   }
 

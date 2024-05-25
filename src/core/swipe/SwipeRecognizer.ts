@@ -26,7 +26,7 @@ export interface SwipeEvent extends RecognizerEvent {
   angle: number
 }
 
-type Params = {
+type Options = {
   /**
    * The minimum velocity (px/ms) that the gesture has to obtain by the end event.
    */
@@ -38,18 +38,18 @@ type Params = {
   posThreshold?: number
 }
 
-export class SwipeRecognizer extends Recognizer {
+export class SwipeRecognizer extends Recognizer<Options> {
   public events$: Observable<SwipeEvent>
 
-  constructor(protected options: Params = {}) {
-    super()
+  constructor(protected options: Options = {}) {
+    super(options)
 
-    const { escapeVelocity = 0.9, posThreshold } = options
-
-    const panRecognizer = new PanRecognizer({ posThreshold })
-
-    this.events$ = this.init$.pipe(
+    this.events$ = this.validConfig$.pipe(
       switchMap((initializedWith) => {
+        const { escapeVelocity = 0.9, posThreshold } =
+          initializedWith.options ?? {}
+        const panRecognizer = new PanRecognizer({ posThreshold })
+
         panRecognizer.initialize(initializedWith)
 
         const hasMoreThanOneFinger$ = panRecognizer.events$.pipe(

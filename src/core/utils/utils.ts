@@ -1,16 +1,8 @@
 import {
   NEVER,
   Observable,
-  defer,
-  endWith,
   filter,
-  fromEvent,
-  map,
   merge,
-  mergeMap,
-  of,
-  scan,
-  takeUntil,
 } from "rxjs"
 import { calculateCentroid } from "./geometry"
 
@@ -40,13 +32,6 @@ export function isOutsidePosThreshold(
     Math.abs(end.x - start.x) > posThreshold ||
     Math.abs(end.y - start.y) > posThreshold
   )
-}
-
-export function calculateDistance(pointA: PointerEvent, pointB: PointerEvent) {
-  const dx = pointA.clientX - pointB.clientX
-  const dy = pointA.clientY - pointB.clientY
-
-  return Math.sqrt(dx * dx + dy * dy)
 }
 
 export const fromFailWith = (failWith?: { start$: Observable<unknown> }[]) =>

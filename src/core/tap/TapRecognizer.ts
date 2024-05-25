@@ -25,7 +25,11 @@ import {
 import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
-import { fromPointerDown, getPointerEvents, trackFingers } from "../utils/events"
+import {
+  fromPointerDown,
+  getPointerEvents,
+  trackFingers,
+} from "../utils/events"
 
 export interface TapEvent extends RecognizerEvent {
   type: "tap"
@@ -41,25 +45,26 @@ interface Options extends RecognizerOptions {
   posThreshold?: number
 }
 
-export class TapRecognizer extends Recognizer {
+export class TapRecognizer extends Recognizer<Options> {
   public events$: Observable<TapEvent>
 
-  constructor(protected options: Options = {}) {
-    super()
+  constructor(protected options: Options) {
+    super(options)
 
-    const {
-      multiTapThreshold = 200,
-      maximumPressTime = 250,
-      maxTaps = 1,
-      // threshold should be high because of fingers size
-      // and potential margin due to it. clicks are nearly perfect
-      // not fingers.
-      posThreshold = 10,
-      failWith,
-    } = options
+    this.events$ = this.validConfig$.pipe(
+      switchMap((config) => {
+        const { container, afterEventReceived } = config
+        const {
+          multiTapThreshold = 200,
+          maximumPressTime = 250,
+          maxTaps = 1,
+          // threshold should be high because of fingers size
+          // and potential margin due to it. clicks are nearly perfect
+          // not fingers.
+          posThreshold = 10,
+          failWith,
+        } = config.options ?? {}
 
-    this.events$ = this.init$.pipe(
-      switchMap(({ container, afterEventReceived }) => {
         const { pointerUp$, pointerLeave$, pointerCancel$, pointerMove$ } =
           getPointerEvents({
             container,

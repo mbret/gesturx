@@ -15,9 +15,7 @@ import {
   takeUntil,
   withLatestFrom,
 } from "rxjs"
-import {
-  isOutsidePosThreshold,
-} from "../utils/utils"
+import { isOutsidePosThreshold } from "../utils/utils"
 import { Recognizer } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
@@ -27,19 +25,23 @@ export interface PanEvent extends RecognizerEvent {
   type: "panStart" | "panMove" | "panEnd"
 }
 
-export class PanRecognizer extends Recognizer {
+type Options = {
+  posThreshold?: number
+}
+
+export class PanRecognizer extends Recognizer<Options> {
   public events$: Observable<PanEvent>
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>
   public fingers$: Observable<number>
 
-  constructor(protected options: { posThreshold?: number } = {}) {
-    super()
+  constructor(protected options: Options = {}) {
+    super(options)
 
-    const { posThreshold = 15 } = options
-
-    this.events$ = this.init$.pipe(
-      switchMap(({ container, afterEventReceived }) => {
+    this.events$ = this.validConfig$.pipe(
+      switchMap((config) => {
+        const { container, afterEventReceived } = config
+        const { posThreshold = 15 } = config.options ?? {}
         const {
           pointerCancel$,
           pointerDown$,
@@ -170,7 +172,7 @@ export class PanRecognizer extends Recognizer {
     )
     this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
 
-    this.fingers$ = this.init$.pipe(
+    this.fingers$ = this.validConfig$.pipe(
       switchMap(({ container, afterEventReceived }) => {
         const pointerEvents = getPointerEvents({
           container,

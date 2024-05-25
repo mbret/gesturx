@@ -1,40 +1,26 @@
 import { useEffect, useState } from "react"
 import { PanRecognizer } from "../core/pan/PanRecognizer"
-import { SwipeRecognizer } from "../core/swipe/SwipeRecognizer"
-import { TapRecognizer } from "../core/tap/TapRecognizer"
-import { createManager } from "../core/manager"
 import { Box, Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
-import { RotateRecognizer } from "../core/rotate/RotateRecognizer"
 import { DebugBox } from "./DebugBox"
+import { useManager } from "./useManager"
+import { useTap } from "./useTap"
+
+const panRecognizer = new PanRecognizer()
 
 function App() {
   const toast = useToast()
+  const [container, setContainer] = useState<HTMLElement | undefined>()
+  const { manager } = useManager(container)
+  const { tapDebug } = useTap(manager)
   const [boxAngle, setBoxAngle] = useState(0)
+  const [boxScale, setBoxScale] = useState(1)
   const [numberOfFingers, setNumberOfFingers] = useState(0)
   const [rotation, setRotation] = useState(0)
+  const [scale, setScale] = useState(1)
+  const [distance, setDistance] = useState(0)
 
   useEffect(() => {
-    const container = document.querySelector<HTMLDivElement>("#root")!
-
-    const panRecognizer = new PanRecognizer()
-    const swipeRecognizer = new SwipeRecognizer()
-    const rotateRecognizer = new RotateRecognizer()
-    const tapRecognizer = new TapRecognizer({
-      maxTaps: 3,
-      failWith: [panRecognizer],
-    })
-
-    const manager = createManager({
-      container,
-      recognizers: [
-        tapRecognizer,
-        panRecognizer,
-        swipeRecognizer,
-        rotateRecognizer,
-      ],
-    })
-
     const rotateSub = manager.events$.subscribe((e) => {
       if (e.type === "rotate") {
         setBoxAngle((state) => state + e.deltaAngle)
@@ -43,6 +29,32 @@ function App() {
 
       if (e.type === "rotateEnd") {
         setRotation(0)
+      }
+    })
+
+    const pinchSub = manager.events$.subscribe((e) => {
+      let latestScale = 1
+      let scale = 1
+
+      if (e.type === "pinchStart") {
+        console.log(e.type, e.scale)
+      }
+
+      if (e.type === "pinchMove") {
+        scale = latestScale + e.scale
+        setBoxScale(scale)
+
+        setScale(e.scale)
+        setDistance(e.distance)
+        console.log(e.type, e.scale, e.pointersAverageDistance)
+      }
+
+      if (e.type === "pinchEnd") {
+        latestScale = scale
+
+        setScale(1)
+        setDistance(0)
+        console.log(e.type, e.scale)
       }
     })
 
@@ -62,21 +74,6 @@ function App() {
               <Text display="flex" gap={4}>
                 Velocity: X: <b>{e.velocityX.toFixed(2)}</b> / Y:{" "}
                 <b>{e.velocityY.toFixed(2)} </b>
-              </Text>
-            </Stack>
-          ),
-        })
-      }
-    })
-
-    const clickSub = manager.events$.subscribe((e) => {
-      if (e.type === "tap") {
-        toast({
-          title: "Click",
-          description: (
-            <Stack>
-              <Text display="flex" gap={4}>
-                Taps: <b>{e.taps}</b>
               </Text>
             </Stack>
           ),
@@ -138,29 +135,49 @@ function App() {
       swipeSub.unsubscribe()
       fingerTrackingSub.unsubscribe()
       sub3.unsubscribe()
-      clickSub.unsubscribe()
       rotateSub.unsubscribe()
+      pinchSub.unsubscribe()
     }
-  }, [])
+  }, [manager])
 
   return (
     <>
-      <Stack position="absolute" right={0} top={0} pr={2} pt={2}>
+      <Stack
+        position="absolute"
+        right={0}
+        top={0}
+        pr={2}
+        pt={2}
+        zIndex={1}
+      >
         <DebugBox>fingers: {numberOfFingers}</DebugBox>
+        {tapDebug}
         <DebugBox>
           rotation:{" "}
           <ArrowForwardIcon boxSize={6} transform={`rotate(${rotation}deg)`} />{" "}
         </DebugBox>
+        <DebugBox>
+          pinch: {scale.toFixed(1)}% {distance.toFixed(0)}px
+        </DebugBox>
       </Stack>
-      <Box id="boxContainer">
-        <div
-          id="box"
-          style={{
-            transform: `rotate(${boxAngle}deg)`,
-          }}
-        ></div>
+      <Box
+        id="container"
+        ref={(element) => {
+          if (element) {
+            setContainer(element)
+          }
+        }}
+      >
+        <Box id="boxContainer">
+          <div
+            id="box"
+            style={{
+              transform: `rotate(${boxAngle}deg) scale(${boxScale})`,
+            }}
+          ></div>
+        </Box>
+        <div id="boxCenter"></div>
       </Box>
-      <div id="boxCenter"></div>
     </>
   )
 }

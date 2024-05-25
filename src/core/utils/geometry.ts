@@ -1,5 +1,29 @@
 type Point = { x: number; y: number }
 
+export function calculateDistance(pointA: Point, pointB: Point): number {
+  return Math.sqrt(
+    Math.pow(pointB.x - pointA.x, 2) + Math.pow(pointB.y - pointA.y, 2),
+  )
+}
+
+export function calculateAverageDistance(pointerEvents: Point[]): number {
+  const n = pointerEvents.length
+  if (n < 2) return 0 // No distance if fewer than 2 pointers
+
+  const totalDistance = pointerEvents.reduce((sum, event1, i) => {
+    return (
+      sum +
+      pointerEvents.slice(i + 1).reduce((innerSum, event2) => {
+        return innerSum + calculateDistance(event1, event2)
+      }, 0)
+    )
+  }, 0)
+
+  // Number of pairs is n choose 2: n * (n - 1) / 2
+  const numberOfPairs = (n * (n - 1)) / 2
+  return totalDistance / numberOfPairs
+}
+
 export function calculateRadianAngleBetweenPoints(
   pointerA: Point,
   pointerB: Point,
@@ -29,11 +53,11 @@ export function calculateDegreeAngleBetweenPoints(
   return angleInDegrees
 }
 
-export function calculateCentroid(points: PointerEvent[]) {
+export function calculateCentroid(points: Point[]) {
   const sum = points.reduce(
     (acc, point) => {
-      acc.x += point.clientX
-      acc.y += point.clientY
+      acc.x += point.x
+      acc.y += point.y
 
       return acc
     },

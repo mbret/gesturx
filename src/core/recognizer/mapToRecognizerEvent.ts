@@ -1,7 +1,11 @@
 import { Observable, map, scan } from "rxjs"
 import { RecognizerEvent } from "./RecognizerEvent"
 import { calculateVelocity } from "../utils/utils"
-import { calculateAngleDelta, calculateCentroid } from "../utils/geometry"
+import {
+  calculateAngleDelta,
+  calculateAverageDistance,
+  calculateCentroid,
+} from "../utils/geometry"
 
 export interface RecognizerEventInput {
   event: PointerEvent
@@ -42,12 +46,19 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
     )
 
   return stream.pipe(
-    scan<T, RecognizerEventState, Partial<RecognizerEventState>>(
+    scan<
+      T,
+      RecognizerEventState,
+      Pick<
+        RecognizerEventState,
+        "deltaX" | "center" | "deltaY" | "latestActivePointers"
+      >
+    >(
       (acc, curr) => {
         const newCenter = getCenterFromData(curr)
-        const prevCenter = acc.center ?? { x: 0, y: 0 }
-        const prevDeltaX = acc.deltaX ?? 0
-        const prevDeltaY = acc.deltaY ?? 0
+        const prevCenter = acc.center
+        const prevDeltaX = acc.deltaX
+        const prevDeltaY = acc.deltaY
         const prevActivePointersNumber = acc.latestActivePointers?.length ?? 0
         const currActivePointersNumber = curr.latestActivePointers?.length ?? 0
 
@@ -77,7 +88,7 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
             : { degreesDelta: 0 }
 
         return {
-          startTime: acc.startTime ?? new Date().getTime(),
+          startTime: new Date().getTime(),
           ...acc,
           ...curr,
           center: newCenter,
@@ -86,7 +97,12 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
           deltaPointersAngle,
         }
       },
-      {},
+      {
+        deltaX: 0,
+        deltaY: 0,
+        center: { x: 0, y: 0 },
+        latestActivePointers: [],
+      },
     ),
     map((data) => {
       const {
@@ -105,6 +121,8 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
       const delay = now - startTime
 
       const { velocityX, velocityY } = calculateVelocity(delay, deltaX, deltaY)
+      const pointersAverageDistance =
+        calculateAverageDistance(latestActivePointers)
 
       return {
         deltaX,
@@ -117,6 +135,7 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
         startTime,
         event,
         deltaPointersAngle,
+        pointersAverageDistance,
       } satisfies RecognizerEvent
     }),
   )

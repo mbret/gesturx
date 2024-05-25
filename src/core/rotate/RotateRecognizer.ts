@@ -27,22 +27,22 @@ export interface RotateEvent extends RecognizerEvent {
   deltaAngle: number
 }
 
-type Params = {
+type Options = {
   posThreshold?: number
 }
 
-export class RotateRecognizer extends Recognizer {
+export class RotateRecognizer extends Recognizer<Options> {
   public events$: Observable<RotateEvent>
 
-  constructor(protected options: Params = {}) {
-    super()
+  constructor(protected options: Options = {}) {
+    super(options)
 
-    const { posThreshold } = options
-
-    const panRecognizer = new PanRecognizer({ posThreshold })
-
-    this.events$ = this.init$.pipe(
+    this.events$ = this.config$.pipe(
       switchMap((initializedWith) => {
+        const { posThreshold } = initializedWith.options ?? {}
+
+        const panRecognizer = new PanRecognizer({ posThreshold })
+
         panRecognizer.initialize(initializedWith)
 
         const hasLessThanTwoFinger$ = panRecognizer.events$.pipe(
