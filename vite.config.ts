@@ -9,7 +9,8 @@ export default defineConfig(({ mode }) => {
 
   return {
     build: {
-      minify: false,
+      minify: true,
+      cssMinify: true,
       ...(libMode && {
         lib: {
           entry: resolve(__dirname, `src/core/index.ts`),
