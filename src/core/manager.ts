@@ -14,6 +14,7 @@ type Recognizer =
 
 export class Manager {
   public readonly events$: Observable<ObservedValueOf<Recognizer["events$"]>>
+  public recognizers: Recognizer[]
 
   constructor(
     protected options: {
@@ -21,6 +22,7 @@ export class Manager {
       afterEventReceived?: (event: PointerEvent) => PointerEvent
     },
   ) {
+    this.recognizers = options.recognizers
     this.events$ = merge(
       ...options.recognizers.map((recognizer) => recognizer.events$),
     ).pipe(share())
