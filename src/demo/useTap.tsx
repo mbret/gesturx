@@ -33,6 +33,7 @@ const TapDebug = ({
             min={1}
             max={20}
             onChange={(valueString) => onChange(parseInt(valueString))}
+            maxWidth={100}
           >
             <NumberInputField />
             <NumberInputStepper>

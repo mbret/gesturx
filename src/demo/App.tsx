@@ -33,28 +33,15 @@ function App() {
     })
 
     const pinchSub = manager.events$.subscribe((e) => {
-      let latestScale = 1
-      let scale = 1
-
-      if (e.type === "pinchStart") {
-        console.log(e.type, e.scale)
-      }
-
       if (e.type === "pinchMove") {
-        scale = latestScale + e.scale
-        setBoxScale(scale)
-
+        setBoxScale((value) => value * e.deltaDistanceScale)
         setScale(e.scale)
         setDistance(e.distance)
-        console.log(e.type, e.scale, e.pointersAverageDistance)
       }
 
       if (e.type === "pinchEnd") {
-        latestScale = scale
-
         setScale(1)
         setDistance(0)
-        console.log(e.type, e.scale)
       }
     })
 
@@ -142,14 +129,7 @@ function App() {
 
   return (
     <>
-      <Stack
-        position="absolute"
-        right={0}
-        top={0}
-        pr={2}
-        pt={2}
-        zIndex={1}
-      >
+      <Stack position="absolute" right={0} top={0} pr={2} pt={2} zIndex={1}>
         <DebugBox>fingers: {numberOfFingers}</DebugBox>
         {tapDebug}
         <DebugBox>
@@ -157,7 +137,10 @@ function App() {
           <ArrowForwardIcon boxSize={6} transform={`rotate(${rotation}deg)`} />{" "}
         </DebugBox>
         <DebugBox>
-          pinch: {scale.toFixed(1)}% {distance.toFixed(0)}px
+          pinch:
+          <Text>
+            {scale.toFixed(1)}% {distance.toFixed(0)}px
+          </Text>
         </DebugBox>
       </Stack>
       <Box
