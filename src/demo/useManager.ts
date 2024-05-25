@@ -22,10 +22,10 @@ export const useManager = (container?: HTMLElement) => {
     return createManager({
       recognizers: [
         tapRecognizer,
-        // panRecognizer,
-        // swipeRecognizer,
-        // rotateRecognizer,
-        // pinchRecognizer,
+        panRecognizer,
+        swipeRecognizer,
+        rotateRecognizer,
+        pinchRecognizer,
       ],
     })
   })
