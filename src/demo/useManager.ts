@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import {
+  Manager,
   PanRecognizer,
   SwipeRecognizer,
   TapRecognizer,
@@ -19,7 +20,7 @@ export const useManager = (container?: HTMLElement) => {
       failWith: [panRecognizer],
     })
 
-    return createManager({
+    return new Manager({
       recognizers: [
         tapRecognizer,
         panRecognizer,
