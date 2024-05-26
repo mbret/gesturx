@@ -4,7 +4,6 @@ import {
   PanRecognizer,
   SwipeRecognizer,
   TapRecognizer,
-  createManager,
 } from "../core"
 import { RotateRecognizer } from "../core/rotate/RotateRecognizer"
 import { PinchRecognizer } from "../core/pinch/PinchRecognizer"
