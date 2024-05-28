@@ -1,4 +1,4 @@
-export *from "./pan/PanRecognizer"
+export * from "./pan/PanRecognizer"
 export * from "./swipe/SwipeRecognizer"
 export * from "./tap/TapRecognizer"
 export * from "./rotate/RotateRecognizer"

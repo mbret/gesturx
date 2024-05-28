@@ -12,7 +12,6 @@ import {
   skipUntil,
   switchMap,
   takeUntil,
-  tap,
   withLatestFrom,
 } from "rxjs"
 import { isOutsidePosThreshold } from "../utils/utils"
@@ -76,9 +75,6 @@ export abstract class AbstractPanRecognizer<
                 pointerMove$,
                 trackMove: true,
               }),
-              tap(() => {
-                console.log("trackFingers")
-              }),
               shareReplay(),
             )
 
@@ -127,9 +123,6 @@ export abstract class AbstractPanRecognizer<
                 event: initialPointerDownEvent,
               })),
               share(),
-              tap(() => {
-                console.log("panStart")
-              }),
               takeUntil(panReleased$),
             )
 
