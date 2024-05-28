@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react"
 import {
-  Manager,
+  Recognizable,
   PanRecognizer,
   SwipeRecognizer,
   TapRecognizer,
@@ -8,8 +8,10 @@ import {
 import { RotateRecognizer } from "../core/rotate/RotateRecognizer"
 import { PinchRecognizer } from "../core/pinch/PinchRecognizer"
 
-export const useManager = (container?: HTMLElement) => {
-  const [manager] = useState(() => {
+export type AppRecognizable = ReturnType<typeof useRecognizable>["recognizable"]
+
+export const useRecognizable = (container?: HTMLElement) => {
+  const [recognizable] = useState(() => {
     const panRecognizer = new PanRecognizer()
     const swipeRecognizer = new SwipeRecognizer()
     const rotateRecognizer = new RotateRecognizer()
@@ -19,7 +21,7 @@ export const useManager = (container?: HTMLElement) => {
       failWith: [panRecognizer],
     })
 
-    return new Manager({
+    return new Recognizable({
       recognizers: [
         tapRecognizer,
         panRecognizer,
@@ -32,9 +34,9 @@ export const useManager = (container?: HTMLElement) => {
 
   useEffect(() => {
     if (container) {
-      manager.initialize(container)
+      recognizable.initialize(container)
     }
-  }, [container, manager])
+  }, [container, recognizable])
 
-  return { manager }
+  return { recognizable }
 }

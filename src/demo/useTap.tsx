@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react"
-import { Manager } from "../core/manager"
 import {
   FormControl,
   FormLabel,
@@ -14,6 +13,7 @@ import {
 } from "@chakra-ui/react"
 import { DebugBox } from "./DebugBox"
 import { TapRecognizer } from "../core"
+import { AppRecognizable } from "./useRecognizable"
 
 const TapDebug = ({
   value,
@@ -47,15 +47,15 @@ const TapDebug = ({
   )
 }
 
-export const useTap = (manager: Manager) => {
+export const useTap = (recognizable: AppRecognizable) => {
   const toast = useToast()
   const [maxTaps, setMaxTaps] = useState(3)
-  const tapRecognizer = manager.recognizers.find(
+  const tapRecognizer = recognizable.recognizers.find(
     (recognizer) => recognizer instanceof TapRecognizer,
   )
 
   useEffect(() => {
-    const clickSub = manager.events$.subscribe((e) => {
+    const clickSub = recognizable.events$.subscribe((e) => {
       if (e.type === "tap") {
         toast({
           title: "Click",
@@ -73,7 +73,7 @@ export const useTap = (manager: Manager) => {
     return () => {
       clickSub.unsubscribe()
     }
-  }, [manager, toast])
+  }, [recognizable, toast])
 
   useEffect(() => {
     tapRecognizer?.update({ maxTaps })

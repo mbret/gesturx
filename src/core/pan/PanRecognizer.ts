@@ -29,7 +29,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class PanRecognizer extends Recognizer<Options> {
+export class PanRecognizer extends Recognizer<Options, PanEvent> {
   public events$: Observable<PanEvent>
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>

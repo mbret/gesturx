@@ -31,7 +31,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class RotateRecognizer extends Recognizer<Options> {
+export class RotateRecognizer extends Recognizer<Options, RotateEvent> {
   public events$: Observable<RotateEvent>
 
   constructor(protected options: Options = {}) {

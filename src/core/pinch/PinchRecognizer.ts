@@ -36,7 +36,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class PinchRecognizer extends Recognizer<Options> {
+export class PinchRecognizer extends Recognizer<Options, PinchEvent> {
   public events$: Observable<PinchEvent>
 
   constructor(protected options: Options = {}) {

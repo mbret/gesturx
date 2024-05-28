@@ -3,14 +3,14 @@ import { PanRecognizer } from "../core/pan/PanRecognizer"
 import { Box, Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
 import { DebugBox } from "./DebugBox"
-import { useManager } from "./useManager"
+import { useRecognizable } from "./useRecognizable"
 import { useTap } from "./useTap"
 
 function App() {
   const toast = useToast()
   const [container, setContainer] = useState<HTMLElement | undefined>()
-  const { manager } = useManager(container)
-  const { tapDebug } = useTap(manager)
+  const { recognizable } = useRecognizable(container)
+  const { tapDebug } = useTap(recognizable)
   const [boxAngle, setBoxAngle] = useState(0)
   const [boxScale, setBoxScale] = useState(1)
   const [numberOfFingers, setNumberOfFingers] = useState(0)
@@ -19,7 +19,7 @@ function App() {
   const [distance, setDistance] = useState(0)
 
   useEffect(() => {
-    const rotateSub = manager.events$.subscribe((e) => {
+    const rotateSub = recognizable.events$.subscribe((e) => {
       if (e.type === "rotate") {
         setBoxAngle((state) => state + e.deltaAngle)
         setRotation(e.angle)
@@ -30,7 +30,7 @@ function App() {
       }
     })
 
-    const pinchSub = manager.events$.subscribe((e) => {
+    const pinchSub = recognizable.events$.subscribe((e) => {
       if (e.type === "pinchMove") {
         setBoxScale((value) => value * e.deltaDistanceScale)
         setScale(e.scale)
@@ -43,7 +43,7 @@ function App() {
       }
     })
 
-    const swipeSub = manager.events$.subscribe((e) => {
+    const swipeSub = recognizable.events$.subscribe((e) => {
       if (e.type === "swipe") {
         toast({
           title: "Swipe",
@@ -70,7 +70,7 @@ function App() {
      * To track active fingers, listen for the fingers$ observable on one of
      * your pan recognizer which is configured in a way to track all fingers.
      */
-    const fingerTrackingSub = manager.recognizers
+    const fingerTrackingSub = recognizable.recognizers
       .find(
         (recognizer): recognizer is PanRecognizer =>
           recognizer instanceof PanRecognizer,
@@ -84,7 +84,7 @@ function App() {
      * We track the deltaX/Y values.
      */
     let latestBoxPosition = { x: 0, y: 0 }
-    const sub3 = manager.events$.subscribe((event) => {
+    const sub3 = recognizable.events$.subscribe((event) => {
       if (
         event.type === "panMove" ||
         event.type === "panEnd" ||
@@ -111,7 +111,7 @@ function App() {
      * We use the center value, which indicate the true center
      * no matter how many fingers
      */
-    const sub = manager.events$.subscribe((event) => {
+    const sub = recognizable.events$.subscribe((event) => {
       const boxElement = document.getElementById(`boxCenter`)
 
       if (boxElement) {
@@ -128,7 +128,7 @@ function App() {
       rotateSub.unsubscribe()
       pinchSub.unsubscribe()
     }
-  }, [manager])
+  }, [recognizable])
 
   return (
     <>

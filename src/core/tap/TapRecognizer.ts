@@ -45,7 +45,7 @@ interface Options extends RecognizerOptions {
   posThreshold?: number
 }
 
-export class TapRecognizer extends Recognizer<Options> {
+export class TapRecognizer extends Recognizer<Options, TapEvent> {
   public events$: Observable<TapEvent>
 
   constructor(protected options: Options) {

@@ -1,4 +1,5 @@
 import { BehaviorSubject, Observable, filter } from "rxjs"
+import { RecognizerEvent } from "./RecognizerEvent"
 
 type RecognizerConfig<Options> = {
   container?: HTMLElement
@@ -15,8 +16,11 @@ export interface RecognizerOptions {
   failWith?: { start$: Observable<unknown> }[]
 }
 
-export class Recognizer<Options> {
+export abstract class Recognizer<Options, Event extends RecognizerEvent> {
   protected config$ = new BehaviorSubject<RecognizerConfig<Options>>({})
+
+  abstract events$: Observable<Event>
+
   protected validConfig$ = this.config$.pipe(
     filter(
       (config): config is ValidRecognizerConfig<Options> => !!config.container,

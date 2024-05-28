@@ -38,7 +38,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class SwipeRecognizer extends Recognizer<Options> {
+export class SwipeRecognizer extends Recognizer<Options, SwipeEvent> {
   public events$: Observable<SwipeEvent>
 
   constructor(protected options: Options = {}) {
