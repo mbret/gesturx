@@ -1,7 +1,6 @@
-import { Observable, map, merge, share, switchMap } from "rxjs"
-import { Recognizer } from "../recognizer/Recognizer"
-import { PanRecognizer } from "../pan/PanRecognizer"
+import { Observable, filter, map, merge, share } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
+import { AbstractPanRecognizer, PanOptions } from "../pan/AbstractPanRecognizer"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "holdStart" | "holdEnd"
@@ -9,38 +8,35 @@ export interface SwipeEvent extends RecognizerEvent {
 
 type Options = {}
 
-export class HoldRecognizer extends Recognizer<Options, SwipeEvent> {
+export class HoldRecognizer extends AbstractPanRecognizer<Options, SwipeEvent> {
   public events$: Observable<SwipeEvent>
 
   constructor(protected options: Options = {}) {
-    super(options)
+    super({
+      ...options,
+      posThreshold: 0
+    } satisfies PanOptions)
 
-    this.events$ = this.validConfig$.pipe(
-      switchMap((initializedWith) => {
-        const panRecognizer = new PanRecognizer({ posThreshold: 0 })
-
-        panRecognizer.initialize(initializedWith)
-
-        const start$ = panRecognizer.start$.pipe(
-          map(({ type, ...rest }) => {
-            return {
-              type: "holdStart" as const,
-              ...rest,
-            }
-          }),
-        )
-
-        const end$ = panRecognizer.end$.pipe(
-          map(({ type, ...rest }) => {
-            return {
-              type: "holdEnd" as const,
-              ...rest,
-            }
-          }),
-        )
-
-        return merge(start$, end$).pipe(share())
+    const start$ = this.panEvent$.pipe(
+      filter((e) => e.type === "panStart"),
+      map(({ type, ...rest }) => {
+        return {
+          type: "holdStart" as const,
+          ...rest,
+        }
       }),
     )
+
+    const end$ = this.panEvent$.pipe(
+      filter((e) => e.type === "panEnd"),
+      map(({ type, ...rest }) => {
+        return {
+          type: "holdEnd" as const,
+          ...rest,
+        }
+      }),
+    )
+
+    this.events$ = merge(start$, end$).pipe(share())
   }
 }
