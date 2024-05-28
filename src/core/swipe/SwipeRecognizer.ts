@@ -8,11 +8,10 @@ import {
   switchMap,
   takeUntil,
 } from "rxjs"
-import { Recognizer } from "../recognizer/Recognizer"
-import { PanRecognizer } from "../pan/PanRecognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry"
 import { isRecognizedAsSwipe } from "./isRecognizedAsSwipe"
+import { AbstractPanRecognizer } from "../pan/AbstractPanRecognizer"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "swipe"
@@ -38,7 +37,10 @@ type Options = {
   posThreshold?: number
 }
 
-export class SwipeRecognizer extends Recognizer<Options, SwipeEvent> {
+export class SwipeRecognizer extends AbstractPanRecognizer<
+  Options,
+  SwipeEvent
+> {
   public events$: Observable<SwipeEvent>
 
   constructor(protected options: Options = {}) {
@@ -46,19 +48,21 @@ export class SwipeRecognizer extends Recognizer<Options, SwipeEvent> {
 
     this.events$ = this.validConfig$.pipe(
       switchMap((initializedWith) => {
-        const { escapeVelocity = 0.9, posThreshold } =
-          initializedWith.options ?? {}
-        const panRecognizer = new PanRecognizer({ posThreshold })
+        const { escapeVelocity = 0.9 } = initializedWith.options ?? {}
 
-        panRecognizer.initialize(initializedWith)
-
-        const hasMoreThanOneFinger$ = panRecognizer.events$.pipe(
+        const hasMoreThanOneFinger$ = this.panEvent$.pipe(
           filter(({ pointers }) => pointers.length > 1),
         )
 
-        return panRecognizer.start$.pipe(
+        const panStart$ = this.panEvent$.pipe(
+          filter((e) => e.type === "panStart"),
+        )
+
+        const panEnd$ = this.panEvent$.pipe(filter((e) => e.type === "panEnd"))
+
+        return panStart$.pipe(
           exhaustMap((startEvent) => {
-            return panRecognizer.end$.pipe(
+            return panEnd$.pipe(
               first(),
               isRecognizedAsSwipe(escapeVelocity),
               map(({ type, ...rest }) => {
