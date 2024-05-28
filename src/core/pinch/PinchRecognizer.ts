@@ -13,7 +13,8 @@ import {
 } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { Recognizer } from "../recognizer/Recognizer"
-import { PanEvent, PanRecognizer } from "../pan/PanRecognizer"
+import { PanRecognizer } from "../pan/PanRecognizer"
+import { PanEvent } from "../pan/AbstractPanRecognizer"
 
 export interface PinchEvent extends RecognizerEvent {
   type: "pinchStart" | "pinchMove" | "pinchEnd"
