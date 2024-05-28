@@ -7,6 +7,7 @@ import {
 } from "../core"
 import { RotateRecognizer } from "../core/rotate/RotateRecognizer"
 import { PinchRecognizer } from "../core/pinch/PinchRecognizer"
+import { HoldRecognizer } from "../core/hold/HoldRecognizer"
 
 export type AppRecognizable = ReturnType<typeof useRecognizable>["recognizable"]
 
@@ -16,6 +17,7 @@ export const useRecognizable = (container?: HTMLElement) => {
     const swipeRecognizer = new SwipeRecognizer()
     const rotateRecognizer = new RotateRecognizer()
     const pinchRecognizer = new PinchRecognizer()
+    const holdRecognizer = new HoldRecognizer()
     const tapRecognizer = new TapRecognizer({
       maxTaps: 3,
       failWith: [panRecognizer],
@@ -28,6 +30,7 @@ export const useRecognizable = (container?: HTMLElement) => {
         swipeRecognizer,
         rotateRecognizer,
         pinchRecognizer,
+        holdRecognizer,
       ],
     })
   })

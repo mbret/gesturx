@@ -1,6 +1,5 @@
 import {
   Observable,
-  combineLatest,
   exhaustMap,
   filter,
   first,
@@ -13,6 +12,7 @@ import {
   skipUntil,
   switchMap,
   takeUntil,
+  tap,
   withLatestFrom,
 } from "rxjs"
 import { isOutsidePosThreshold } from "../utils/utils"
@@ -76,6 +76,9 @@ export class PanRecognizer extends Recognizer<Options, PanEvent> {
                 pointerMove$,
                 trackMove: true,
               }),
+              tap(() => {
+                console.log("trackFingers")
+              }),
               shareReplay(),
             )
 
@@ -97,9 +100,13 @@ export class PanRecognizer extends Recognizer<Options, PanEvent> {
               share(),
             )
 
-            const firstPointerDownMovingOutOfThreshold$ = pointerDowns$.pipe(
-              mergeMap((pointerDown) =>
-                pointerMove$.pipe(
+            const firstEventPassingThreshold$ = pointerDowns$.pipe(
+              mergeMap((pointerDown) => {
+                if (posThreshold <= 0) {
+                  return of(pointerDown)
+                }
+
+                return pointerMove$.pipe(
                   matchPointer(pointerDown),
                   // we start pan only if the user started moving a certain distance
                   filter((pointerMoveEvent) =>
@@ -109,17 +116,20 @@ export class PanRecognizer extends Recognizer<Options, PanEvent> {
                       posThreshold,
                     ),
                   ),
-                ),
-              ),
+                )
+              }),
               first(),
             )
 
-            const panStart$ = firstPointerDownMovingOutOfThreshold$.pipe(
+            const panStart$ = firstEventPassingThreshold$.pipe(
               map(() => ({
                 type: "panStart" as const,
                 event: initialPointerDownEvent,
               })),
               share(),
+              tap(() => {
+                console.log("panStart")
+              }),
               takeUntil(panReleased$),
             )
 
@@ -149,13 +159,12 @@ export class PanRecognizer extends Recognizer<Options, PanEvent> {
                 ...event,
                 latestActivePointers: pointers,
               })),
-              share(),
+              shareReplay(),
             )
 
-            return combineLatest([
-              rawEvent$.pipe(mapToRecognizerEvent),
-              rawEvent$,
-            ]).pipe(
+            return rawEvent$.pipe(
+              mapToRecognizerEvent,
+              withLatestFrom(rawEvent$),
               map(([recognizerEvent, { type }]) => ({
                 ...recognizerEvent,
                 type,

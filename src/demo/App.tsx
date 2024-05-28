@@ -5,12 +5,14 @@ import { ArrowForwardIcon } from "@chakra-ui/icons"
 import { DebugBox } from "./DebugBox"
 import { useRecognizable } from "./useRecognizable"
 import { useTap } from "./useTap"
+import { useHold } from "./useHold"
 
 function App() {
   const toast = useToast()
   const [container, setContainer] = useState<HTMLElement | undefined>()
   const { recognizable } = useRecognizable(container)
   const { tapDebug } = useTap(recognizable)
+  const { holdDebug } = useHold(recognizable)
   const [boxAngle, setBoxAngle] = useState(0)
   const [boxScale, setBoxScale] = useState(1)
   const [numberOfFingers, setNumberOfFingers] = useState(0)
@@ -135,6 +137,7 @@ function App() {
       <Stack position="absolute" right={0} top={0} pr={2} pt={2} zIndex={1}>
         <DebugBox>fingers: {numberOfFingers}</DebugBox>
         {tapDebug}
+        {holdDebug}
         <DebugBox>
           rotation:{" "}
           <ArrowForwardIcon boxSize={6} transform={`rotate(${rotation}deg)`} />{" "}
