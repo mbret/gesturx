@@ -12,8 +12,9 @@ import {
   takeUntil,
 } from "rxjs"
 import { Recognizer } from "../recognizer/Recognizer"
-import { PanEvent, PanRecognizer } from "../pan/PanRecognizer"
+import { PanRecognizer } from "../pan/PanRecognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
+import { PanEvent } from "../pan/AbstractPanRecognizer"
 
 export interface RotateEvent extends RecognizerEvent {
   type: "rotate" | "rotateStart" | "rotateEnd"
