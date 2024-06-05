@@ -1,4 +1,5 @@
 import {
+  BehaviorSubject,
   Observable,
   exhaustMap,
   filter,
@@ -12,6 +13,7 @@ import {
   skipUntil,
   switchMap,
   takeUntil,
+  tap,
   withLatestFrom,
 } from "rxjs"
 import { isOutsidePosThreshold } from "../utils/utils"
@@ -28,14 +30,24 @@ export type PanOptions = {
   posThreshold?: number
 }
 
+export type State = {
+  fingers: number
+}
+
 export abstract class AbstractPanRecognizer<
   Options extends PanOptions,
   Event extends RecognizerEvent,
 > extends Recognizer<Options, Event> {
   protected panEvent$: Observable<PanEvent>
 
+  public state$: Observable<State>
+
   constructor(protected options: Options) {
     super(options)
+
+    const stateSubject = new BehaviorSubject<State>({
+      fingers: 0,
+    })
 
     this.panEvent$ = this.validConfig$.pipe(
       switchMap((config) => {
@@ -166,7 +178,14 @@ export abstract class AbstractPanRecognizer<
           }),
         )
       }),
+      tap((event) => {
+        stateSubject.next({
+          fingers: event.pointers.length,
+        })
+      }),
       share(),
     )
+
+    this.state$ = stateSubject.asObservable()
   }
 }

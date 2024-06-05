@@ -1,9 +1,23 @@
-import { Observable, ObservedValueOf, merge, share } from "rxjs"
+import {
+  Observable,
+  ObservedValueOf,
+  combineLatest,
+  map,
+  merge,
+  share,
+} from "rxjs"
 import { Recognizer } from "../recognizer/Recognizer"
+import { AbstractPanRecognizer, State } from "../pan/AbstractPanRecognizer"
 
 export class Recognizable<T extends Recognizer<any, any>[]> {
-  public readonly events$: Observable<ObservedValueOf<T[number]['events$']>>
+  public readonly events$: Observable<ObservedValueOf<T[number]["events$"]>>
   public recognizers: T
+
+  /**
+   * Merge of all the state of recognizers.
+   * Global state listener for conveniance.
+   */
+  public state$: Observable<State>
 
   constructor(
     protected options: {
@@ -15,6 +29,22 @@ export class Recognizable<T extends Recognizer<any, any>[]> {
     this.events$ = merge(
       ...options.recognizers.map((recognizer) => recognizer.events$),
     ).pipe(share())
+
+    // @todo remove when all recognizers inherit AbstractPanRecognizer
+    const panRecognizers = this.recognizers.filter(
+      (recognizer): recognizer is AbstractPanRecognizer<any, any> =>
+        recognizer instanceof AbstractPanRecognizer,
+    )
+
+    this.state$ = combineLatest(
+      panRecognizers.map((recognizer) => recognizer.state$),
+    ).pipe(
+      map((states) =>
+        states.reduce((acc, state) => ({
+          fingers: Math.max(acc.fingers, state.fingers),
+        })),
+      ),
+    )
   }
 
   public initialize(container: HTMLElement) {

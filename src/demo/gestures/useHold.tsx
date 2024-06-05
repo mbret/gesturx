@@ -1,21 +1,8 @@
 import { useEffect, useState } from "react"
 import {
-  Stack,
-  Text,
   useToast,
 } from "@chakra-ui/react"
-import { DebugBox } from "../debug/DebugBox"
 import { AppRecognizable } from "./useRecognizable"
-
-const HoldDebug = ({ value }: { value: boolean }) => {
-  return (
-    <DebugBox>
-      <Stack>
-        <Text>Hold: {value ? "true" : "false"}</Text>
-      </Stack>
-    </DebugBox>
-  )
-}
 
 export const useHold = (recognizable: AppRecognizable) => {
   const toast = useToast()
@@ -37,9 +24,5 @@ export const useHold = (recognizable: AppRecognizable) => {
     }
   }, [recognizable, toast])
 
-  const holdDebug = (
-    <HoldDebug value={isHolding} />
-  )
-
-  return { holdDebug }
+  return { isHolding }
 }
