@@ -2,10 +2,11 @@ import { useEffect, useState } from "react"
 import { PanRecognizer } from "../core/pan/PanRecognizer"
 import { Box, Stack, Text, useToast } from "@chakra-ui/react"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
-import { DebugBox } from "./DebugBox"
-import { useRecognizable } from "./useRecognizable"
-import { useTap } from "./useTap"
-import { useHold } from "./useHold"
+import { DebugBox } from "./debug/DebugBox"
+import { useRecognizable } from "./gestures/useRecognizable"
+import { useTap } from "./gestures/useTap"
+import { useHold } from "./gestures/useHold"
+import { useTrackCenter } from "./gestures/useTrackCenter"
 
 function App() {
   const toast = useToast()
@@ -13,6 +14,7 @@ function App() {
   const { recognizable } = useRecognizable(container)
   const { tapDebug } = useTap(recognizable)
   const { holdDebug } = useHold(recognizable)
+  const { centerTrackingBox } = useTrackCenter(recognizable)
   const [boxAngle, setBoxAngle] = useState(0)
   const [boxScale, setBoxScale] = useState(1)
   const [numberOfFingers, setNumberOfFingers] = useState(0)
@@ -108,22 +110,7 @@ function App() {
       }
     })
 
-    /**
-     * track center.
-     * We use the center value, which indicate the true center
-     * no matter how many fingers
-     */
-    const sub = recognizable.events$.subscribe((event) => {
-      const boxElement = document.getElementById(`boxCenter`)
-
-      if (boxElement) {
-        boxElement.style.left = `${event.center.x - boxElement.offsetWidth / 2}px`
-        boxElement.style.top = `${event.center.y - boxElement.offsetHeight / 2}px`
-      }
-    })
-
     return () => {
-      sub.unsubscribe()
       swipeSub.unsubscribe()
       fingerTrackingSub?.unsubscribe()
       sub3.unsubscribe()
@@ -165,7 +152,7 @@ function App() {
             }}
           ></div>
         </Box>
-        <div id="boxCenter"></div>
+        {centerTrackingBox}
       </Box>
     </>
   )

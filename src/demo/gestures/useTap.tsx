@@ -11,8 +11,8 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react"
-import { DebugBox } from "./DebugBox"
-import { TapRecognizer } from "../core"
+import { DebugBox } from "../debug/DebugBox"
+import { TapRecognizer } from "../../core"
 import { AppRecognizable } from "./useRecognizable"
 
 const TapDebug = ({

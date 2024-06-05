@@ -4,7 +4,7 @@ import {
   Text,
   useToast,
 } from "@chakra-ui/react"
-import { DebugBox } from "./DebugBox"
+import { DebugBox } from "../debug/DebugBox"
 import { AppRecognizable } from "./useRecognizable"
 
 const HoldDebug = ({ value }: { value: boolean }) => {

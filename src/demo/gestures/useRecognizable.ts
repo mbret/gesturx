@@ -4,10 +4,10 @@ import {
   PanRecognizer,
   SwipeRecognizer,
   TapRecognizer,
-} from "../core"
-import { RotateRecognizer } from "../core/rotate/RotateRecognizer"
-import { PinchRecognizer } from "../core/pinch/PinchRecognizer"
-import { HoldRecognizer } from "../core/hold/HoldRecognizer"
+} from "../../core"
+import { RotateRecognizer } from "../../core/rotate/RotateRecognizer"
+import { PinchRecognizer } from "../../core/pinch/PinchRecognizer"
+import { HoldRecognizer } from "../../core/hold/HoldRecognizer"
 
 export type AppRecognizable = ReturnType<typeof useRecognizable>["recognizable"]
 
