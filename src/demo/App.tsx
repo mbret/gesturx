@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Box, Stack } from "@chakra-ui/react"
 import { DebugBox } from "./debug/DebugBox"
 import { useRecognizable } from "./gestures/useRecognizable"
@@ -11,6 +11,7 @@ import { HoldDebug } from "./debug/HoldDebug"
 import { useSwipe } from "./gestures/useSwipe"
 import { useSwipeDebugToast } from "./debug/useSwipeDebugToast"
 import { useTrackFingers } from "./gestures/useTrackFingers"
+import { useBoxPan } from "./gestures/useBoxPan"
 
 function App() {
   const swipeDebugToast = useSwipeDebugToast()
@@ -26,39 +27,7 @@ function App() {
     onSwipe: swipeDebugToast,
   })
   const { fingers } = useTrackFingers(recognizable)
-
-  useEffect(() => {
-    /**
-     * Moving a box on x,y axis.
-     * We track the deltaX/Y values.
-     */
-    let latestBoxPosition = { x: 0, y: 0 }
-    const sub3 = recognizable.events$.subscribe((event) => {
-      if (
-        event.type === "panMove" ||
-        event.type === "panEnd" ||
-        event.type === "panStart"
-      ) {
-        const boxElement = document.getElementById(`boxContainer`)
-
-        if (boxElement) {
-          const domRect = boxElement.getBoundingClientRect()
-
-          if (event.type === "panStart") {
-            latestBoxPosition.x = domRect.left
-            latestBoxPosition.y = domRect.top
-          }
-
-          boxElement.style.left = `${latestBoxPosition.x + event.deltaX}px`
-          boxElement.style.top = `${latestBoxPosition.y + event.deltaY}px`
-        }
-      }
-    })
-
-    return () => {
-      sub3.unsubscribe()
-    }
-  }, [recognizable])
+  const { position } = useBoxPan(recognizable)
 
   return (
     <>
@@ -77,7 +46,7 @@ function App() {
           }
         }}
       >
-        <Box id="boxContainer">
+        <Box id="boxContainer" left={`${position.x}px`} top={`${position.y}px`}>
           <div
             id="box"
             style={{
