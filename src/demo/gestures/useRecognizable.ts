@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import {
   Recognizable,
   PanRecognizer,
@@ -11,7 +11,8 @@ import { HoldRecognizer } from "../../core/hold/HoldRecognizer"
 
 export type AppRecognizable = ReturnType<typeof useRecognizable>["recognizable"]
 
-export const useRecognizable = (container?: HTMLElement) => {
+export const useRecognizable = () => {
+  const [container, containerRef] = useState<HTMLElement | undefined | null>()
   const [recognizable] = useState(() => {
     const panRecognizer = new PanRecognizer()
     const swipeRecognizer = new SwipeRecognizer()
@@ -41,5 +42,5 @@ export const useRecognizable = (container?: HTMLElement) => {
     }
   }, [container, recognizable])
 
-  return { recognizable }
+  return { recognizable, containerRef }
 }

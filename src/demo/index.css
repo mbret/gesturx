@@ -28,19 +28,6 @@ body {
   display: flex;
 }
 
-#container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 1;
-  position: relative;
-  overflow: hidden;
-}
-
-.container {
-  position: relative;
-}
-
 #boxContainer {
   height: 150px;
   width: 150px;

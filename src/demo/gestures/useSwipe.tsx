@@ -1,18 +1,18 @@
 import { useEffect } from "react"
 import { AppRecognizable } from "./useRecognizable"
-import { SwipeEvent } from "../../core"
+import { useSwipeDebugToast } from "../debug/useSwipeDebugToast"
 
 export const useSwipe = ({
-  onSwipe,
   recognizable,
 }: {
-  onSwipe: (event: SwipeEvent) => void
   recognizable: AppRecognizable
 }) => {
+  const swipeDebugToast = useSwipeDebugToast()
+
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {
       if (e.type === "swipe") {
-        onSwipe(e)
+        swipeDebugToast(e)
       }
     })
 

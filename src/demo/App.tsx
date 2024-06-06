@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Box, Stack } from "@chakra-ui/react"
 import { DebugBox } from "./debug/DebugBox"
 import { useRecognizable } from "./gestures/useRecognizable"
@@ -9,25 +8,46 @@ import { useRotate } from "./gestures/useRotate"
 import { usePinch } from "./gestures/usePinch"
 import { HoldDebug } from "./debug/HoldDebug"
 import { useSwipe } from "./gestures/useSwipe"
-import { useSwipeDebugToast } from "./debug/useSwipeDebugToast"
 import { useTrackFingers } from "./gestures/useTrackFingers"
 import { useBoxPan } from "./gestures/useBoxPan"
+import { Pan } from "./Pan"
 
 function App() {
-  const swipeDebugToast = useSwipeDebugToast()
-  const [container, setContainer] = useState<HTMLElement | undefined>()
-  const { recognizable } = useRecognizable(container)
+  const { recognizable, containerRef } = useRecognizable()
+  /**
+   * Detect user taps
+   */
   const { tapDebug } = useTap(recognizable)
+  /**
+   * Detect when user is holding the pan
+   */
   const { isHolding } = useHold(recognizable)
-  const { boxAngle, rotateDebug } = useRotate(recognizable)
-  const { boxScale, pinchDebug } = usePinch(recognizable)
+  /**
+   * Track fingers center
+   */
   const { centerTrackingBox } = useTrackCenter(recognizable)
+  /**
+   * Detect swipes
+   */
   useSwipe({
     recognizable,
-    onSwipe: swipeDebugToast,
   })
+  /**
+   * Track number of fingers active
+   */
   const { fingers } = useTrackFingers(recognizable)
+  /**
+   * Move the box with fingers
+   */
   const { position } = useBoxPan(recognizable)
+  /**
+   * Zoom in/out the box
+   */
+  const { boxScale, pinchDebug } = usePinch(recognizable)
+  /**
+   * Rotate the box
+   */
+  const { boxAngle, rotateDebug } = useRotate(recognizable)
 
   return (
     <>
@@ -38,14 +58,7 @@ function App() {
         {rotateDebug}
         {pinchDebug}
       </Stack>
-      <Box
-        id="container"
-        ref={(element) => {
-          if (element) {
-            setContainer(element)
-          }
-        }}
-      >
+      <Pan containerRef={containerRef}>
         <Box id="boxContainer" left={`${position.x}px`} top={`${position.y}px`}>
           <div
             id="box"
@@ -55,7 +68,7 @@ function App() {
           ></div>
         </Box>
         {centerTrackingBox}
-      </Box>
+      </Pan>
     </>
   )
 }
