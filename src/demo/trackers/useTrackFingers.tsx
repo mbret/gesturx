@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { AppRecognizable } from "./useRecognizable"
+import { AppRecognizable } from "../useRecognizable"
 
 /**
  * To track fingers we simply need to observe the state of the

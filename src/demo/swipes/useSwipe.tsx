@@ -1,13 +1,13 @@
 import { useEffect } from "react"
-import { AppRecognizable } from "./useRecognizable"
-import { useSwipeDebugToast } from "../debug/useSwipeDebugToast"
+import { AppRecognizable } from "../useRecognizable"
+import { useSwipeToast } from "./useSwipeToast"
 
 export const useSwipe = ({
   recognizable,
 }: {
   recognizable: AppRecognizable
 }) => {
-  const swipeDebugToast = useSwipeDebugToast()
+  const swipeDebugToast = useSwipeToast()
 
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {

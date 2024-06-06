@@ -3,7 +3,7 @@ import { Stack, Text, useToast } from "@chakra-ui/react"
 import { useCallback } from "react"
 import { SwipeEvent } from "../../core"
 
-export const useSwipeDebugToast = () => {
+export const useSwipeToast = () => {
   const toast = useToast()
 
   return useCallback((e: SwipeEvent) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { AppRecognizable } from "./useRecognizable"
+import { AppRecognizable } from "../useRecognizable"
 import { Box } from "@chakra-ui/react"
 
 /**
@@ -8,11 +8,15 @@ import { Box } from "@chakra-ui/react"
  * This is an example of how to detect center in events.
  * Every recognizer events have a `center` property which define
  * the center between all fingers.
- * 
+ *
  * In this case we listen for whatever events is detected and update
  * the center.
  */
-export const useTrackCenter = (recognizable: AppRecognizable) => {
+export const CenterTracker = ({
+  recognizable,
+}: {
+  recognizable: AppRecognizable
+}) => {
   const [position, setPosition] = useState({ x: 0, y: 0 })
 
   useEffect(() => {
@@ -25,7 +29,7 @@ export const useTrackCenter = (recognizable: AppRecognizable) => {
     }
   }, [recognizable])
 
-  const centerTrackingBox = (
+  return (
     <Box
       position="absolute"
       bgColor="white"
@@ -37,6 +41,4 @@ export const useTrackCenter = (recognizable: AppRecognizable) => {
       transform="translate(-50%, -50%)"
     />
   )
-
-  return { centerTrackingBox }
 }

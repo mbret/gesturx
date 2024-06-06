@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
-import { AppRecognizable } from "./useRecognizable"
+import { AppRecognizable } from "../useRecognizable"
 
-export const useBoxPan = (recognizable: AppRecognizable) => {
+export const usePan = (recognizable: AppRecognizable) => {
   const [position, setPosition] = useState({
     initial: { x: 0, y: 0 },
     x: 0,

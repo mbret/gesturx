@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react"
-import { AppRecognizable } from "./useRecognizable"
-import { DebugBox } from "../debug/DebugBox"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
+import { ControlBox } from "../controls/ControlBox"
+import { AppRecognizable } from "../useRecognizable"
+import { useEffect, useState } from "react"
 
-export const useRotate = (recognizable: AppRecognizable) => {
-  const [boxAngle, setBoxAngle] = useState(0)
+export const RotateControls = ({
+  recognizable,
+}: {
+  recognizable: AppRecognizable
+}) => {
   const [rotation, setRotation] = useState(0)
 
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {
       if (e.type === "rotate") {
-        setBoxAngle((state) => state + e.deltaAngle)
         setRotation(e.angle)
       }
 
@@ -24,12 +26,10 @@ export const useRotate = (recognizable: AppRecognizable) => {
     }
   }, [recognizable])
 
-  const rotateDebug = (
-    <DebugBox>
+  return (
+    <ControlBox>
       rotation:{" "}
       <ArrowForwardIcon boxSize={6} transform={`rotate(${rotation}deg)`} />{" "}
-    </DebugBox>
+    </ControlBox>
   )
-
-  return { rotateDebug, boxAngle }
 }
