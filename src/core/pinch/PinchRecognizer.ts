@@ -1,6 +1,5 @@
 import {
   Observable,
-  combineLatest,
   distinctUntilChanged,
   filter,
   first,
@@ -8,13 +7,17 @@ import {
   merge,
   mergeMap,
   scan,
+  share,
+  shareReplay,
   switchMap,
   takeUntil,
+  tap,
+  withLatestFrom,
 } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer } from "../recognizer/Recognizer"
-import { PanRecognizer } from "../pan/PanRecognizer"
-import { PanEvent } from "../pan/AbstractPanRecognizer"
+import { AbstractPanRecognizer, PanEvent } from "../pan/AbstractPanRecognizer"
+import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
+import { emitOnceWhen } from "../utils/operators"
 
 export interface PinchEvent extends RecognizerEvent {
   type: "pinchStart" | "pinchMove" | "pinchEnd"
@@ -37,95 +40,75 @@ type Options = {
   posThreshold?: number
 }
 
-export class PinchRecognizer extends Recognizer<Options, PinchEvent> {
+export class PinchRecognizer extends AbstractPanRecognizer<
+  Options,
+  PinchEvent
+> {
   public events$: Observable<PinchEvent>
 
   constructor(protected options: Options = {}) {
     super(options)
 
-    this.events$ = this.config$.pipe(
-      switchMap((initializedWith) => {
-        const { posThreshold } = initializedWith.options ?? {}
-        const panRecognizer = new PanRecognizer({ posThreshold })
-
-        panRecognizer.initialize(initializedWith)
-
-        const hasLessThanTwoFinger$ = panRecognizer.events$.pipe(
-          filter(({ pointers }) => pointers.length < 2),
-          distinctUntilChanged(),
+    this.events$ = this.validConfig$.pipe(
+      switchMap(() => {
+        const hasLessThanTwoFinger$ = this.panEvent$.pipe(
+          emitOnceWhen(({ pointers }) => pointers.length < 2),
+          share(),
         )
 
-        const hasMoreThanOneFinger$ = panRecognizer.events$.pipe(
-          map((event) => [event, event.pointers.length > 1] as const),
-          distinctUntilChanged(
-            (
-              [_, previousHasMoreThanOneFinger],
-              [__, currentHasMoreThanOneFinger],
-            ) => previousHasMoreThanOneFinger === currentHasMoreThanOneFinger,
-          ),
-          filter(([_, hasMoreThanOneFinger]) => hasMoreThanOneFinger),
+        const hasMoreThanOneFinger$ = this.panEvent$.pipe(
+          emitOnceWhen(({ pointers }) => pointers.length > 1),
         )
 
         const start$ = hasMoreThanOneFinger$.pipe(
-          map(([event]) => ({
-            ...event,
-            type: "pinchStart" as const,
-            scale: 1,
-            distance: 0,
-            deltaDistance: 0,
-            deltaDistanceScale: 1,
-          })),
+          map((panEvent) =>
+            mapPanEventToPinchEvent({
+              panEvent,
+              pinchStartEvent: undefined,
+              previousPinchEvent: undefined,
+              type: "pinchStart",
+            }),
+          ),
+          share(),
         )
 
         const rotate$ = start$.pipe(
-          mergeMap((startEvent) => {
-            return panRecognizer.events$.pipe(
-              scan<PanEvent, PinchEvent, Partial<PinchEvent>>(
-                (acc, current) => {
-                  const previousPointersAverageDistance =
-                    acc.pointersAverageDistance ??
-                    current.pointersAverageDistance
-
-                  const scale =
-                    current.pointersAverageDistance /
-                    startEvent.pointersAverageDistance
-
-                  return {
-                    ...acc,
-                    ...current,
-                    scale,
-                    distance:
-                      current.pointersAverageDistance -
-                      startEvent.pointersAverageDistance,
-                    deltaDistance:
-                      current.pointersAverageDistance -
-                      previousPointersAverageDistance,
-                    deltaDistanceScale:
-                      current.pointersAverageDistance /
-                      previousPointersAverageDistance,
-                    type: "pinchMove" as const,
-                  }
-                },
-                { scale: 0 },
+          mergeMap((pinchStartEvent) => {
+            return this.panEvent$.pipe(
+              scan<PanEvent, PinchEvent, PinchEvent>(
+                (previousPinchEvent, panEvent) =>
+                  mapPanEventToPinchEvent({
+                    pinchStartEvent,
+                    previousPinchEvent,
+                    panEvent,
+                    type: "pinchMove",
+                  }),
+                pinchStartEvent,
               ),
               takeUntil(hasLessThanTwoFinger$),
             )
           }),
+          shareReplay(),
         )
 
-        const end$ = start$.pipe(
-          mergeMap(() =>
-            combineLatest([rotate$, hasLessThanTwoFinger$] as const).pipe(
+        const pinchEnd$ = start$.pipe(
+          mergeMap((pinchStartEvent) =>
+            hasLessThanTwoFinger$.pipe(
               first(),
-              map(([event]) => ({
-                ...event,
-                type: "pinchEnd" as const,
-              })),
+              withLatestFrom(rotate$),
+              map(([panEvent, previousPinchEvent]) =>
+                mapPanEventToPinchEvent({
+                  pinchStartEvent,
+                  previousPinchEvent,
+                  panEvent,
+                  type: "pinchEnd",
+                }),
+              ),
             ),
           ),
         )
 
-        return merge(start$, rotate$, end$)
+        return merge(start$, rotate$, pinchEnd$)
       }),
     )
   }
