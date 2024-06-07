@@ -10,13 +10,15 @@ import { useState } from "react"
 import { Controls } from "./controls/Controls"
 
 function App() {
-  const [maxTaps, setMaxTaps] = useState(3)
+  const [settings, setSettings] = useState({
+    maxTaps: 3,
+  })
   const { recognizable, containerRef } = useRecognizable()
 
   /**
    * Detect user taps
    */
-  useTap({ recognizable, maxTaps })
+  useTap({ recognizable, maxTaps: settings.maxTaps })
 
   /**
    * Detect when user is holding the pan
@@ -39,8 +41,10 @@ function App() {
     <>
       <Controls
         fingers={fingers}
-        maxTaps={maxTaps}
-        onMaxTapsChange={(value) => setMaxTaps(value)}
+        maxTaps={settings.maxTaps}
+        onMaxTapsChange={(value) =>
+          setSettings((state) => ({ ...state, maxTaps: value }))
+        }
         recognizable={recognizable}
       />
       <Pan containerRef={containerRef}>

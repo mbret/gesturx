@@ -11,10 +11,8 @@ import {
   switchMap,
   takeUntil,
 } from "rxjs"
-import { Recognizer } from "../recognizer/Recognizer"
-import { PanRecognizer } from "../pan/PanRecognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { PanEvent } from "../pan/AbstractPanRecognizer"
+import { AbstractPanRecognizer, PanEvent } from "../pan/AbstractPanRecognizer"
 
 export interface RotateEvent extends RecognizerEvent {
   type: "rotate" | "rotateStart" | "rotateEnd"
@@ -32,26 +30,23 @@ type Options = {
   posThreshold?: number
 }
 
-export class RotateRecognizer extends Recognizer<Options, RotateEvent> {
+export class RotateRecognizer extends AbstractPanRecognizer<
+  Options,
+  RotateEvent
+> {
   public events$: Observable<RotateEvent>
 
   constructor(protected options: Options = {}) {
     super(options)
 
-    this.events$ = this.config$.pipe(
-      switchMap((initializedWith) => {
-        const { posThreshold } = initializedWith.options ?? {}
-
-        const panRecognizer = new PanRecognizer({ posThreshold })
-
-        panRecognizer.initialize(initializedWith)
-
-        const hasLessThanTwoFinger$ = panRecognizer.events$.pipe(
+    this.events$ = this.validConfig$.pipe(
+      switchMap(() => {
+        const hasLessThanTwoFinger$ = this.panEvent$.pipe(
           filter(({ pointers }) => pointers.length < 2),
           distinctUntilChanged(),
         )
 
-        const hasMoreThanOneFinger$ = panRecognizer.events$.pipe(
+        const hasMoreThanOneFinger$ = this.panEvent$.pipe(
           map((event) => [event, event.pointers.length > 1] as const),
           distinctUntilChanged(
             (
@@ -73,7 +68,7 @@ export class RotateRecognizer extends Recognizer<Options, RotateEvent> {
 
         const rotate$ = start$.pipe(
           mergeMap(() =>
-            panRecognizer.events$.pipe(
+            this.panEvent$.pipe(
               scan<
                 PanEvent,
                 RotateEvent,
