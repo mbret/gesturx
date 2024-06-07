@@ -1,7 +1,5 @@
 import {
   Observable,
-  distinctUntilChanged,
-  filter,
   first,
   map,
   merge,
@@ -11,7 +9,6 @@ import {
   shareReplay,
   switchMap,
   takeUntil,
-  tap,
   withLatestFrom,
 } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
