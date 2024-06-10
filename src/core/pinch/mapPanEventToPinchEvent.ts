@@ -1,4 +1,4 @@
-import { PanEvent } from "../pan/AbstractPanRecognizer"
+import { PanEvent } from "../recognizer/Recognizer"
 import { PinchEvent } from "./PinchRecognizer"
 
 export const mapPanEventToPinchEvent = ({

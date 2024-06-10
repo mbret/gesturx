@@ -22,7 +22,6 @@ import {
   filterNotEmpty,
   isOutsidePosThreshold,
 } from "../utils/utils"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
 import {
@@ -30,19 +29,20 @@ import {
   getPointerEvents,
   trackFingers,
 } from "../utils/events"
+import { Recognizer, PanOptions } from "../recognizer/Recognizer"
 
 export interface TapEvent extends RecognizerEvent {
   type: "tap"
   taps: number
 }
 
-interface Options extends RecognizerOptions {
+interface Options extends PanOptions {
   // Maximum time in ms between multiple taps.
   multiTapThreshold?: number
   // Maximum press time in ms.
   maximumPressTime?: number
   maxTaps?: number
-  posThreshold?: number
+  tolerance?: number
 }
 
 export class TapRecognizer extends Recognizer<Options, TapEvent> {

@@ -1,6 +1,6 @@
 import { Observable, filter, map, merge, share } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { AbstractPanRecognizer, PanOptions } from "../pan/AbstractPanRecognizer"
+import { Recognizer, PanOptions } from "../recognizer/Recognizer"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "holdStart" | "holdEnd"
@@ -8,7 +8,7 @@ export interface SwipeEvent extends RecognizerEvent {
 
 type Options = {}
 
-export class HoldRecognizer extends AbstractPanRecognizer<Options, SwipeEvent> {
+export class HoldRecognizer extends Recognizer<Options, SwipeEvent> {
   public events$: Observable<SwipeEvent>
 
   constructor(protected options: Options = {}) {

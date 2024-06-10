@@ -6,8 +6,7 @@ import {
   merge,
   share,
 } from "rxjs"
-import { Recognizer } from "../recognizer/Recognizer"
-import { AbstractPanRecognizer, State } from "../pan/AbstractPanRecognizer"
+import { Recognizer, State } from "../recognizer/Recognizer"
 
 export class Recognizable<T extends Recognizer<any, any>[]> {
   public readonly events$: Observable<ObservedValueOf<T[number]["events$"]>>
@@ -30,10 +29,10 @@ export class Recognizable<T extends Recognizer<any, any>[]> {
       ...options.recognizers.map((recognizer) => recognizer.events$),
     ).pipe(share())
 
-    // @todo remove when all recognizers inherit AbstractPanRecognizer
+    // @todo remove when all recognizers inherit Recognizer
     const panRecognizers = this.recognizers.filter(
-      (recognizer): recognizer is AbstractPanRecognizer<any, any> =>
-        recognizer instanceof AbstractPanRecognizer,
+      (recognizer): recognizer is Recognizer<any, any> =>
+        recognizer instanceof Recognizer,
     )
 
     this.state$ = combineLatest(

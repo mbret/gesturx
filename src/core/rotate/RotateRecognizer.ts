@@ -12,7 +12,7 @@ import {
   takeUntil,
 } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { AbstractPanRecognizer, PanEvent } from "../pan/AbstractPanRecognizer"
+import { Recognizer, PanEvent } from "../recognizer/Recognizer"
 
 export interface RotateEvent extends RecognizerEvent {
   type: "rotate" | "rotateStart" | "rotateEnd"
@@ -30,7 +30,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class RotateRecognizer extends AbstractPanRecognizer<
+export class RotateRecognizer extends Recognizer<
   Options,
   RotateEvent
 > {

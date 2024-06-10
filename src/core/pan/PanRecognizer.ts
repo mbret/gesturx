@@ -2,13 +2,9 @@ import {
   Observable,
   filter,
 } from "rxjs"
-import {
-  AbstractPanRecognizer,
-  PanEvent,
-  PanOptions,
-} from "./AbstractPanRecognizer"
+import { Recognizer, PanOptions, PanEvent } from "../recognizer/Recognizer"
 
-export class PanRecognizer extends AbstractPanRecognizer<PanOptions, PanEvent> {
+export class PanRecognizer extends Recognizer<PanOptions, PanEvent> {
   public events$: Observable<PanEvent>
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>

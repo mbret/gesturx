@@ -11,7 +11,7 @@ import {
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry"
 import { isRecognizedAsSwipe } from "./isRecognizedAsSwipe"
-import { AbstractPanRecognizer } from "../pan/AbstractPanRecognizer"
+import { Recognizer } from "../recognizer/Recognizer"
 
 export interface SwipeEvent extends RecognizerEvent {
   type: "swipe"
@@ -37,7 +37,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class SwipeRecognizer extends AbstractPanRecognizer<
+export class SwipeRecognizer extends Recognizer<
   Options,
   SwipeEvent
 > {

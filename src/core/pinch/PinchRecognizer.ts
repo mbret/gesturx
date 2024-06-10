@@ -12,7 +12,7 @@ import {
   withLatestFrom,
 } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { AbstractPanRecognizer, PanEvent } from "../pan/AbstractPanRecognizer"
+import { Recognizer, PanEvent } from "../recognizer/Recognizer"
 import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
 import { emitOnceWhen } from "../utils/operators"
 
@@ -37,7 +37,7 @@ type Options = {
   posThreshold?: number
 }
 
-export class PinchRecognizer extends AbstractPanRecognizer<
+export class PinchRecognizer extends Recognizer<
   Options,
   PinchEvent
 > {

@@ -1,5 +1,5 @@
 import { Observable, filter } from "rxjs"
-import { PanEvent } from "../pan/AbstractPanRecognizer"
+import { PanEvent } from "../recognizer/Recognizer"
 
 export const isRecognizedAsSwipe =
   (escapeVelocity: number) => (stream: Observable<PanEvent>) =>
