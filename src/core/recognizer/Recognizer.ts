@@ -36,7 +36,7 @@ export interface PanEvent extends RecognizerEvent {
   type: "panStart" | "panMove" | "panEnd"
 }
 
-export type PanOptions = {
+export type RecognizerOptions = {
   posThreshold?: number
   failWith?: { start$: Observable<unknown> }[]
 }
@@ -46,7 +46,7 @@ export type State = {
 }
 
 export abstract class Recognizer<
-  Options extends PanOptions,
+  Options extends RecognizerOptions,
   Event extends RecognizerEvent,
 > {
   protected config$ = new BehaviorSubject<RecognizerConfig<Options>>({})
@@ -68,7 +68,9 @@ export abstract class Recognizer<
     this.panEvent$ = this.validConfig$.pipe(
       switchMap((config) => {
         const { container, afterEventReceived } = config
-        const { posThreshold = 15 } = config.options ?? {}
+        const {
+          posThreshold = 0,
+        } = config.options ?? {}
         const {
           pointerCancel$,
           pointerDown$,

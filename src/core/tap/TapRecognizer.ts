@@ -29,14 +29,14 @@ import {
   getPointerEvents,
   trackFingers,
 } from "../utils/events"
-import { Recognizer, PanOptions } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 
 export interface TapEvent extends RecognizerEvent {
   type: "tap"
   taps: number
 }
 
-interface Options extends PanOptions {
+interface Options extends RecognizerOptions {
   // Maximum time in ms between multiple taps.
   multiTapThreshold?: number
   // Maximum press time in ms.
