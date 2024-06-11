@@ -20,14 +20,8 @@ export class Recognizable<T extends Recognizer<any, any>[]>
       ...options.recognizers.map((recognizer) => recognizer.events$),
     ).pipe(share())
 
-    // @todo remove when all recognizers inherit Recognizer
-    const panRecognizers = this.recognizers.filter(
-      (recognizer): recognizer is Recognizer<any, any> =>
-        recognizer instanceof Recognizer,
-    )
-
     this.state$ = combineLatest(
-      panRecognizers.map((recognizer) => recognizer.state$),
+      this.recognizers.map((recognizer) => recognizer.state$),
     ).pipe(
       map((states) =>
         states.reduce((acc, state) => ({

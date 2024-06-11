@@ -8,11 +8,16 @@ export interface SwipeEvent extends RecognizerEvent {
 
 type Options = Pick<RecognizerOptions, "numInputs" | "failWith" | "delay">
 
-export class HoldRecognizer extends Recognizer<Options, SwipeEvent> {
+export class HoldRecognizer extends Recognizer<RecognizerOptions, SwipeEvent> {
   public events$: Observable<SwipeEvent>
 
   constructor(protected options: Options = {}) {
-    super(options)
+    super({
+      numInputs: 1,
+      delay: 0,
+      posThreshold: 0,
+      ...options,
+    })
 
     const start$ = this.panEvent$.pipe(
       filter((e) => e.type === "panStart"),
