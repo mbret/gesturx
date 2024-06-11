@@ -7,8 +7,11 @@ import {
   share,
 } from "rxjs"
 import { Recognizer, State } from "../recognizer/Recognizer"
+import { RecognizableInterface } from "./RecognizableInterface"
 
-export class Recognizable<T extends Recognizer<any, any>[]> {
+export class Recognizable<T extends Recognizer<any, any>[]>
+  implements RecognizableInterface
+{
   public readonly events$: Observable<ObservedValueOf<T[number]["events$"]>>
   public recognizers: T
 
