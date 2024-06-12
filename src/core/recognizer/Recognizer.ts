@@ -10,15 +10,16 @@ import {
   of,
   share,
   shareReplay,
-  skipUntil,
+  skip,
   switchMap,
   takeUntil,
   tap,
+  timer,
   withLatestFrom,
 } from "rxjs"
 import { RecognizerEvent } from "./RecognizerEvent"
-import { getPointerEvents, trackFingers, matchPointer } from "../utils/events"
-import { isOutsidePosThreshold } from "../utils/utils"
+import { getPointerEvents, trackPointers, matchPointer } from "../utils/events"
+import { isWithinPosThreshold } from "../utils/utils"
 import { mapToRecognizerEvent } from "./mapToRecognizerEvent"
 
 type RecognizerConfig<Options> = {
@@ -38,6 +39,12 @@ export interface PanEvent extends RecognizerEvent {
 
 export type RecognizerOptions = {
   posThreshold?: number
+  delay?: number
+  /**
+   * Number of inputs to trigger the event.
+   * Default to 1
+   */
+  numInputs?: number
   failWith?: { start$: Observable<unknown> }[]
 }
 
@@ -68,9 +75,10 @@ export abstract class Recognizer<
     this.panEvent$ = this.validConfig$.pipe(
       switchMap((config) => {
         const { container, afterEventReceived } = config
-        const {
-          posThreshold = 0,
-        } = config.options ?? {}
+        const numInputs = Math.max(1, config.options?.numInputs ?? 1)
+        const posThreshold = Math.max(0, config.options?.posThreshold ?? 0)
+        const delay = Math.max(0, config.options?.delay ?? 0)
+
         const {
           pointerCancel$,
           pointerDown$,
@@ -82,118 +90,124 @@ export abstract class Recognizer<
           afterEventReceived,
         })
 
-        return pointerDown$.pipe(
-          exhaustMap((initialPointerDownEvent) => {
-            const pointerDowns$ = merge(
-              of(initialPointerDownEvent),
-              pointerDown$,
-            )
+        const trackPointers$ = pointerDown$.pipe(
+          trackPointers({
+            pointerCancel$,
+            pointerLeave$,
+            pointerUp$,
+            pointerMove$,
+            trackMove: true,
+          }),
+          shareReplay(1),
+        )
 
-            const pointerUpdate$ = merge(
-              pointerCancel$,
-              pointerDown$,
-              pointerLeave$,
-              pointerMove$,
-              pointerUp$,
-            )
+        const hasEnoughFingers = (
+          stream: Observable<{ event: PointerEvent; pointers: PointerEvent[] }>,
+        ) =>
+          stream.pipe(
+            filter(
+              (
+                events,
+              ): events is { event: PointerEvent; pointers: [PointerEvent] } =>
+                events.pointers.length >= numInputs,
+            ),
+          )
 
-            const trackFingers$ = pointerDowns$.pipe(
-              trackFingers({
-                pointerCancel$,
-                pointerLeave$,
-                pointerUp$,
-                pointerMove$,
-                trackMove: true,
-              }),
-              shareReplay(),
-            )
+        const hasNotEnoughFingers = (
+          stream: Observable<{
+            event: PointerEvent
+            pointers: PointerEvent[]
+          }>,
+        ) => stream.pipe(filter((events) => events.pointers.length < numInputs))
 
-            /**
-             * We release when we detect a pointer leave and there are no more
-             * active fingers.
-             *
-             * @todo move to utils
-             */
-            const panReleased$ = merge(
-              pointerUp$,
-              pointerLeave$,
-              pointerCancel$,
-            ).pipe(
-              withLatestFrom(trackFingers$),
-              filter(([_, pointers]) => !pointers.length),
-              map(([event]) => event),
-              first(),
-              share(),
-            )
+        return trackPointers$.pipe(
+          hasEnoughFingers,
+          exhaustMap(
+            ({
+              event: initialPointerEvent,
+              pointers: initialPointerEvents,
+            }) => {
+              const panReleased$ = trackPointers$.pipe(
+                hasNotEnoughFingers,
+                first(),
+                share(),
+              )
 
-            const firstEventPassingThreshold$ = pointerDowns$.pipe(
-              mergeMap((pointerDown) => {
-                if (posThreshold <= 0) {
-                  return of(pointerDown)
-                }
+              const delay$ = timer(delay)
 
-                return pointerMove$.pipe(
-                  matchPointer(pointerDown),
-                  // we start pan only if the user started moving a certain distance
-                  filter((pointerMoveEvent) =>
-                    isOutsidePosThreshold(
-                      pointerDown,
-                      pointerMoveEvent,
-                      posThreshold,
+              const pointerDownPassingThreshold$ = merge(
+                ...initialPointerEvents.map((pointerEvent) => of(pointerEvent)),
+                pointerDown$,
+              ).pipe(
+                mergeMap((pointerDown) =>
+                  merge(pointerMove$, of(pointerDown)).pipe(
+                    matchPointer(pointerDown),
+                    filter((pointerMoveEvent) =>
+                      isWithinPosThreshold(
+                        pointerDown,
+                        pointerMoveEvent,
+                        posThreshold,
+                      ),
                     ),
                   ),
-                )
-              }),
-              first(),
-            )
-
-            const panStart$ = firstEventPassingThreshold$.pipe(
-              map(() => ({
-                type: "panStart" as const,
-                event: initialPointerDownEvent,
-              })),
-              share(),
-              takeUntil(panReleased$),
-            )
-
-            const panEnd$ = panStart$.pipe(
-              mergeMap(() =>
-                panReleased$.pipe(
-                  map((endEvent) => ({
-                    type: "panEnd" as const,
-                    event: endEvent,
-                  })),
                 ),
-              ),
-            )
+                first(),
+              )
 
-            const panUpdate$ = pointerUpdate$.pipe(
-              skipUntil(panStart$),
-              map((event) => ({
-                type: "panMove" as const,
-                event,
-              })),
-              takeUntil(panReleased$),
-            )
+              const panStart$ = pointerDownPassingThreshold$.pipe(
+                switchMap(() => delay$),
+                map(() => ({
+                  type: "panStart" as const,
+                  event: initialPointerEvent,
+                  latestActivePointers: initialPointerEvents,
+                })),
+                shareReplay({
+                  bufferSize: 1,
+                  refCount: false,
+                }),
+                takeUntil(panReleased$),
+              )
 
-            const rawEvent$ = merge(panStart$, panUpdate$, panEnd$).pipe(
-              withLatestFrom(trackFingers$),
-              map(([event, pointers]) => ({
-                ...event,
-                latestActivePointers: pointers,
-              })),
-              shareReplay(),
-            )
+              const panUpdate$ = panStart$.pipe(
+                mergeMap(() =>
+                  trackPointers$.pipe(
+                    skip(1),
+                    map(({ event, pointers }) => ({
+                      type: "panMove" as const,
+                      event,
+                      latestActivePointers: pointers,
+                    })),
+                  ),
+                ),
+                takeUntil(panReleased$),
+              )
 
-            return rawEvent$.pipe(
-              mapToRecognizerEvent,
-              withLatestFrom(rawEvent$),
-              map(([recognizerEvent, { type }]) => ({
-                ...recognizerEvent,
-                type,
-              })),
-            )
-          }),
+              const panEnd$ = panStart$.pipe(
+                mergeMap(() =>
+                  panReleased$.pipe(
+                    map(({ event, pointers }) => ({
+                      type: "panEnd" as const,
+                      event,
+                      latestActivePointers: pointers,
+                    })),
+                  ),
+                ),
+              )
+
+              const rawEvent$ = merge(panStart$, panUpdate$, panEnd$).pipe(
+                shareReplay(1),
+              )
+
+              return rawEvent$.pipe(
+                mapToRecognizerEvent,
+                withLatestFrom(rawEvent$),
+                map(([recognizerEvent, { type }]) => ({
+                  ...recognizerEvent,
+                  type,
+                })),
+              )
+            },
+          ),
         )
       }),
       tap((event) => {

@@ -70,6 +70,7 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
             "pointerup",
           ].includes(curr.event.type) &&
           prevActivePointersNumber !== currActivePointersNumber
+
         const hasAtLeastOneFinger = currActivePointersNumber > 0
 
         const { deltaX, deltaY } =

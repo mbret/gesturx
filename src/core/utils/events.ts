@@ -1,8 +1,6 @@
 import {
-  NEVER,
   Observable,
   defer,
-  endWith,
   filter,
   fromEvent,
   map,
@@ -10,7 +8,7 @@ import {
   mergeMap,
   of,
   scan,
-  takeUntil,
+  takeWhile,
 } from "rxjs"
 import { isDefined } from "./utils"
 
@@ -71,65 +69,14 @@ export const fromPointerDown = ({
   )
 
 /**
- * @todo test the strict stability
- * @important
- * Stable function, will not emit if the pointers don't change
- */
-export const trackActivePointers = ({
-  container,
-}: {
-  container: HTMLElement
-}) => {
-  const pointerUp$ = fromEvent<PointerEvent>(container, "pointerup")
-  const pointerLeave$ = fromEvent<PointerEvent>(container, "pointerleave")
-  const pointerCancel$ = fromEvent<PointerEvent>(container, "pointercancel")
-
-  return fromEvent<PointerEvent>(container, "pointerdown").pipe(
-    mergeMap((pointerDown) => {
-      const pointerDownRelease$ = merge(
-        pointerUp$,
-        pointerLeave$,
-        pointerCancel$,
-      ).pipe(matchPointer(pointerDown))
-      const pointerDown$ = defer(() => of(pointerDown))
-
-      return pointerDown$.pipe(
-        mergeMap(() => merge(pointerDown$, NEVER)),
-        map((event) => ({ id: event.pointerId, event })),
-        takeUntil(pointerDownRelease$),
-        endWith({ id: pointerDown.pointerId, event: undefined }),
-      )
-    }),
-    scan(
-      (acc, { event, id }) => {
-        if (!event) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [id]: _deleted, ...rest } = acc
-
-          return rest
-        }
-
-        return {
-          ...acc,
-          [id]: event,
-        }
-      },
-      {} as Record<number, PointerEvent | undefined>,
-    ),
-    map((events) => Object.values(events).filter(isDefined)),
-  )
-}
-
-/**
  * Track all pointerEvent for active fingers
  */
-export const trackFingers =
+export const trackPointers =
   ({
     pointerCancel$,
     pointerLeave$,
     pointerUp$,
     pointerMove$,
-    trackMove,
   }: {
     pointerUp$: Observable<PointerEvent>
     pointerLeave$: Observable<PointerEvent>
@@ -143,44 +90,49 @@ export const trackFingers =
     trackMove: boolean
   }) =>
   (stream: Observable<PointerEvent>) => {
+    type PointersState = {
+      event: PointerEvent
+      pointers: Record<number, PointerEvent | undefined>
+    }
+
+    const isPointerRemoved = (event: PointerEvent) =>
+      ["pointercancel", "pointerleave", "pointerup"].includes(event.type)
+
     return stream.pipe(
       mergeMap((pointerDown) => {
-        const pointerDownRelease$ = merge(
-          pointerUp$,
-          pointerLeave$,
-          pointerCancel$,
-        ).pipe(matchPointer(pointerDown))
-
         const pointerDown$ = defer(() => of(pointerDown))
 
         const tracking$ = merge(
           pointerDown$,
-          trackMove ? pointerMove$ : NEVER,
+          merge(pointerMove$, pointerCancel$, pointerLeave$, pointerUp$),
         ).pipe(
           matchPointer(pointerDown),
-          map((event) => ({ id: event.pointerId, event })),
-          takeUntil(pointerDownRelease$),
-          endWith({ id: pointerDown.pointerId, event: undefined }),
+          takeWhile((event) => !isPointerRemoved(event), true),
         )
 
         return tracking$
       }),
-      scan(
-        (acc, { event, id }) => {
-          if (!event) {
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-            const { [id]: _deleted, ...rest } = acc
-
-            return rest
-          }
+      scan<PointerEvent, PointersState, undefined>((acc, event) => {
+        if (isPointerRemoved(event)) {
+          const { [event.pointerId]: _deleted, ...rest } = acc?.pointers ?? {}
 
           return {
-            ...acc,
-            [id]: event,
+            event,
+            pointers: rest,
           }
-        },
-        {} as Record<number, PointerEvent | undefined>,
-      ),
-      map((events) => Object.values(events).filter(isDefined)),
+        }
+
+        return {
+          event,
+          pointers: {
+            ...(acc?.pointers ?? {}),
+            [event.pointerId]: event,
+          },
+        }
+      }, undefined),
+      map(({ event, pointers }) => ({
+        event,
+        pointers: Object.values(pointers).filter(isDefined),
+      })),
     )
   }

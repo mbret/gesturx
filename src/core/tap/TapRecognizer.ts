@@ -73,7 +73,7 @@ export class TapRecognizer extends Recognizer<Options, TapEvent> {
 
         const pointerDown$ = fromPointerDown({ container, afterEventReceived })
         const activePointers$ = pointerDown$.pipe(
-          trackFingers({
+          trackPointers({
             pointerCancel$,
             pointerLeave$,
             pointerMove$,

@@ -1,13 +1,23 @@
-import { combineLatest, map, merge, share } from "rxjs"
+import {
+  Observable,
+  ObservedValueOf,
+  combineLatest,
+  map,
+  merge,
+  share,
+} from "rxjs"
 import { Recognizer } from "../recognizer/Recognizer"
-import { RecognizableInterface } from "./RecognizableInterface"
+import {
+  RecognizableInterface,
+  RecognizableState,
+} from "./RecognizableInterface"
 
 export class Recognizable<T extends Recognizer<any, any>[]>
   implements RecognizableInterface<T>
 {
-  public readonly events$
-  public readonly recognizers
-  public readonly state$
+  events$: Observable<ObservedValueOf<T[number]["events$"]>>
+  recognizers: T
+  state$: Observable<RecognizableState>
 
   constructor(
     protected options: {

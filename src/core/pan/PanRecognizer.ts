@@ -4,18 +4,20 @@ import {
   RecognizerOptions,
   PanEvent,
 } from "../recognizer/Recognizer"
+import {
+  PanRecognizerInterface,
+  PanRecognizerOptions,
+} from "./PanRecognizerInterface"
 
-export type PanOptions = Pick<
-  RecognizerOptions,
-  "numInputs" | "failWith" | "posThreshold"
->
-
-export class PanRecognizer extends Recognizer<PanOptions, PanEvent> {
+export class PanRecognizer
+  extends Recognizer<RecognizerOptions, PanEvent>
+  implements PanRecognizerInterface
+{
   public events$: Observable<PanEvent>
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>
 
-  constructor(options: PanOptions = {}) {
+  constructor(options: PanRecognizerOptions = {}) {
     super({
       ...options,
       posThreshold: options.posThreshold ?? 15,
@@ -28,5 +30,9 @@ export class PanRecognizer extends Recognizer<PanOptions, PanEvent> {
     )
 
     this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
+  }
+
+  public update(options: PanRecognizerOptions) {
+    super.update(options)
   }
 }
