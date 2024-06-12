@@ -27,7 +27,7 @@ function App() {
     holdDelay: 0,
     panDelay: 0,
     panNumInputs: 1,
-    panPosThreshold: 15,
+    panPosThreshold: 0,
   })
   const { recognizable, containerRef } = useRecognizable()
 
@@ -58,11 +58,12 @@ function App() {
       <Controls
         fingers={fingers}
         settings={settings}
+        setSettings={setSettings}
         onSettingsChange={(newSettings) => setSettings(newSettings)}
         recognizable={recognizable}
       />
       <Pan containerRef={containerRef}>
-        <GesturesBox recognizable={recognizable} />
+        <GesturesBox recognizable={recognizable} settings={settings} />
         <CenterTracker recognizable={recognizable} />
       </Pan>
     </>

@@ -3,16 +3,19 @@ import { usePan } from "./usePan"
 import { AppRecognizable } from "../useRecognizable"
 import { usePinch } from "./usePinch"
 import { useRotate } from "./useRotate"
+import { Settings } from "../App"
 
 export const GesturesBox = ({
   recognizable,
+  settings,
 }: {
   recognizable: AppRecognizable
+  settings: Settings
 }) => {
   /**
    * Move the box with fingers
    */
-  const { position } = usePan(recognizable)
+  const { position } = usePan({ recognizable, settings })
   /**
    * Zoom in/out the box
    */
