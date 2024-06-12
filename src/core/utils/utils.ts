@@ -19,7 +19,7 @@ export const filterNotEmpty = <T>(
   stream: Observable<T[]>,
 ): Observable<[T, ...T[]]> => stream.pipe(filter(hasAtLeastOneItem))
 
-export function isOutsidePosThreshold(
+export function isWithinPosThreshold(
   startEvent: PointerEvent,
   endEvent: PointerEvent,
   posThreshold: number,
@@ -29,8 +29,8 @@ export function isOutsidePosThreshold(
 
   // Determines if the movement qualifies as a drag
   return (
-    Math.abs(end.x - start.x) > posThreshold ||
-    Math.abs(end.y - start.y) > posThreshold
+    Math.abs(end.x - start.x) >= posThreshold ||
+    Math.abs(end.y - start.y) >= posThreshold
   )
 }
 

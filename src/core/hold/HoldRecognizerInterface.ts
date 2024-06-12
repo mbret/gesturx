@@ -13,11 +13,9 @@ export interface HoldRecognizerOptions {
   failWith?: { start$: Observable<unknown> }[]
 }
 
-export interface HoldRecognizer
+export interface HoldRecognizerInterface
   extends Recognizer<RecognizerOptions, HoldEvent> {
   events$: Observable<HoldEvent>
-
-  new (options: HoldRecognizerOptions): HoldRecognizer
 
   update(options: HoldRecognizerOptions): void
 }

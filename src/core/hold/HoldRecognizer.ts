@@ -1,12 +1,19 @@
 import { Observable, filter, map, merge, share } from "rxjs"
 import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { PanOptions } from "../pan/PanRecognizer"
-import { HoldEvent } from "./HoldRecognizerInterface"
+import {
+  HoldEvent,
+  HoldRecognizerInterface,
+  HoldRecognizerOptions,
+} from "./HoldRecognizerInterface"
 
-export class HoldRecognizer extends Recognizer<RecognizerOptions, HoldEvent> {
+export class HoldRecognizer
+  extends Recognizer<RecognizerOptions, HoldEvent>
+  implements HoldRecognizerInterface
+{
   public events$: Observable<HoldEvent>
 
-  constructor(protected options: PanOptions = {}) {
+  constructor(options: HoldRecognizerOptions = {}) {
     super({
       numInputs: 1,
       delay: 0,
