@@ -1,17 +1,12 @@
 import { Observable, filter, map, merge, share } from "rxjs"
-import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
+import { PanOptions } from "../pan/PanRecognizer"
+import { HoldEvent } from "./HoldRecognizerInterface"
 
-export interface SwipeEvent extends RecognizerEvent {
-  type: "holdStart" | "holdEnd"
-}
+export class HoldRecognizer extends Recognizer<RecognizerOptions, HoldEvent> {
+  public events$: Observable<HoldEvent>
 
-type Options = Pick<RecognizerOptions, "numInputs" | "failWith" | "delay">
-
-export class HoldRecognizer extends Recognizer<RecognizerOptions, SwipeEvent> {
-  public events$: Observable<SwipeEvent>
-
-  constructor(protected options: Options = {}) {
+  constructor(protected options: PanOptions = {}) {
     super({
       numInputs: 1,
       delay: 0,
@@ -40,5 +35,9 @@ export class HoldRecognizer extends Recognizer<RecognizerOptions, SwipeEvent> {
     )
 
     this.events$ = merge(start$, end$).pipe(share())
+  }
+
+  public update(options: PanOptions) {
+    super.update(options)
   }
 }
