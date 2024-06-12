@@ -9,9 +9,25 @@ import { GesturesBox } from "./gesturesBox/GesturesBox"
 import { useState } from "react"
 import { Controls } from "./controls/Controls"
 
+export type Settings = {
+  maxTaps: number
+  holdNumInputs: number
+  holdPosThreshold: number
+  holdDelay: number
+  panNumInputs: number
+  panPosThreshold: number
+  panDelay: number
+}
+
 function App() {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<Settings>({
     maxTaps: 3,
+    holdNumInputs: 1,
+    holdPosThreshold: 0,
+    holdDelay: 0,
+    panDelay: 0,
+    panNumInputs: 1,
+    panPosThreshold: 15,
   })
   const { recognizable, containerRef } = useRecognizable()
 
@@ -23,7 +39,7 @@ function App() {
   /**
    * Detect when user is holding the pan
    */
-  useHold(recognizable)
+  useHold({ recognizable, settings })
 
   /**
    * Detect swipes
@@ -41,10 +57,8 @@ function App() {
     <>
       <Controls
         fingers={fingers}
-        maxTaps={settings.maxTaps}
-        onMaxTapsChange={(value) =>
-          setSettings((state) => ({ ...state, maxTaps: value }))
-        }
+        settings={settings}
+        onSettingsChange={(newSettings) => setSettings(newSettings)}
         recognizable={recognizable}
       />
       <Pan containerRef={containerRef}>
