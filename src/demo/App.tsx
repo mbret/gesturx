@@ -17,6 +17,7 @@ export type Settings = {
   panNumInputs: number
   panPosThreshold: number
   panDelay: number
+  pinchPosThreshold: number
 }
 
 function App() {
@@ -27,7 +28,8 @@ function App() {
     holdDelay: 0,
     panDelay: 0,
     panNumInputs: 1,
-    panPosThreshold: 0,
+    panPosThreshold: 15,
+    pinchPosThreshold: 15
   })
   const { recognizable, containerRef } = useRecognizable()
 

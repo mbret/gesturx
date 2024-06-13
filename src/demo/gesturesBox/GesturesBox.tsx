@@ -19,7 +19,7 @@ export const GesturesBox = ({
   /**
    * Zoom in/out the box
    */
-  const { boxScale } = usePinch(recognizable)
+  const { boxScale } = usePinch({ recognizable, settings })
   /**
    * Rotate the box
    */

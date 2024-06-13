@@ -47,7 +47,7 @@ export const PanControl = ({
           <NumberInput
             defaultValue={settings.panNumInputs}
             min={1}
-            max={5}
+            max={99}
             size="sm"
             onChange={(valueString) =>
               setSettings((state) => ({
@@ -65,7 +65,7 @@ export const PanControl = ({
             size="sm"
             defaultValue={settings.panPosThreshold}
             min={0}
-            max={100}
+            max={9999}
             onChange={(valueString) =>
               setSettings((state) => ({
                 ...state,

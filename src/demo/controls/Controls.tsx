@@ -52,17 +52,18 @@ export const Controls = ({
       zIndex={1}
       width={150}
       bgColor="white"
+      p={0}
     >
       <AccordionItem defaultChecked>
         <AccordionControlButton>fingers</AccordionControlButton>
-        <AccordionPanel>
+        <AccordionPanel p={1}>
           <ControlBox>fingers: {fingers}</ControlBox>
         </AccordionPanel>
       </AccordionItem>
 
       <AccordionItem>
         <AccordionControlButton>taps</AccordionControlButton>
-        <AccordionPanel>
+        <AccordionPanel p={1}>
           <TapControls
             value={settings.maxTaps}
             onChange={(value) => {
@@ -74,7 +75,7 @@ export const Controls = ({
 
       <AccordionItem>
         <AccordionControlButton>pan</AccordionControlButton>
-        <AccordionPanel>
+        <AccordionPanel p={1}>
           <PanControl
             recognizable={recognizable}
             settings={settings}
@@ -85,7 +86,7 @@ export const Controls = ({
 
       <AccordionItem>
         <AccordionControlButton>hold</AccordionControlButton>
-        <AccordionPanel>
+        <AccordionPanel p={1}>
           <HoldControls
             recognizable={recognizable}
             numInputsHold={settings.holdNumInputs}
@@ -106,15 +107,19 @@ export const Controls = ({
 
       <AccordionItem>
         <AccordionControlButton>rotate</AccordionControlButton>
-        <AccordionPanel>
+        <AccordionPanel p={1}>
           <RotateControls recognizable={recognizable} />
         </AccordionPanel>
       </AccordionItem>
 
       <AccordionItem>
         <AccordionControlButton>pinch</AccordionControlButton>
-        <AccordionPanel>
-          <PinchControls recognizable={recognizable} />
+        <AccordionPanel p={1}>
+          <PinchControls
+            recognizable={recognizable}
+            settings={settings}
+            setSettings={setSettings}
+          />
         </AccordionPanel>
       </AccordionItem>
     </Accordion>
