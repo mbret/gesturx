@@ -11,39 +11,26 @@ import {
   takeUntil,
   withLatestFrom,
 } from "rxjs"
-import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer, PanEvent } from "../recognizer/Recognizer"
+import {
+  Recognizer,
+  PanEvent,
+  RecognizerOptions,
+} from "../recognizer/Recognizer"
 import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
 import { emitOnceWhen } from "../utils/operators"
+import {
+  PinchEvent,
+  PinchRecognizerInterface,
+  PinchRecognizerOptions,
+} from "./PinchRecognizerInterface"
 
-export interface PinchEvent extends RecognizerEvent {
-  type: "pinchStart" | "pinchMove" | "pinchEnd"
-  scale: number
-  /**
-   * Distance between start and current
-   */
-  distance: number
-  /**
-   * Delta distance between events
-   */
-  deltaDistance: number
-  /**
-   * Delta scale between events
-   */
-  deltaDistanceScale: number
-}
-
-type Options = {
-  posThreshold?: number
-}
-
-export class PinchRecognizer extends Recognizer<
-  Options,
-  PinchEvent
-> {
+export class PinchRecognizer
+  extends Recognizer<RecognizerOptions, PinchEvent>
+  implements PinchRecognizerInterface
+{
   public events$: Observable<PinchEvent>
 
-  constructor(protected options: Options = {}) {
+  constructor(protected options: PinchRecognizerOptions = {}) {
     super(options)
 
     this.events$ = this.validConfig$.pipe(
@@ -108,5 +95,9 @@ export class PinchRecognizer extends Recognizer<
         return merge(start$, rotate$, pinchEnd$)
       }),
     )
+  }
+
+  public update(options: PinchRecognizerOptions) {
+    super.update(options)
   }
 }
