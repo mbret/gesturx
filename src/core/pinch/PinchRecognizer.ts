@@ -1,28 +1,27 @@
 import {
   Observable,
-  first,
-  map,
+  filter,
   merge,
-  mergeMap,
-  scan,
+  of,
+  pairwise,
   share,
   shareReplay,
+  startWith,
   switchMap,
-  takeUntil,
-  withLatestFrom,
+  takeWhile,
 } from "rxjs"
 import {
   Recognizer,
-  PanEvent,
   RecognizerOptions,
 } from "../recognizer/Recognizer"
 import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
-import { emitOnceWhen } from "../utils/operators"
 import {
   PinchEvent,
   PinchRecognizerInterface,
   PinchRecognizerOptions,
 } from "./PinchRecognizerInterface"
+
+export { type PinchEvent } from "./PinchRecognizerInterface"
 
 export class PinchRecognizer
   extends Recognizer<RecognizerOptions, PinchEvent>
@@ -31,69 +30,60 @@ export class PinchRecognizer
   public events$: Observable<PinchEvent>
 
   constructor(protected options: PinchRecognizerOptions = {}) {
-    super(options)
+    super({
+      posThreshold: options.posThreshold,
+      numInputs: 2,
+    })
 
     this.events$ = this.validConfig$.pipe(
       switchMap(() => {
-        const hasLessThanTwoFinger$ = this.panEvent$.pipe(
-          emitOnceWhen(({ pointers }) => pointers.length < 2),
-          share(),
-        )
-
-        const hasMoreThanOneFinger$ = this.panEvent$.pipe(
-          emitOnceWhen(({ pointers }) => pointers.length > 1),
-        )
-
-        const start$ = hasMoreThanOneFinger$.pipe(
-          map((panEvent) =>
-            mapPanEventToPinchEvent({
-              panEvent,
-              pinchStartEvent: undefined,
-              previousPinchEvent: undefined,
-              type: "pinchStart",
-            }),
+        const pinchStart$ = this.panEvent$.pipe(
+          filter((event) => event.type === "panStart"),
+          switchMap((event) =>
+            of(event).pipe(
+              mapPanEventToPinchEvent({
+                type: "pinchStart",
+                initialEvent: undefined,
+              }),
+            ),
           ),
-          share(),
+          shareReplay(1),
         )
 
-        const rotate$ = start$.pipe(
-          mergeMap((pinchStartEvent) => {
+        const pinchMove$ = pinchStart$.pipe(
+          switchMap((initialEvent) => {
             return this.panEvent$.pipe(
-              scan<PanEvent, PinchEvent, PinchEvent>(
-                (previousPinchEvent, panEvent) =>
-                  mapPanEventToPinchEvent({
-                    pinchStartEvent,
-                    previousPinchEvent,
-                    panEvent,
-                    type: "pinchMove",
-                  }),
-                pinchStartEvent,
-              ),
-              takeUntil(hasLessThanTwoFinger$),
+              takeWhile((event) => event.type !== "panEnd"),
+              mapPanEventToPinchEvent({
+                type: "pinchMove",
+                initialEvent,
+              }),
             )
           }),
-          shareReplay(),
         )
 
-        const pinchEnd$ = start$.pipe(
-          mergeMap((pinchStartEvent) =>
-            hasLessThanTwoFinger$.pipe(
-              first(),
-              withLatestFrom(rotate$),
-              map(([panEvent, previousPinchEvent]) =>
-                mapPanEventToPinchEvent({
-                  pinchStartEvent,
-                  previousPinchEvent,
-                  panEvent,
-                  type: "pinchEnd",
-                }),
+        const pinchEnd$ = pinchStart$.pipe(
+          switchMap((pinchStartEvent) =>
+            this.panEvent$.pipe(
+              // we cannot have a panEnd without a previous event so it will always emit
+              startWith(pinchStartEvent),
+              pairwise(),
+              filter(([_, currEvent]) => currEvent.type === "panEnd"),
+              switchMap(([previousEvent, currEvent]) =>
+                of(currEvent).pipe(
+                  mapPanEventToPinchEvent({
+                    type: "pinchEnd",
+                    initialEvent: previousEvent,
+                  }),
+                ),
               ),
             ),
           ),
         )
 
-        return merge(start$, rotate$, pinchEnd$)
+        return merge(pinchStart$, pinchMove$, pinchEnd$)
       }),
+      share(),
     )
   }
 

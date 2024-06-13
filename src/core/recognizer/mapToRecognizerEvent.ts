@@ -46,65 +46,46 @@ export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
     )
 
   return stream.pipe(
-    scan<
-      T,
-      RecognizerEventState,
-      Pick<
-        RecognizerEventState,
-        "deltaX" | "center" | "deltaY" | "latestActivePointers"
-      >
-    >(
-      (acc, curr) => {
-        const newCenter = getCenterFromData(curr)
-        const prevCenter = acc.center
-        const prevDeltaX = acc.deltaX
-        const prevDeltaY = acc.deltaY
-        const prevActivePointersNumber = acc.latestActivePointers?.length ?? 0
-        const currActivePointersNumber = curr.latestActivePointers?.length ?? 0
+    scan<T, RecognizerEventState, undefined>((acc, curr) => {
+      const newCenter = getCenterFromData(curr)
+      const prevCenter = acc?.center ?? newCenter
+      const prevDeltaX = acc?.deltaX ?? 0
+      const prevDeltaY = acc?.deltaY ?? 0
+      const prevActivePointersNumber = acc?.latestActivePointers?.length ?? 1
+      const currActivePointersNumber = curr.latestActivePointers?.length ?? 1
 
-        const hasAddedOrRemovedAFinger =
-          [
-            "pointerdown",
-            "pointercancel",
-            "pointerleave",
-            "pointerup",
-          ].includes(curr.event.type) &&
-          prevActivePointersNumber !== currActivePointersNumber
+      const hasAddedOrRemovedAFinger =
+        ["pointerdown", "pointercancel", "pointerleave", "pointerup"].includes(
+          curr.event.type,
+        ) && prevActivePointersNumber !== currActivePointersNumber
 
-        const hasAtLeastOneFinger = currActivePointersNumber > 0
+      const hasAtLeastOneFinger = currActivePointersNumber > 0
 
-        const { deltaX, deltaY } =
-          hasAddedOrRemovedAFinger && hasAtLeastOneFinger
-            ? calculateNewDelta(newCenter, newCenter, prevDeltaX, prevDeltaY)
-            : calculateNewDelta(newCenter, prevCenter, prevDeltaX, prevDeltaY)
+      const { deltaX, deltaY } =
+        hasAddedOrRemovedAFinger && hasAtLeastOneFinger
+          ? calculateNewDelta(newCenter, newCenter, prevDeltaX, prevDeltaY)
+          : calculateNewDelta(newCenter, prevCenter, prevDeltaX, prevDeltaY)
 
-        const { degreesDelta: deltaPointersAngle } =
-          prevActivePointersNumber === currActivePointersNumber &&
-          prevActivePointersNumber >= 2 &&
-          currActivePointersNumber >= 2
-            ? calculateAngleDelta(
-                acc.latestActivePointers ?? [],
-                curr.latestActivePointers ?? [],
-              )
-            : { degreesDelta: 0 }
+      const { degreesDelta: deltaPointersAngle } =
+        prevActivePointersNumber === currActivePointersNumber &&
+        prevActivePointersNumber >= 2 &&
+        currActivePointersNumber >= 2
+          ? calculateAngleDelta(
+              acc?.latestActivePointers ?? [],
+              curr.latestActivePointers ?? [],
+            )
+          : { degreesDelta: 0 }
 
-        return {
-          startTime: new Date().getTime(),
-          ...acc,
-          ...curr,
-          center: newCenter,
-          deltaX,
-          deltaY,
-          deltaPointersAngle,
-        }
-      },
-      {
-        deltaX: 0,
-        deltaY: 0,
-        center: { x: 0, y: 0 },
-        latestActivePointers: [],
-      },
-    ),
+      return {
+        startTime: new Date().getTime(),
+        ...acc,
+        ...curr,
+        center: newCenter,
+        deltaX,
+        deltaY,
+        deltaPointersAngle,
+      }
+    }, undefined),
     map((data) => {
       const {
         deltaX,
