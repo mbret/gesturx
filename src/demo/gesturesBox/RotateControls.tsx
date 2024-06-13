@@ -2,6 +2,7 @@ import { ArrowForwardIcon } from "@chakra-ui/icons"
 import { ControlBox } from "../controls/ControlBox"
 import { AppRecognizable } from "../useRecognizable"
 import { useEffect, useState } from "react"
+import { Text } from "@chakra-ui/react"
 
 export const RotateControls = ({
   recognizable,
@@ -28,8 +29,11 @@ export const RotateControls = ({
 
   return (
     <ControlBox>
-      rotation:{" "}
-      <ArrowForwardIcon boxSize={6} transform={`rotate(${rotation}deg)`} />{" "}
+      <Text fontSize="xs">
+        rotation:{" "}
+        <ArrowForwardIcon boxSize={4} transform={`rotate(${rotation}deg)`} />{" "}
+        {rotation.toFixed(0)} deg
+      </Text>
     </ControlBox>
   )
 }

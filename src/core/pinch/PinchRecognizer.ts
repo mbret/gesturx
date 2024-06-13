@@ -10,10 +10,7 @@ import {
   switchMap,
   takeWhile,
 } from "rxjs"
-import {
-  Recognizer,
-  RecognizerOptions,
-} from "../recognizer/Recognizer"
+import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
 import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
 import {
   PinchEvent,
@@ -31,7 +28,7 @@ export class PinchRecognizer
 
   constructor(protected options: PinchRecognizerOptions = {}) {
     super({
-      posThreshold: options.posThreshold,
+      ...options,
       numInputs: 2,
     })
 

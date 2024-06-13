@@ -8,36 +8,26 @@ import {
   merge,
   mergeMap,
   scan,
+  share,
+  shareReplay,
   switchMap,
   takeUntil,
 } from "rxjs"
-import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer, PanEvent } from "../recognizer/Recognizer"
+import {
+  Recognizer,
+  PanEvent,
+} from "../recognizer/Recognizer"
+import { RotateEvent, RotateRecognizerOptions } from "./RotateRecognizerInterface"
 
-export interface RotateEvent extends RecognizerEvent {
-  type: "rotate" | "rotateStart" | "rotateEnd"
-  /**
-   * Current rotation angle
-   */
-  angle: number
-  /**
-   * Delta angle between events
-   */
-  deltaAngle: number
-}
-
-type Options = {
-  posThreshold?: number
-}
-
-export class RotateRecognizer extends Recognizer<
-  Options,
-  RotateEvent
-> {
+export class RotateRecognizer extends Recognizer<RotateRecognizerOptions, RotateEvent> {
   public events$: Observable<RotateEvent>
 
-  constructor(protected options: Options = {}) {
-    super(options)
+  constructor(protected options: RotateRecognizerOptions = {}) {
+    super({
+      numInputs: 2,
+      posThreshold: 15,
+      ...options,
+    })
 
     this.events$ = this.validConfig$.pipe(
       switchMap(() => {
@@ -46,27 +36,18 @@ export class RotateRecognizer extends Recognizer<
           distinctUntilChanged(),
         )
 
-        const hasMoreThanOneFinger$ = this.panEvent$.pipe(
-          map((event) => [event, event.pointers.length > 1] as const),
-          distinctUntilChanged(
-            (
-              [_, previousHasMoreThanOneFinger],
-              [__, currentHasMoreThanOneFinger],
-            ) => previousHasMoreThanOneFinger === currentHasMoreThanOneFinger,
-          ),
-          filter(([_, hasMoreThanOneFinger]) => hasMoreThanOneFinger),
-        )
-
-        const start$ = hasMoreThanOneFinger$.pipe(
-          map(([event]) => ({
+        const rotateStart$ = this.panEvent$.pipe(
+          filter((event) => event.type === "panStart"),
+          map((event) => ({
             ...event,
             type: "rotateStart" as const,
             angle: 0,
             deltaAngle: 0,
           })),
+          shareReplay(1),
         )
 
-        const rotate$ = start$.pipe(
+        const rotate$ = rotateStart$.pipe(
           mergeMap(() =>
             this.panEvent$.pipe(
               scan<
@@ -92,7 +73,7 @@ export class RotateRecognizer extends Recognizer<
           ),
         )
 
-        const end$ = start$.pipe(
+        const rotateEnd$ = rotateStart$.pipe(
           mergeMap(() =>
             combineLatest([rotate$, hasLessThanTwoFinger$] as const).pipe(
               first(),
@@ -104,8 +85,13 @@ export class RotateRecognizer extends Recognizer<
           ),
         )
 
-        return merge(start$, rotate$, end$)
+        return merge(rotateStart$, rotate$, rotateEnd$)
       }),
+      share(),
     )
+  }
+
+  public update(options: RotateRecognizerOptions) {
+    super.update(options)
   }
 }
