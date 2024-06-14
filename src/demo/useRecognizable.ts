@@ -20,7 +20,6 @@ export const useRecognizable = () => {
     const pinchRecognizer = new PinchRecognizer()
     const holdRecognizer = new HoldRecognizer()
     const tapRecognizer = new TapRecognizer({
-      maxTaps: 3,
       failWith: [panRecognizer],
     })
 

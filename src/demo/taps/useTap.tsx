@@ -37,6 +37,10 @@ export const useTap = ({
   }, [recognizable, toast])
 
   useEffect(() => {
-    tapRecognizer?.update({ maxTaps })
+    tapRecognizer?.update({
+      options: {
+        maxTaps,
+      },
+    })
   }, [maxTaps, tapRecognizer])
 }

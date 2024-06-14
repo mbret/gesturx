@@ -18,6 +18,8 @@ export type Settings = {
   panPosThreshold: number
   panDelay: number
   pinchPosThreshold: number
+  rotateNumInputs: number
+  rotatePosThreshold: number
 }
 
 function App() {
@@ -29,7 +31,9 @@ function App() {
     panDelay: 0,
     panNumInputs: 1,
     panPosThreshold: 15,
-    pinchPosThreshold: 15
+    pinchPosThreshold: 15,
+    rotateNumInputs: 2,
+    rotatePosThreshold: 15,
   })
   const { recognizable, containerRef } = useRecognizable()
 

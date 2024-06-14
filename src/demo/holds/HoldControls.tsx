@@ -9,25 +9,34 @@ import {
 import { ControlBox } from "../controls/ControlBox"
 import { AppRecognizable } from "../useRecognizable"
 import { useEffect, useState } from "react"
+import { HoldRecognizer } from "../../core/hold/HoldRecognizer"
+import { Settings } from "../App"
 
 export const HoldControls = ({
   recognizable,
-  numInputsHold,
-  setNumInputsHold,
-  posThreshold,
-  setPosThreshold,
-  delay,
-  setDelay,
+  setSettings,
+  settings,
 }: {
   recognizable: AppRecognizable
-  numInputsHold: number
-  posThreshold: number
-  setPosThreshold: (value: number) => void
-  setNumInputsHold: (value: number) => void
-  delay: number
-  setDelay: (value: number) => void
+  settings: Settings
+  setSettings: (stateUpdate: (state: Settings) => Settings) => void
 }) => {
   const [isHolding, setIsHolding] = useState(false)
+  const { holdDelay, holdNumInputs, holdPosThreshold } = settings
+  const holdRecognizer = recognizable.recognizers.find(
+    (recognizer): recognizer is HoldRecognizer =>
+      recognizer instanceof HoldRecognizer,
+  )
+
+  useEffect(() => {
+    holdRecognizer?.update({
+      options: {
+        numInputs: holdNumInputs,
+        posThreshold: holdPosThreshold,
+        delay: holdDelay,
+      },
+    })
+  }, [holdRecognizer, holdDelay, holdNumInputs, holdPosThreshold])
 
   useEffect(() => {
     const clickSub = recognizable.events$.subscribe((e) => {
@@ -52,11 +61,16 @@ export const HoldControls = ({
         <FormControl>
           <FormLabel fontSize="small">numInputs</FormLabel>
           <NumberInput
-            defaultValue={numInputsHold}
+            defaultValue={settings.holdNumInputs}
             min={1}
             max={5}
             size="sm"
-            onChange={(valueString) => setNumInputsHold(parseInt(valueString))}
+            onChange={(valueString) =>
+              setSettings((state) => ({
+                ...state,
+                holdNumInputs: parseInt(valueString) || 0,
+              }))
+            }
           >
             <NumberInputField />
           </NumberInput>
@@ -65,10 +79,15 @@ export const HoldControls = ({
           <FormLabel fontSize="small">posThreshold (px)</FormLabel>
           <NumberInput
             size="sm"
-            defaultValue={posThreshold}
+            defaultValue={settings.holdPosThreshold}
             min={0}
             max={100}
-            onChange={(valueString) => setPosThreshold(parseInt(valueString))}
+            onChange={(valueString) =>
+              setSettings((state) => ({
+                ...state,
+                holdPosThreshold: parseInt(valueString) || 0,
+              }))
+            }
           >
             <NumberInputField />
           </NumberInput>
@@ -77,10 +96,15 @@ export const HoldControls = ({
           <FormLabel fontSize="small">delay (seconds)</FormLabel>
           <NumberInput
             size="sm"
-            defaultValue={delay}
+            defaultValue={settings.holdDelay}
             min={0}
             max={9999}
-            onChange={(valueString) => setDelay(parseInt(valueString))}
+            onChange={(valueString) =>
+              setSettings((state) => ({
+                ...state,
+                holdDelay: parseInt(valueString) || 0,
+              }))
+            }
           >
             <NumberInputField />
           </NumberInput>

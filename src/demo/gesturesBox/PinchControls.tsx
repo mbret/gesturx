@@ -9,7 +9,7 @@ import {
   Text,
 } from "@chakra-ui/react"
 import { Settings } from "../App"
-import { PinchEvent } from "../../core"
+import { PinchEvent, PinchRecognizer } from "../../core"
 
 export const PinchControls = ({
   recognizable,
@@ -21,10 +21,32 @@ export const PinchControls = ({
   setSettings: (stateUpdate: (state: Settings) => Settings) => void
 }) => {
   const [event, setEvent] = useState<PinchEvent | undefined>(undefined)
+  const { pinchPosThreshold } = settings
+  const pinchRecognizer = recognizable.recognizers.find(
+    (recognizer): recognizer is PinchRecognizer =>
+      recognizer instanceof PinchRecognizer,
+  )
+
+  /**
+   * Update settings from controls
+   */
+  useEffect(() => {
+    pinchRecognizer?.update({
+      options: {
+        posThreshold: pinchPosThreshold,
+      },
+    })
+  }, [pinchRecognizer, pinchPosThreshold])
 
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {
-      setEvent(e)
+      if (
+        e.type === "pinchEnd" ||
+        e.type === "pinchMove" ||
+        e.type === "pinchStart"
+      ) {
+        setEvent(e)
+      }
 
       if (e.type === "pinchEnd") {
         setEvent(undefined)

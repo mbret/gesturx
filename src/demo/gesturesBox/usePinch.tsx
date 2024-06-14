@@ -3,11 +3,9 @@ import { AppRecognizable } from "../useRecognizable"
 import { ControlBox } from "../controls/ControlBox"
 import { Text } from "@chakra-ui/react"
 import { Settings } from "../App"
-import { PinchRecognizer } from "../../core"
 
 export const usePinch = ({
   recognizable,
-  settings,
 }: {
   recognizable: AppRecognizable
   settings: Settings
@@ -15,20 +13,7 @@ export const usePinch = ({
   const [boxScale, setBoxScale] = useState(1)
   const [scale, setScale] = useState(1)
   const [distance, setDistance] = useState(0)
-  const { pinchPosThreshold } = settings
-  const pinchRecognizer = recognizable.recognizers.find(
-    (recognizer): recognizer is PinchRecognizer =>
-      recognizer instanceof PinchRecognizer,
-  )
 
-  /**
-   * Update settings from controls
-   */
-  useEffect(() => {
-    pinchRecognizer?.update({
-      posThreshold: pinchPosThreshold,
-    })
-  }, [pinchRecognizer, pinchPosThreshold])
 
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {

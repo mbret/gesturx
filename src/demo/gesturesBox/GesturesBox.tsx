@@ -23,7 +23,7 @@ export const GesturesBox = ({
   /**
    * Rotate the box
    */
-  const { boxAngle } = useRotate(recognizable)
+  const { boxAngle } = useRotate({ recognizable, settings })
 
   return (
     <Box id="boxContainer" left={`${position.x}px`} top={`${position.y}px`}>

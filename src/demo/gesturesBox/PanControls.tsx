@@ -10,6 +10,7 @@ import { ControlBox } from "../controls/ControlBox"
 import { AppRecognizable } from "../useRecognizable"
 import { useEffect, useState } from "react"
 import { Settings } from "../App"
+import { PanRecognizer } from "../../core"
 
 export const PanControl = ({
   recognizable,
@@ -21,6 +22,24 @@ export const PanControl = ({
   setSettings: (stateUpdate: (state: Settings) => Settings) => void
 }) => {
   const [isHolding, setIsHolding] = useState(false)
+  const { panDelay, panNumInputs, panPosThreshold } = settings
+  const panRecognizer = recognizable.recognizers.find(
+    (recognizer): recognizer is PanRecognizer =>
+      recognizer instanceof PanRecognizer,
+  )
+
+  /**
+   * Update settings from controls
+   */
+  useEffect(() => {
+    panRecognizer?.update({
+      options: {
+        numInputs: panNumInputs,
+        posThreshold: panPosThreshold,
+        delay: panDelay,
+      },
+    })
+  }, [panRecognizer, panDelay, panNumInputs, panPosThreshold])
 
   useEffect(() => {
     const clickSub = recognizable.events$.subscribe((e) => {

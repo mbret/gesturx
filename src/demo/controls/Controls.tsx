@@ -89,18 +89,8 @@ export const Controls = ({
         <AccordionPanel p={1}>
           <HoldControls
             recognizable={recognizable}
-            numInputsHold={settings.holdNumInputs}
-            setNumInputsHold={(value) => {
-              onSettingsChange({ ...settings, holdNumInputs: value })
-            }}
-            posThreshold={settings.holdPosThreshold}
-            setPosThreshold={(value) =>
-              onSettingsChange({ ...settings, holdPosThreshold: value })
-            }
-            delay={settings.holdDelay}
-            setDelay={(value) =>
-              onSettingsChange({ ...settings, holdDelay: value })
-            }
+            settings={settings}
+            setSettings={setSettings}
           />
         </AccordionPanel>
       </AccordionItem>
@@ -108,7 +98,11 @@ export const Controls = ({
       <AccordionItem>
         <AccordionControlButton>rotate</AccordionControlButton>
         <AccordionPanel p={1}>
-          <RotateControls recognizable={recognizable} />
+          <RotateControls
+            recognizable={recognizable}
+            settings={settings}
+            setSettings={setSettings}
+          />
         </AccordionPanel>
       </AccordionItem>
 
