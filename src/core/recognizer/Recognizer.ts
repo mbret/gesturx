@@ -21,23 +21,9 @@ import { RecognizerEvent } from "./RecognizerEvent"
 import { getPointerEvents, trackPointers, matchPointer } from "../utils/events"
 import { isWithinPosThreshold } from "../utils/utils"
 import { mapToRecognizerEvent } from "./mapToRecognizerEvent"
+import { isValidConfig } from "./operators"
 
-type RecognizerConfig<Options> = {
-  container?: HTMLElement
-  afterEventReceived?: (event: PointerEvent) => PointerEvent
-  options?: Options
-}
-
-type ValidRecognizerConfig<Options> = Required<
-  Pick<RecognizerConfig<Options>, "container">
-> &
-  RecognizerConfig<Options>
-
-export interface PanEvent extends RecognizerEvent {
-  type: "panStart" | "panMove" | "panEnd"
-}
-
-export type RecognizerOptions = {
+type PanConfig = {
   posThreshold?: number
   delay?: number
   /**
@@ -45,7 +31,17 @@ export type RecognizerOptions = {
    * Default to 1
    */
   numInputs?: number
+}
+
+export type RecognizerConfig<Options> = {
+  container?: HTMLElement
+  afterEventReceived?: (event: PointerEvent) => PointerEvent
+  options?: Options
   failWith?: { start$: Observable<unknown> }[]
+}
+
+export interface PanEvent extends RecognizerEvent {
+  type: "panStart" | "panMove" | "panEnd"
 }
 
 export type State = {
@@ -53,31 +49,34 @@ export type State = {
 }
 
 export abstract class Recognizer<
-  Options extends RecognizerOptions,
+  Options extends Record<any, any>,
   Event extends RecognizerEvent,
 > {
-  protected config$ = new BehaviorSubject<RecognizerConfig<Options>>({})
+  protected configSubject = new BehaviorSubject<
+    RecognizerConfig<Options> & {
+      panConfig?: PanConfig
+    }
+  >({})
   protected panEvent$: Observable<PanEvent>
+
   public state$: Observable<State>
+
   abstract events$: Observable<Event>
 
-  protected validConfig$ = this.config$.pipe(
-    filter(
-      (config): config is ValidRecognizerConfig<Options> => !!config.container,
-    ),
-  )
+  protected config$ = this.configSubject.pipe(isValidConfig)
 
-  constructor(options: Options) {
+  constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
     const stateSubject = new BehaviorSubject<State>({
       fingers: 0,
     })
 
-    this.panEvent$ = this.validConfig$.pipe(
+    this.panEvent$ = this.configSubject.pipe(
+      isValidConfig,
       switchMap((config) => {
         const { container, afterEventReceived } = config
-        const numInputs = Math.max(1, config.options?.numInputs ?? 1)
-        const posThreshold = Math.max(0, config.options?.posThreshold ?? 0)
-        const delay = Math.max(0, config.options?.delay ?? 0)
+        const numInputs = Math.max(1, config.panConfig?.numInputs ?? 1)
+        const posThreshold = Math.max(0, config.panConfig?.posThreshold ?? 0)
+        const delay = Math.max(0, config.panConfig?.delay ?? 0)
 
         const {
           pointerCancel$,
@@ -216,31 +215,32 @@ export abstract class Recognizer<
 
     this.state$ = stateSubject.asObservable()
 
-    this.update(options)
+    this.updateInternal(config ?? {}, panConfig)
   }
 
-  public initialize(config: RecognizerConfig<Options>) {
-    const prevConfig = this.config$.getValue()
+  private updateInternal(
+    config: Partial<RecognizerConfig<Options>>,
+    panConfig?: PanConfig,
+  ) {
+    const existingConfig = this.configSubject.getValue()
 
-    this.config$.next({
-      ...prevConfig,
+    this.configSubject.next({
+      ...existingConfig,
       ...config,
-      options: {
-        ...prevConfig.options,
-        ...config.options,
-      } as Options,
-    })
-  }
-
-  public update(options: Options) {
-    const config = this.config$.getValue()
-
-    this.config$.next({
-      ...config,
-      options: {
-        ...config.options,
-        ...options,
+      ...(config.options && {
+        options: { ...existingConfig.options, ...config.options },
+      }),
+      panConfig: {
+        ...existingConfig.panConfig,
+        ...panConfig,
       },
     })
+  }
+
+  public update(
+    config: Partial<RecognizerConfig<Options>>,
+    panConfig?: PanConfig,
+  ) {
+    this.updateInternal(config, panConfig)
   }
 }

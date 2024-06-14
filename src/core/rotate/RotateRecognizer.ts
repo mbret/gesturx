@@ -1,41 +1,39 @@
 import {
   Observable,
-  combineLatest,
-  distinctUntilChanged,
   filter,
-  first,
   map,
   merge,
-  mergeMap,
   scan,
   share,
   shareReplay,
   switchMap,
-  takeUntil,
 } from "rxjs"
 import {
   Recognizer,
   PanEvent,
+  RecognizerConfig,
 } from "../recognizer/Recognizer"
-import { RotateEvent, RotateRecognizerOptions } from "./RotateRecognizerInterface"
+import {
+  RotateEvent,
+  RotateRecognizerInterface,
+  RotateRecognizerOptions,
+} from "./RotateRecognizerInterface"
 
-export class RotateRecognizer extends Recognizer<RotateRecognizerOptions, RotateEvent> {
+export class RotateRecognizer
+  extends Recognizer<RotateRecognizerOptions, RotateEvent>
+  implements RotateRecognizerInterface
+{
   public events$: Observable<RotateEvent>
 
-  constructor(protected options: RotateRecognizerOptions = {}) {
-    super({
+  constructor(config: RecognizerConfig<RotateRecognizerOptions> = {}) {
+    super(config, {
       numInputs: 2,
       posThreshold: 15,
-      ...options,
+      ...config.options,
     })
 
-    this.events$ = this.validConfig$.pipe(
+    this.events$ = this.config$.pipe(
       switchMap(() => {
-        const hasLessThanTwoFinger$ = this.panEvent$.pipe(
-          filter(({ pointers }) => pointers.length < 2),
-          distinctUntilChanged(),
-        )
-
         const rotateStart$ = this.panEvent$.pipe(
           filter((event) => event.type === "panStart"),
           map((event) => ({
@@ -48,50 +46,44 @@ export class RotateRecognizer extends Recognizer<RotateRecognizerOptions, Rotate
         )
 
         const rotate$ = rotateStart$.pipe(
-          mergeMap(() =>
+          switchMap(() =>
             this.panEvent$.pipe(
               scan<
                 PanEvent,
-                RotateEvent,
-                Pick<RotateEvent, "angle" | "deltaAngle">
-              >(
-                (acc, current) => {
-                  const angle = acc.angle + current.deltaPointersAngle
+                PanEvent & { angle: number; deltaAngle: number },
+                undefined
+              >((acc, current) => {
+                const angle = (acc?.angle ?? 0) + current.deltaPointersAngle
 
-                  return {
-                    ...acc,
-                    ...current,
-                    type: "rotate" as const,
-                    angle,
-                    deltaAngle: current.deltaPointersAngle,
-                  }
-                },
-                { angle: 0, deltaAngle: 0 },
-              ),
-              takeUntil(hasLessThanTwoFinger$),
+                return {
+                  ...acc,
+                  ...current,
+                  angle,
+                  deltaAngle: current.deltaPointersAngle,
+                }
+              }, undefined),
             ),
           ),
+          share(),
         )
 
-        const rotateEnd$ = rotateStart$.pipe(
-          mergeMap(() =>
-            combineLatest([rotate$, hasLessThanTwoFinger$] as const).pipe(
-              first(),
-              map(([event]) => ({
-                ...event,
-                type: "rotateEnd" as const,
-              })),
-            ),
-          ),
+        const rotateMove$ = rotate$.pipe(
+          filter((event) => event.type === "panMove"),
+          map((event) => ({ ...event, type: "rotateMove" as const })),
         )
 
-        return merge(rotateStart$, rotate$, rotateEnd$)
+        const rotateEnd$ = rotate$.pipe(
+          filter((event) => event.type === "panEnd"),
+          map((event) => ({ ...event, type: "rotateEnd" as const })),
+        )
+
+        return merge(rotateStart$, rotateMove$, rotateEnd$)
       }),
       share(),
     )
   }
 
-  public update(options: RotateRecognizerOptions) {
-    super.update(options)
+  public update(options: RecognizerConfig<RotateRecognizerOptions>) {
+    super.update(options, options.options)
   }
 }

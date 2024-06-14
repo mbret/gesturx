@@ -1,6 +1,6 @@
 import { Observable } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 
 export interface PanEvent extends RecognizerEvent {
   type: "panStart" | "panMove" | "panEnd"
@@ -10,11 +10,10 @@ export interface PanRecognizerOptions {
   posThreshold?: number
   delay?: number
   numInputs?: number
-  failWith?: { start$: Observable<unknown> }[]
 }
 
-export interface PanRecognizerInterface extends Recognizer<RecognizerOptions, PanEvent> {
+export interface PanRecognizerInterface extends Recognizer<PanRecognizerOptions, PanEvent> {
   events$: Observable<PanEvent>
 
-  update(options: PanRecognizerOptions): void
+  update(options: RecognizerConfig<PanRecognizerOptions>): void
 }

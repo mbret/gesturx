@@ -1,9 +1,9 @@
 import { Observable } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 
 export interface RotateEvent extends RecognizerEvent {
-  type: "rotate" | "rotateStart" | "rotateEnd"
+  type: "rotateMove" | "rotateStart" | "rotateEnd"
   /**
    * Current rotation angle
    */
@@ -27,12 +27,11 @@ export interface RotateRecognizerOptions {
    * @default 2
    */
   numInputs?: number
-  failWith?: { start$: Observable<unknown> }[]
 }
 
 export interface RotateRecognizerInterface
-  extends Recognizer<RecognizerOptions, RotateEvent> {
+  extends Recognizer<RotateRecognizerOptions, RotateEvent> {
   events$: Observable<RotateEvent>
 
-  update(options: RotateRecognizerOptions): void
+  update(options: RecognizerConfig<RotateRecognizerOptions>): void
 }

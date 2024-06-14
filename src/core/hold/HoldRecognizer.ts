@@ -1,6 +1,5 @@
 import { Observable, filter, map, merge, share } from "rxjs"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
-import { PanOptions } from "../pan/PanRecognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import {
   HoldEvent,
   HoldRecognizerInterface,
@@ -8,17 +7,17 @@ import {
 } from "./HoldRecognizerInterface"
 
 export class HoldRecognizer
-  extends Recognizer<RecognizerOptions, HoldEvent>
+  extends Recognizer<HoldRecognizerOptions, HoldEvent>
   implements HoldRecognizerInterface
 {
   public events$: Observable<HoldEvent>
 
-  constructor(options: HoldRecognizerOptions = {}) {
-    super({
+  constructor(options: RecognizerConfig<HoldRecognizerOptions> = {}) {
+    super(options, {
       numInputs: 1,
       delay: 0,
       posThreshold: 0,
-      ...options,
+      ...options.options,
     })
 
     const start$ = this.panEvent$.pipe(
@@ -44,7 +43,7 @@ export class HoldRecognizer
     this.events$ = merge(start$, end$).pipe(share())
   }
 
-  public update(options: PanOptions) {
-    super.update(options)
+  public update(options: RecognizerConfig<HoldRecognizerOptions>) {
+    super.update(options, options.options)
   }
 }

@@ -55,7 +55,8 @@ export class Recognizable<T extends Recognizer<any, any>[]>
     container.style.userSelect = `none`
 
     this.options.recognizers.forEach((recognizer) => {
-      recognizer.initialize({
+      console.log("recognizable update")
+      recognizer.update({
         container,
         afterEventReceived: this.options.afterEventReceived,
       })

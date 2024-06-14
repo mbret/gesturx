@@ -36,7 +36,7 @@ describe("SwipeRecognizer", () => {
     event.x = x
     // @ts-ignore
     event.y = y
-    
+
     return event
   }
 
@@ -109,12 +109,10 @@ describe("SwipeRecognizer", () => {
   it("should detect a swipe if above threshold", async () => {
     const waitLongEnough$ = timer(100)
     const recognizer = new SwipeRecognizer({
-      escapeVelocity: 0.4,
-      posThreshold: 5
-    })
-
-    recognizer.initialize({
       container,
+      options: {
+        escapeVelocity: 0.4,
+      },
     })
 
     const values = await lastValueFrom(
@@ -135,12 +133,10 @@ describe("SwipeRecognizer", () => {
   it("should not detect a swipe if below threshold", async () => {
     const waitLongEnough$ = timer(100)
     const recognizer = new SwipeRecognizer({
-      escapeVelocity: 10,
-      posThreshold: 5
-    })
-
-    recognizer.initialize({
       container,
+      options: {
+        escapeVelocity: 10,
+      },
     })
 
     const values = await lastValueFrom(

@@ -1,6 +1,6 @@
 import { Observable } from "rxjs"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 
 export interface PinchEvent extends RecognizerEvent {
   type: "pinchStart" | "pinchMove" | "pinchEnd"
@@ -21,12 +21,11 @@ export interface PinchEvent extends RecognizerEvent {
 
 export interface PinchRecognizerOptions {
   posThreshold?: number
-  failWith?: { start$: Observable<unknown> }[]
 }
 
 export interface PinchRecognizerInterface
-  extends Recognizer<RecognizerOptions, PinchEvent> {
+  extends Recognizer<PinchRecognizerOptions, PinchEvent> {
   events$: Observable<PinchEvent>
 
-  update(options: PinchRecognizerOptions): void
+  update(options: RecognizerConfig<PinchRecognizerOptions>): void
 }

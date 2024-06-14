@@ -10,7 +10,7 @@ import {
   switchMap,
   takeWhile,
 } from "rxjs"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
 import {
   PinchEvent,
@@ -21,18 +21,18 @@ import {
 export { type PinchEvent } from "./PinchRecognizerInterface"
 
 export class PinchRecognizer
-  extends Recognizer<RecognizerOptions, PinchEvent>
+  extends Recognizer<PinchRecognizerOptions, PinchEvent>
   implements PinchRecognizerInterface
 {
   public events$: Observable<PinchEvent>
 
-  constructor(protected options: PinchRecognizerOptions = {}) {
-    super({
-      ...options,
+  constructor(config?: RecognizerConfig<PinchRecognizerOptions>) {
+    super(config, {
+      ...config?.options,
       numInputs: 2,
     })
 
-    this.events$ = this.validConfig$.pipe(
+    this.events$ = this.config$.pipe(
       switchMap(() => {
         const pinchStart$ = this.panEvent$.pipe(
           filter((event) => event.type === "panStart"),
@@ -84,7 +84,7 @@ export class PinchRecognizer
     )
   }
 
-  public update(options: PinchRecognizerOptions) {
-    super.update(options)
+  public update(options: RecognizerConfig<PinchRecognizerOptions>) {
+    super.update(options, options.options)
   }
 }

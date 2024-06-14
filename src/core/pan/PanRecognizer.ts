@@ -1,8 +1,8 @@
 import { Observable, filter } from "rxjs"
 import {
   Recognizer,
-  RecognizerOptions,
   PanEvent,
+  RecognizerConfig,
 } from "../recognizer/Recognizer"
 import {
   PanRecognizerInterface,
@@ -10,17 +10,17 @@ import {
 } from "./PanRecognizerInterface"
 
 export class PanRecognizer
-  extends Recognizer<RecognizerOptions, PanEvent>
+  extends Recognizer<PanRecognizerOptions, PanEvent>
   implements PanRecognizerInterface
 {
   public events$: Observable<PanEvent>
   public start$: Observable<PanEvent>
   public end$: Observable<PanEvent>
 
-  constructor(options: PanRecognizerOptions = {}) {
-    super({
-      ...options,
-      posThreshold: options.posThreshold ?? 15,
+  constructor(config?: RecognizerConfig<PanRecognizerOptions>) {
+    super(config, {
+      ...config,
+      posThreshold: config?.options?.posThreshold ?? 15,
     })
 
     this.events$ = this.panEvent$
@@ -32,7 +32,7 @@ export class PanRecognizer
     this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
   }
 
-  public update(options: PanRecognizerOptions) {
-    super.update(options)
+  public update(config: RecognizerConfig<PanRecognizerOptions>) {
+    super.update(config, config.options)
   }
 }

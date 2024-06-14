@@ -1,58 +1,34 @@
 import {
   Observable,
-  exhaustMap,
   filter,
-  first,
   map,
   share,
   switchMap,
-  takeUntil,
 } from "rxjs"
-import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry"
-import { isRecognizedAsSwipe } from "./isRecognizedAsSwipe"
-import { Recognizer } from "../recognizer/Recognizer"
+import { isRecognizedAsSwipe } from "./operators"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
+import {
+  SwipeEvent,
+  SwipeRecognizerInterface,
+  SwipeRecognizerOptions,
+} from "./SwipeRecognizerInterface"
 
-export interface SwipeEvent extends RecognizerEvent {
-  type: "swipe"
-  /**
-   * Angle between first pointer and last one in degree
-   *
-   *             (-90)
-   * (+/-180) <-   |   -> (+/-0)
-   *             (+90)
-   */
-  angle: number
-}
-
-type Options = {
-  /**
-   * The minimum velocity (px/ms) that the gesture has to obtain by the end event.
-   */
-  escapeVelocity?: number
-  // @todo
-  numInputs?: number
-  // @todo
-  maxRestTime?: number
-  posThreshold?: number
-}
-
-export class SwipeRecognizer extends Recognizer<
-  Options,
-  SwipeEvent
-> {
+export class SwipeRecognizer
+  extends Recognizer<SwipeRecognizerOptions, SwipeEvent>
+  implements SwipeRecognizerInterface
+{
   public events$: Observable<SwipeEvent>
 
-  constructor(protected options: Options = {}) {
-    super(options)
+  constructor(config?: RecognizerConfig<SwipeRecognizerOptions>) {
+    super(config, {
+      posThreshold: 0,
+      numInputs: 1,
+    })
 
-    this.events$ = this.validConfig$.pipe(
+    this.events$ = this.config$.pipe(
       switchMap((initializedWith) => {
         const { escapeVelocity = 0.9 } = initializedWith.options ?? {}
-
-        const hasMoreThanOneFinger$ = this.panEvent$.pipe(
-          filter(({ pointers }) => pointers.length > 1),
-        )
 
         const panStart$ = this.panEvent$.pipe(
           filter((e) => e.type === "panStart"),
@@ -61,9 +37,8 @@ export class SwipeRecognizer extends Recognizer<
         const panEnd$ = this.panEvent$.pipe(filter((e) => e.type === "panEnd"))
 
         return panStart$.pipe(
-          exhaustMap((startEvent) => {
+          switchMap((startEvent) => {
             return panEnd$.pipe(
-              first(),
               isRecognizedAsSwipe(escapeVelocity),
               map(({ type, ...rest }) => {
                 return {
@@ -75,12 +50,15 @@ export class SwipeRecognizer extends Recognizer<
                   ...rest,
                 }
               }),
-              takeUntil(hasMoreThanOneFinger$),
             )
           }),
           share(),
         )
       }),
     )
+  }
+
+  public update(config: RecognizerConfig<SwipeRecognizerOptions>) {
+    super.update(config)
   }
 }
