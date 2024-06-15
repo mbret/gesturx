@@ -1,7 +1,6 @@
 import {
   Observable,
   buffer,
-  combineLatest,
   debounceTime,
   exhaustMap,
   filter,
@@ -14,129 +13,94 @@ import {
   shareReplay,
   switchMap,
   takeUntil,
-  timer,
   withLatestFrom,
 } from "rxjs"
+import { filterNotEmpty } from "../utils/utils"
+import { scanToRecognizerEvent } from "../recognizer/scanToRecognizerEvent"
+import { trackPointers } from "../utils/events"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import {
-  fromFailWith,
-  filterNotEmpty,
-  isOutsidePosThreshold,
-} from "../utils/utils"
-import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { mapToRecognizerEvent } from "../recognizer/mapToRecognizerEvent"
-import {
-  fromPointerDown,
-  getPointerEvents,
-  trackFingers,
-} from "../utils/events"
-import { Recognizer, RecognizerOptions } from "../recognizer/Recognizer"
+  TapEvent,
+  TapRecognizerInterface,
+  TapRecognizerOptions,
+} from "./TapRecognizerInterface"
+import { takeWhenOutsideThreshold, takeWhenPressedTooLong } from "./operators"
 
-export interface TapEvent extends RecognizerEvent {
-  type: "tap"
-  taps: number
-}
-
-interface Options extends RecognizerOptions {
-  // Maximum time in ms between multiple taps.
-  multiTapThreshold?: number
-  // Maximum press time in ms.
-  maximumPressTime?: number
-  maxTaps?: number
-  tolerance?: number
-}
-
-export class TapRecognizer extends Recognizer<Options, TapEvent> {
+export class TapRecognizer
+  extends Recognizer<TapRecognizerOptions, TapEvent>
+  implements TapRecognizerInterface
+{
   public events$: Observable<TapEvent>
 
-  constructor(protected options: Options) {
+  constructor(options?: RecognizerConfig<TapRecognizerOptions>) {
     super(options)
 
-    this.events$ = this.validConfig$.pipe(
+    this.events$ = this.config$.pipe(
       switchMap((config) => {
-        const { container, afterEventReceived } = config
         const {
-          multiTapThreshold = 200,
-          maximumPressTime = 250,
-          maxTaps = 2,
-          // threshold should be high because of fingers size
-          // and potential margin due to it. clicks are nearly perfect
-          // not fingers.
-          posThreshold = 10,
-          failWith,
+          multiTapThreshold = 0,
+          maximumPressTime = 150,
+          maxTaps = 1,
+          tolerance = 10,
         } = config.options ?? {}
 
-        const { pointerUp$, pointerLeave$, pointerCancel$, pointerMove$ } =
-          getPointerEvents({
-            container,
-            afterEventReceived,
-          })
-
-        const pointerDown$ = fromPointerDown({ container, afterEventReceived })
-        const activePointers$ = pointerDown$.pipe(
+        const activePointers$ = this.pointerDown$.pipe(
           trackPointers({
-            pointerCancel$,
-            pointerLeave$,
-            pointerMove$,
-            pointerUp$,
-            trackMove: false,
+            pointerEvent$: this.pointerEvent$,
+            trackMove: true,
           }),
           shareReplay(1),
         )
 
         const hasMoreThanOneActivePointer$ = activePointers$.pipe(
-          filter((pointers) => pointers.length > 1),
+          filter(({ pointers }) => pointers.length > 1),
         )
-
-        const onlyOnePointer = <T>(stream: Observable<T>) =>
-          stream.pipe(
-            withLatestFrom(activePointers$),
-            filter(([, pointers]) => pointers.length === 1),
-            map(([pointer]) => pointer),
-          )
 
         const bufferPointerDowns = (stream: Observable<PointerEvent>) =>
           stream.pipe(
-            buffer(pointerUp$.pipe(debounceTime(multiTapThreshold))),
+            buffer(this.pointerUp$.pipe(debounceTime(multiTapThreshold))),
             first(),
           )
 
-        const failWith$ = fromFailWith(failWith)
-
         const tap$ = merge(
-          pointerDown$,
+          this.pointerDown$,
           activePointers$.pipe(ignoreElements()),
         ).pipe(
-          onlyOnePointer,
           exhaustMap((initialPointerEvent) => {
-            const pointerDowns$ = merge(of(initialPointerEvent), pointerDown$)
-            const subsequentPointerEvents$ = merge(
-              pointerUp$,
-              pointerLeave$,
-              pointerCancel$,
-              pointerMove$,
-            )
+            const pointerDowns$ = merge(
+              of(initialPointerEvent),
+              this.pointerDown$,
+            ).pipe(shareReplay(1))
+
             const pointerDownsBuffered$ = pointerDowns$.pipe(bufferPointerDowns)
-            const subsequentPointersOutOfPositionThreshold$ =
-              subsequentPointerEvents$.pipe(
-                filter((event) =>
-                  isOutsidePosThreshold(
-                    initialPointerEvent,
-                    event,
-                    posThreshold,
-                  ),
-                ),
-                first(),
-              )
-            const waitedTooLong$ = activePointers$.pipe(
-              switchMap(() => timer(maximumPressTime)),
+
+            /**
+             * Exit condition for `tolerance`
+             */
+            const clickedTooFarFromOriginalTap$ = pointerDowns$.pipe(
+              takeWhenOutsideThreshold({
+                initialPointerEvent,
+                pointerEvent$: this.pointerEvent$,
+                tolerance,
+              }),
+            )
+
+            /**
+             * Exit condition for `maximumPressTime`
+             */
+            const hasFingersPressedForTooLong$ = pointerDowns$.pipe(
+              takeWhenPressedTooLong({
+                pointerEvent$: this.pointerEvent$,
+                timeout: maximumPressTime,
+              }),
             )
 
             const takeUntil$ = merge(
-              failWith$,
-              pointerCancel$,
+              this.failWith$,
+              this.pointerCancel$,
               hasMoreThanOneActivePointer$,
-              subsequentPointersOutOfPositionThreshold$,
-              waitedTooLong$,
+              clickedTooFarFromOriginalTap$,
+              hasFingersPressedForTooLong$,
             )
 
             const rawEvent$ = pointerDownsBuffered$.pipe(
@@ -148,12 +112,12 @@ export class TapRecognizer extends Recognizer<Options, TapEvent> {
                 latestActivePointers: events,
                 event: events[0],
               })),
+              shareReplay(1),
             )
 
-            return combineLatest([
-              rawEvent$.pipe(mapToRecognizerEvent),
-              rawEvent$,
-            ]).pipe(
+            return rawEvent$.pipe(
+              scanToRecognizerEvent,
+              withLatestFrom(rawEvent$),
               map(([recognizerEvent, { type, taps }]) => ({
                 ...recognizerEvent,
                 type,
@@ -168,5 +132,9 @@ export class TapRecognizer extends Recognizer<Options, TapEvent> {
       }),
       share(),
     )
+  }
+
+  public update(config: RecognizerConfig<TapRecognizerOptions>): void {
+    super.update(config)
   }
 }

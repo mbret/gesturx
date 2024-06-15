@@ -19,43 +19,10 @@ export function matchPointer(pointer: PointerEvent) {
     )
 }
 
-export const getPointerEvents = ({
-  container,
-  afterEventReceived = (event) => event,
-}: {
-  container: HTMLElement
-  afterEventReceived?: (event: PointerEvent) => PointerEvent
-}) => {
-  const pointerDown$ = fromPointerDown({ afterEventReceived, container })
-  const pointerUp$ = fromEvent<PointerEvent>(container, "pointerup").pipe(
-    map(afterEventReceived),
-  )
-  const pointerMove$ = fromEvent<PointerEvent>(container, "pointermove").pipe(
-    map(afterEventReceived),
-  )
-  /**
-   * Mostly used to handle cursor leaving window on mouse pointers.
-   */
-  const pointerLeave$ = fromEvent<PointerEvent>(container, "pointerleave").pipe(
-    map(afterEventReceived),
-  )
-  /**
-   * Handle things such as contextual menu popup or
-   * native swipe navigation conflict.
-   */
-  const pointerCancel$ = fromEvent<PointerEvent>(
-    container,
-    "pointercancel",
-  ).pipe(map(afterEventReceived))
-
-  return {
-    pointerDown$,
-    pointerCancel$,
-    pointerLeave$,
-    pointerUp$,
-    pointerMove$,
-  }
-}
+export const isPointerOffEvent = (pointerEvent: PointerEvent) =>
+  pointerEvent.type === "pointerleave" ||
+  pointerEvent.type === "pointercancel" ||
+  pointerEvent.type === "pointerup"
 
 export const fromPointerDown = ({
   container,
@@ -73,15 +40,9 @@ export const fromPointerDown = ({
  */
 export const trackPointers =
   ({
-    pointerCancel$,
-    pointerLeave$,
-    pointerUp$,
-    pointerMove$,
+    pointerEvent$,
   }: {
-    pointerUp$: Observable<PointerEvent>
-    pointerLeave$: Observable<PointerEvent>
-    pointerCancel$: Observable<PointerEvent>
-    pointerMove$: Observable<PointerEvent>
+    pointerEvent$: Observable<PointerEvent>
     /**
      * Setting this value to false will not update the list
      * on pointer move. Use it if you only need to track number of active
@@ -94,6 +55,19 @@ export const trackPointers =
       event: PointerEvent
       pointers: Record<number, PointerEvent | undefined>
     }
+
+    const pointerUp$ = pointerEvent$.pipe(
+      filter((event) => event.type === "pointerup"),
+    )
+    const pointerLeave$ = pointerEvent$.pipe(
+      filter((event) => event.type === "pointerleave"),
+    )
+    const pointerCancel$ = pointerEvent$.pipe(
+      filter((event) => event.type === "pointercancel"),
+    )
+    const pointerMove$ = pointerEvent$.pipe(
+      filter((event) => event.type === "pointermove"),
+    )
 
     const isPointerRemoved = (event: PointerEvent) =>
       ["pointercancel", "pointerleave", "pointerup"].includes(event.type)

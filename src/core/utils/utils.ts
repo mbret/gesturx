@@ -1,8 +1,6 @@
 import {
-  NEVER,
   Observable,
   filter,
-  merge,
 } from "rxjs"
 import { calculateCentroid } from "./geometry"
 
@@ -33,11 +31,6 @@ export function isWithinPosThreshold(
     Math.abs(end.y - start.y) >= posThreshold
   )
 }
-
-export const fromFailWith = (failWith?: { start$: Observable<unknown> }[]) =>
-  !failWith?.length
-    ? NEVER
-    : merge(...(failWith?.map(({ start$ }) => start$) ?? []))
 
 /**
  * Avoid division by zero

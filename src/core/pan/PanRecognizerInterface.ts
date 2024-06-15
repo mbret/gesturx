@@ -7,6 +7,9 @@ export interface PanEvent extends RecognizerEvent {
 }
 
 export interface PanRecognizerOptions {
+  /**
+   * @default 15
+   */
   posThreshold?: number
   delay?: number
   numInputs?: number

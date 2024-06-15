@@ -35,7 +35,7 @@ const calculateNewDelta = (
   }
 }
 
-export const mapToRecognizerEvent = <T extends RecognizerEventInput>(
+export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
   stream: Observable<T>,
 ): Observable<RecognizerEvent> => {
   const getCenterFromData = (data: T) =>

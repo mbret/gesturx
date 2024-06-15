@@ -1,5 +1,6 @@
 import {
   BehaviorSubject,
+  NEVER,
   Observable,
   exhaustMap,
   filter,
@@ -18,10 +19,11 @@ import {
   withLatestFrom,
 } from "rxjs"
 import { RecognizerEvent } from "./RecognizerEvent"
-import { getPointerEvents, trackPointers, matchPointer } from "../utils/events"
+import { trackPointers, matchPointer } from "../utils/events"
 import { isWithinPosThreshold } from "../utils/utils"
-import { mapToRecognizerEvent } from "./mapToRecognizerEvent"
-import { isValidConfig } from "./operators"
+import { scanToRecognizerEvent } from "./scanToRecognizerEvent"
+import { filterPointerOff, isValidConfig } from "./operators"
+import { getPointerEvents } from "./utils"
 
 type PanConfig = {
   posThreshold?: number
@@ -58,10 +60,18 @@ export abstract class Recognizer<
     }
   >({})
   protected panEvent$: Observable<PanEvent>
+  protected pointerEvent$: Observable<PointerEvent>
+  protected pointerDown$: Observable<PointerEvent>
+  protected pointerUp$: Observable<PointerEvent>
+  protected pointerCancel$: Observable<PointerEvent>
+  protected pointerMove$: Observable<PointerEvent>
+  protected pointerOff$: Observable<PointerEvent>
 
   public state$: Observable<State>
 
   abstract events$: Observable<Event>
+
+  protected failWith$: Observable<unknown>
 
   protected config$ = this.configSubject.pipe(isValidConfig)
 
@@ -70,31 +80,51 @@ export abstract class Recognizer<
       fingers: 0,
     })
 
+    this.pointerEvent$ = this.config$.pipe(
+      switchMap(({ container, afterEventReceived }) =>
+        getPointerEvents({
+          container,
+          afterEventReceived,
+        }),
+      ),
+    )
+
+    this.pointerDown$ = this.pointerEvent$.pipe(
+      filter((event) => event.type === "pointerdown"),
+    )
+
+    this.pointerUp$ = this.pointerEvent$.pipe(
+      filter((event) => event.type === "pointerup"),
+    )
+
+    this.pointerMove$ = this.pointerEvent$.pipe(
+      filter((event) => event.type === "pointermove"),
+    )
+
+    this.pointerCancel$ = this.pointerEvent$.pipe(
+      filter((event) => event.type === "pointercancel"),
+    )
+
+    this.pointerOff$ = this.pointerEvent$.pipe(filterPointerOff)
+
+    this.failWith$ = this.config$.pipe(
+      switchMap(({ failWith }) =>
+        !failWith?.length
+          ? NEVER
+          : merge(...(failWith?.map(({ start$ }) => start$) ?? [])),
+      ),
+    )
+
     this.panEvent$ = this.configSubject.pipe(
       isValidConfig,
       switchMap((config) => {
-        const { container, afterEventReceived } = config
         const numInputs = Math.max(1, config.panConfig?.numInputs ?? 1)
         const posThreshold = Math.max(0, config.panConfig?.posThreshold ?? 0)
         const delay = Math.max(0, config.panConfig?.delay ?? 0)
 
-        const {
-          pointerCancel$,
-          pointerDown$,
-          pointerLeave$,
-          pointerMove$,
-          pointerUp$,
-        } = getPointerEvents({
-          container,
-          afterEventReceived,
-        })
-
-        const trackPointers$ = pointerDown$.pipe(
+        const trackPointers$ = this.pointerDown$.pipe(
           trackPointers({
-            pointerCancel$,
-            pointerLeave$,
-            pointerUp$,
-            pointerMove$,
+            pointerEvent$: this.pointerEvent$,
             trackMove: true,
           }),
           shareReplay(1),
@@ -132,10 +162,10 @@ export abstract class Recognizer<
 
             const pointerDownPassingThreshold$ = merge(
               ...initialPointerEvents.map((pointerEvent) => of(pointerEvent)),
-              pointerDown$,
+              this.pointerDown$,
             ).pipe(
               mergeMap((pointerDown) =>
-                merge(pointerMove$, of(pointerDown)).pipe(
+                merge(this.pointerMove$, of(pointerDown)).pipe(
                   matchPointer(pointerDown),
                   filter((pointerEvent) =>
                     isWithinPosThreshold(
@@ -195,7 +225,7 @@ export abstract class Recognizer<
             )
 
             return rawEvent$.pipe(
-              mapToRecognizerEvent,
+              scanToRecognizerEvent,
               withLatestFrom(rawEvent$),
               map(([recognizerEvent, { type }]) => ({
                 ...recognizerEvent,

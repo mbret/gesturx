@@ -76,9 +76,11 @@ describe("TapGestureRecognizer", () => {
   it("should detect a single tap", async () => {
     const multiTapThreshold = 5
     const waitLongEnough$ = timer(100)
-    const recognizer = new TapRecognizer({ multiTapThreshold })
-    recognizer.initialize({
+    const recognizer = new TapRecognizer({
       container,
+      options: {
+        multiTapThreshold,
+      },
     })
 
     const values = await lastValueFrom(
@@ -114,9 +116,12 @@ describe("TapGestureRecognizer", () => {
   it("should detect a double tap", async () => {
     const multiTapThreshold = 5
     const waitLongEnough$ = timer(multiTapThreshold * 2)
-    const recognizer = new TapRecognizer({ multiTapThreshold, maxTaps: 2 })
-    recognizer.initialize({
+    const recognizer = new TapRecognizer({
       container,
+      options: {
+        multiTapThreshold,
+        maxTaps: 2,
+      },
     })
 
     const values = await lastValueFrom(
@@ -165,9 +170,12 @@ describe("TapGestureRecognizer", () => {
 
   it("should detect a triple tap", async () => {
     const multiTapThreshold = 5
-    const recognizer = new TapRecognizer({ multiTapThreshold, maxTaps: 3 })
-    recognizer.initialize({
+    const recognizer = new TapRecognizer({
       container,
+      options: {
+        multiTapThreshold,
+        maxTaps: 3,
+      },
     })
     const waitLongEnough$ = timer(100)
 
@@ -232,9 +240,12 @@ describe("TapGestureRecognizer", () => {
   it("should not detect a double tap if the second tap is after threshold", async () => {
     const multiTapThreshold = 5
     const waitLongEnough$ = timer(100)
-    const recognizer = new TapRecognizer({ multiTapThreshold, maxTaps: 2 })
-    recognizer.initialize({
+    const recognizer = new TapRecognizer({
       container,
+      options: {
+        multiTapThreshold,
+        maxTaps: 2,
+      },
     })
 
     const values = await lastValueFrom(
@@ -258,7 +269,7 @@ describe("TapGestureRecognizer", () => {
               y: 0,
             })
 
-            await waitFor(multiTapThreshold)
+            await waitFor(multiTapThreshold + 5)
 
             sendPointerEvent({
               container,
@@ -292,11 +303,11 @@ describe("TapGestureRecognizer", () => {
     const multiTapThreshold = 5
     const waitLongEnough$ = timer(100)
     const recognizer = new TapRecognizer({
-      multiTapThreshold,
-      posThreshold: 5,
-    })
-    recognizer.initialize({
       container,
+      options: {
+        multiTapThreshold,
+        tolerance: 5,
+      },
     })
 
     const values = await lastValueFrom(
@@ -335,12 +346,13 @@ describe("TapGestureRecognizer", () => {
     const maximumPressTime = 10
     const waitLongEnough$ = timer(100)
     const recognizer = new TapRecognizer({
-      multiTapThreshold,
-      posThreshold: 5,
-      maximumPressTime,
-    })
-    recognizer.initialize({
       container,
+      options: {
+        multiTapThreshold,
+        tolerance: 5,
+        maximumPressTime,
+        maxTaps: 1
+      },
     })
 
     const values = await lastValueFrom(
@@ -400,10 +412,7 @@ describe("TapGestureRecognizer", () => {
   })
 
   it("should ignore taps when there are simultaneous pointers active", async () => {
-    const recognizer = new TapRecognizer({})
-    recognizer.initialize({
-      container,
-    })
+    const recognizer = new TapRecognizer({ container })
     const waitLongEnough$ = timer(100)
 
     const values = await lastValueFrom(
@@ -452,12 +461,13 @@ describe("TapGestureRecognizer", () => {
 
   it("should ignore one tap if there is more than one tap", async () => {
     const recognizer = new TapRecognizer({
-      multiTapThreshold: 10,
-      maxTaps: 1,
-    })
-    recognizer.initialize({
       container,
+      options: {
+        multiTapThreshold: 10,
+        maxTaps: 1,
+      },
     })
+
     const waitLongEnough$ = timer(100)
 
     const values = await lastValueFrom(
@@ -509,13 +519,14 @@ describe("TapGestureRecognizer", () => {
 
   it("should ignore taps when a second tap is outside of position threshold", async () => {
     const recognizer = new TapRecognizer({
-      posThreshold: 5,
-      multiTapThreshold: 10,
-      maxTaps: Infinity,
-    })
-    recognizer.initialize({
       container,
+      options: {
+        tolerance: 5,
+        multiTapThreshold: 10,
+        maxTaps: Infinity,
+      },
     })
+
     const waitLongEnough$ = timer(100)
 
     const values = await lastValueFrom(
