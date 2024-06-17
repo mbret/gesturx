@@ -16,16 +16,18 @@ export class Recognizable<T extends Recognizer<any, any>[]>
   implements RecognizableInterface<T>
 {
   events$: Observable<ObservedValueOf<T[number]["events$"]>>
+
   recognizers: T
+
   state$: Observable<RecognizableState>
 
   constructor(
     protected options: {
       recognizers: T
-      afterEventReceived?: (event: PointerEvent) => PointerEvent
-    },
+    } & RecognizerConfig<unknown>,
   ) {
     this.recognizers = options.recognizers
+
     this.events$ = merge(
       ...options.recognizers.map((recognizer) => recognizer.events$),
     ).pipe(share())
@@ -39,6 +41,8 @@ export class Recognizable<T extends Recognizer<any, any>[]>
         })),
       ),
     )
+
+    this.update(options)
   }
 
   public update(options: RecognizerConfig<unknown>) {
