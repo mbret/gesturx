@@ -1,4 +1,4 @@
-type Point = { x: number; y: number }
+export type Point = { x: number; y: number }
 
 export function calculateDistance(pointA: Point, pointB: Point): number {
   return Math.sqrt(

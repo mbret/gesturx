@@ -64,7 +64,7 @@ export class PinchRecognizer
               // we cannot have a panEnd without a previous event so it will always emit
               startWith(pinchStartEvent),
               pairwise(),
-              filter(([_, currEvent]) => currEvent.type === "end"),
+              filter(([, currEvent]) => currEvent.type === "end"),
               switchMap(([previousEvent, currEvent]) =>
                 of(currEvent).pipe(
                   mapPanEventToPinchEvent({

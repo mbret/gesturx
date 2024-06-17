@@ -90,6 +90,8 @@ export const trackPointers =
         if (isPointerRemoved(event)) {
           const { [event.pointerId]: _deleted, ...rest } = acc?.pointers ?? {}
 
+          void _deleted
+
           return {
             event,
             pointers: rest,

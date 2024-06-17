@@ -32,8 +32,10 @@ describe("SwipeRecognizer", () => {
       bubbles: true,
     })
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     event.x = x
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     event.y = y
 

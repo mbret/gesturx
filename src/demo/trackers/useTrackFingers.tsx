@@ -3,7 +3,7 @@ import { AppRecognizable } from "../useRecognizable"
 
 /**
  * To track fingers we simply need to observe the state of the
- * recognizable instance. It will gives us the current maximum fingers 
+ * recognizable instance. It will gives us the current maximum fingers
  * used by whatever recognizers.
  */
 export const useTrackFingers = (recognizable: AppRecognizable) => {

@@ -32,8 +32,10 @@ describe("TapGestureRecognizer", () => {
       bubbles: true,
     })
 
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     event.x = x
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     event.y = y
 
@@ -351,7 +353,7 @@ describe("TapGestureRecognizer", () => {
         multiTapThreshold,
         tolerance: 5,
         maximumPressTime,
-        maxTaps: 1
+        maxTaps: 1,
       },
     })
 

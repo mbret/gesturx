@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Observable, ObservedValueOf } from "rxjs"
 import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 
@@ -36,7 +37,7 @@ export interface RecognizableInterface<T extends Recognizer<any, any>[]> {
 
   /**
    * Update the recognizable with given options.
-   * 
+   *
    * The options are in fact passed down to all of the recognizers.
    * Use it to initialize the container when you want to start
    * listenin to gesture events.

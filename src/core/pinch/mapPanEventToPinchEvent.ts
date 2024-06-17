@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Observable, map, scan } from "rxjs"
 import { PinchEvent } from "./PinchRecognizerInterface"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"

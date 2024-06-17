@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BehaviorSubject,
   NEVER,
@@ -51,8 +52,8 @@ export type State = {
 }
 
 export abstract class Recognizer<
-  Options extends Record<any, any>,
-  Event extends RecognizerEvent,
+  Options extends object = never,
+  Event extends RecognizerEvent = RecognizerEvent,
 > {
   protected configSubject = new BehaviorSubject<
     RecognizerConfig<Options> & {

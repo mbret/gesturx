@@ -14,7 +14,6 @@ export const usePinch = ({
   const [scale, setScale] = useState(1)
   const [distance, setDistance] = useState(0)
 
-
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {
       if (e.type === "pinchStart") {

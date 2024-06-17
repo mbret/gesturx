@@ -15,7 +15,8 @@ export interface PanRecognizerOptions {
   numInputs?: number
 }
 
-export interface PanRecognizerInterface extends Recognizer<PanRecognizerOptions, PanEvent> {
+export interface PanRecognizerInterface
+  extends Recognizer<PanRecognizerOptions, PanEvent> {
   events$: Observable<PanEvent>
 
   update(options: RecognizerConfig<PanRecognizerOptions>): void
