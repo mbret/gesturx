@@ -1,10 +1,7 @@
-import { Observable, filter } from "rxjs"
+import { Observable, map, merge, share } from "rxjs"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import {
-  Recognizer,
   PanEvent,
-  RecognizerConfig,
-} from "../recognizer/Recognizer"
-import {
   PanRecognizerInterface,
   PanRecognizerOptions,
 } from "./PanRecognizerInterface"
@@ -23,13 +20,36 @@ export class PanRecognizer
       posThreshold: config?.options?.posThreshold ?? 15,
     })
 
-    this.events$ = this.panEvent$
-
-    this.start$ = this.panEvent$.pipe(
-      filter((event) => event.type === "panStart"),
+    const panStart$ = this.panStart$.pipe(
+      map((event) => ({
+        type: "panStart" as const,
+        ...event,
+      })),
+      share(),
     )
 
-    this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
+    const panEnd$ = this.panEnd$.pipe(
+      map((event) => ({
+        type: "panEnd" as const,
+        ...event,
+      })),
+      share(),
+    )
+
+    this.events$ = merge(
+      panStart$,
+      this.panMove$.pipe(
+        map((event) => ({
+          type: "panMove" as const,
+          ...event,
+        })),
+      ),
+      panEnd$,
+    )
+
+    this.start$ = panStart$
+
+    this.end$ = panEnd$
   }
 
   public update(config: RecognizerConfig<PanRecognizerOptions>) {

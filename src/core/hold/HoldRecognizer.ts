@@ -1,4 +1,4 @@
-import { Observable, filter, map, merge, share } from "rxjs"
+import { Observable, map, merge, share } from "rxjs"
 import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import {
   HoldEvent,
@@ -20,22 +20,20 @@ export class HoldRecognizer
       ...options.options,
     })
 
-    const start$ = this.panEvent$.pipe(
-      filter((e) => e.type === "panStart"),
-      map(({ type, ...rest }) => {
+    const start$ = this.panStart$.pipe(
+      map((event) => {
         return {
           type: "holdStart" as const,
-          ...rest,
+          ...event,
         }
       }),
     )
 
-    const end$ = this.panEvent$.pipe(
-      filter((e) => e.type === "panEnd"),
-      map(({ type, ...rest }) => {
+    const end$ = this.panEnd$.pipe(
+      map((event) => {
         return {
           type: "holdEnd" as const,
-          ...rest,
+          ...event,
         }
       }),
     )

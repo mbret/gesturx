@@ -1,10 +1,4 @@
-import {
-  Observable,
-  filter,
-  map,
-  share,
-  switchMap,
-} from "rxjs"
+import { Observable, map, share, switchMap } from "rxjs"
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry"
 import { isRecognizedAsSwipe } from "./operators"
 import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
@@ -30,24 +24,18 @@ export class SwipeRecognizer
       switchMap((initializedWith) => {
         const { escapeVelocity = 0.9 } = initializedWith.options ?? {}
 
-        const panStart$ = this.panEvent$.pipe(
-          filter((e) => e.type === "panStart"),
-        )
-
-        const panEnd$ = this.panEvent$.pipe(filter((e) => e.type === "panEnd"))
-
-        return panStart$.pipe(
+        return this.panStart$.pipe(
           switchMap((startEvent) => {
-            return panEnd$.pipe(
+            return this.panEnd$.pipe(
               isRecognizedAsSwipe(escapeVelocity),
-              map(({ type, ...rest }) => {
+              map((event) => {
                 return {
                   type: "swipe" as const,
                   angle: calculateDegreeAngleBetweenPoints(
                     startEvent.event,
-                    rest.event,
+                    event.event,
                   ),
-                  ...rest,
+                  ...event,
                 }
               }),
             )

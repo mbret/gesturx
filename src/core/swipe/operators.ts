@@ -1,8 +1,8 @@
 import { Observable, filter } from "rxjs"
-import { PanEvent } from "../recognizer/Recognizer"
+import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 
 export const isRecognizedAsSwipe =
-  (escapeVelocity: number) => (stream: Observable<PanEvent>) =>
+  (escapeVelocity: number) => (stream: Observable<RecognizerEvent>) =>
     stream.pipe(
       filter((event) => {
         return (

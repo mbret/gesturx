@@ -1,6 +1,6 @@
 import { Observable, map, scan } from "rxjs"
-import { PanEvent } from "../recognizer/Recognizer"
 import { PinchEvent } from "./PinchRecognizerInterface"
+import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 
 export const mapPanEventToPinchEvent =
   ({
@@ -8,16 +8,16 @@ export const mapPanEventToPinchEvent =
     initialEvent,
   }: {
     type: PinchEvent["type"]
-    initialEvent: PinchEvent | PanEvent | undefined
+    initialEvent: PinchEvent | RecognizerEvent | undefined
   }) =>
-  (stream: Observable<PanEvent | PinchEvent>) =>
+  (stream: Observable<RecognizerEvent | PinchEvent>) =>
     stream.pipe(
       scan<
-        PanEvent | PinchEvent,
+        RecognizerEvent | PinchEvent,
         PinchEvent & {
           initialPointersAverageDistance: number
         },
-        PinchEvent | PanEvent | undefined
+        PinchEvent | RecognizerEvent | undefined
       >((acc, curr) => {
         const previousPointersLength = acc?.pointers.length ?? 0
         const hasChangedFingers =

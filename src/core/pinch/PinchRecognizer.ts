@@ -34,8 +34,7 @@ export class PinchRecognizer
 
     this.events$ = this.config$.pipe(
       switchMap(() => {
-        const pinchStart$ = this.panEvent$.pipe(
-          filter((event) => event.type === "panStart"),
+        const pinchStart$ = this.panStart$.pipe(
           switchMap((event) =>
             of(event).pipe(
               mapPanEventToPinchEvent({
@@ -49,8 +48,8 @@ export class PinchRecognizer
 
         const pinchMove$ = pinchStart$.pipe(
           switchMap((initialEvent) => {
-            return this.panEvent$.pipe(
-              takeWhile((event) => event.type !== "panEnd"),
+            return this.pan$.pipe(
+              takeWhile((event) => event.type !== "end"),
               mapPanEventToPinchEvent({
                 type: "pinchMove",
                 initialEvent,
@@ -61,11 +60,11 @@ export class PinchRecognizer
 
         const pinchEnd$ = pinchStart$.pipe(
           switchMap((pinchStartEvent) =>
-            this.panEvent$.pipe(
+            this.pan$.pipe(
               // we cannot have a panEnd without a previous event so it will always emit
               startWith(pinchStartEvent),
               pairwise(),
-              filter(([_, currEvent]) => currEvent.type === "panEnd"),
+              filter(([_, currEvent]) => currEvent.type === "end"),
               switchMap(([previousEvent, currEvent]) =>
                 of(currEvent).pipe(
                   mapPanEventToPinchEvent({

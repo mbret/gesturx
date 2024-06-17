@@ -10,8 +10,8 @@ import {
 } from "rxjs"
 import {
   Recognizer,
-  PanEvent,
   RecognizerConfig,
+  RecognizerPanEvent,
 } from "../recognizer/Recognizer"
 import {
   RotateEvent,
@@ -34,8 +34,7 @@ export class RotateRecognizer
 
     this.events$ = this.config$.pipe(
       switchMap(() => {
-        const rotateStart$ = this.panEvent$.pipe(
-          filter((event) => event.type === "panStart"),
+        const rotateStart$ = this.panStart$.pipe(
           map((event) => ({
             ...event,
             type: "rotateStart" as const,
@@ -47,10 +46,10 @@ export class RotateRecognizer
 
         const rotate$ = rotateStart$.pipe(
           switchMap(() =>
-            this.panEvent$.pipe(
+            this.pan$.pipe(
               scan<
-                PanEvent,
-                PanEvent & { angle: number; deltaAngle: number },
+                RecognizerPanEvent,
+                RecognizerPanEvent & { angle: number; deltaAngle: number },
                 undefined
               >((acc, current) => {
                 const angle = (acc?.angle ?? 0) + current.deltaPointersAngle
@@ -68,12 +67,12 @@ export class RotateRecognizer
         )
 
         const rotateMove$ = rotate$.pipe(
-          filter((event) => event.type === "panMove"),
+          filter((event) => event.type === "move"),
           map((event) => ({ ...event, type: "rotateMove" as const })),
         )
 
         const rotateEnd$ = rotate$.pipe(
-          filter((event) => event.type === "panEnd"),
+          filter((event) => event.type === "end"),
           map((event) => ({ ...event, type: "rotateEnd" as const })),
         )
 

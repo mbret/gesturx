@@ -42,8 +42,8 @@ export type RecognizerConfig<Options> = {
   failWith?: { start$: Observable<unknown> }[]
 }
 
-export interface PanEvent extends RecognizerEvent {
-  type: "panStart" | "panMove" | "panEnd"
+export interface RecognizerPanEvent extends RecognizerEvent {
+  type: "start" | "move" | "end"
 }
 
 export type State = {
@@ -59,7 +59,11 @@ export abstract class Recognizer<
       panConfig?: PanConfig
     }
   >({})
-  protected panEvent$: Observable<PanEvent>
+  protected pan$: Observable<RecognizerPanEvent>
+  protected panStart$: Observable<RecognizerEvent>
+  protected panMove$: Observable<RecognizerEvent>
+  protected panEnd$: Observable<RecognizerEvent>
+
   protected pointerEvent$: Observable<PointerEvent>
   protected pointerDown$: Observable<PointerEvent>
   protected pointerUp$: Observable<PointerEvent>
@@ -115,7 +119,7 @@ export abstract class Recognizer<
       ),
     )
 
-    this.panEvent$ = this.configSubject.pipe(
+    this.pan$ = this.configSubject.pipe(
       isValidConfig,
       switchMap((config) => {
         const numInputs = Math.max(1, config.panConfig?.numInputs ?? 1)
@@ -183,7 +187,7 @@ export abstract class Recognizer<
               switchMap(() => delay$),
               withLatestFrom(trackPointers$),
               map(([, { event, pointers }]) => ({
-                type: "panStart" as const,
+                type: "start" as const,
                 event,
                 latestActivePointers: pointers,
               })),
@@ -199,7 +203,7 @@ export abstract class Recognizer<
                 trackPointers$.pipe(
                   skip(1),
                   map(({ event, pointers }) => ({
-                    type: "panMove" as const,
+                    type: "move" as const,
                     event,
                     latestActivePointers: pointers,
                   })),
@@ -212,7 +216,7 @@ export abstract class Recognizer<
               mergeMap(() =>
                 panReleased$.pipe(
                   map(({ event, pointers }) => ({
-                    type: "panEnd" as const,
+                    type: "end" as const,
                     event,
                     latestActivePointers: pointers,
                   })),
@@ -241,6 +245,21 @@ export abstract class Recognizer<
         })
       }),
       share(),
+    )
+
+    this.panStart$ = this.pan$.pipe(
+      filter((event) => event.type === "start"),
+      map(({ type, ...rest }) => rest),
+    )
+
+    this.panMove$ = this.pan$.pipe(
+      filter((event) => event.type === "move"),
+      map(({ type, ...rest }) => rest),
+    )
+
+    this.panEnd$ = this.pan$.pipe(
+      filter((event) => event.type === "end"),
+      map(({ type, ...rest }) => rest),
     )
 
     this.state$ = stateSubject.asObservable()
