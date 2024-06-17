@@ -6,7 +6,7 @@ import {
   merge,
   share,
 } from "rxjs"
-import { Recognizer } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import {
   RecognizableInterface,
   RecognizableState,
@@ -41,25 +41,23 @@ export class Recognizable<T extends Recognizer<any, any>[]>
     )
   }
 
-  public initialize(container: HTMLElement) {
-    /**
-     * We have to disable touch-action otherwise every events will be followed
-     * by a cancel event since the browser will try to handle touch.
-     * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-     */
-    container.style.touchAction = `none`
+  public update(options: RecognizerConfig<unknown>) {
+    if (options.container) {
+      /**
+       * We have to disable touch-action otherwise every events will be followed
+       * by a cancel event since the browser will try to handle touch.
+       * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
+       */
+      options.container.style.touchAction = `none`
 
-    /**
-     *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
-     */
-    container.style.userSelect = `none`
+      /**
+       *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
+       */
+      options.container.style.userSelect = `none`
+    }
 
     this.options.recognizers.forEach((recognizer) => {
-      console.log("recognizable update")
-      recognizer.update({
-        container,
-        afterEventReceived: this.options.afterEventReceived,
-      })
+      recognizer.update(options)
     })
   }
 }

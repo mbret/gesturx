@@ -37,7 +37,7 @@ export const useRecognizable = () => {
 
   useEffect(() => {
     if (container) {
-      recognizable.initialize(container)
+      recognizable.update({ container })
     }
   }, [container, recognizable])
 

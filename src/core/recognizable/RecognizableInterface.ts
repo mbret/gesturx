@@ -1,5 +1,5 @@
 import { Observable, ObservedValueOf } from "rxjs"
-import { Recognizer } from "../recognizer/Recognizer"
+import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 
 export type RecognizableState = {
   /**
@@ -40,5 +40,5 @@ export interface RecognizableInterface<T extends Recognizer<any, any>[]> {
    * You can only initialize one element per instance but you can
    * change the element and call the method again if needed.
    */
-  initialize(container: HTMLElement): void
+  update(options: RecognizerConfig<unknown>): void
 }
