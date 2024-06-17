@@ -23,7 +23,9 @@ export const useHold = ({
       }
 
       if (e.type === "holdEnd") {
-        toastId && toast.close(toastId)
+        if (toastId) {
+          toast.close(toastId)
+        }
       }
     })
 
