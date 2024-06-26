@@ -26,6 +26,8 @@ import {
 } from "./TapRecognizerInterface"
 import { takeWhenOutsideThreshold, takeWhenPressedTooLong } from "./operators"
 
+export { type TapEvent }
+
 export class TapRecognizer
   extends Recognizer<TapRecognizerOptions, TapEvent>
   implements TapRecognizerInterface
