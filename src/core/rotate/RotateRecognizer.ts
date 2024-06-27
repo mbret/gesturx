@@ -19,6 +19,8 @@ import {
   RotateRecognizerOptions,
 } from "./RotateRecognizerInterface"
 
+export { type RotateEvent }
+
 export class RotateRecognizer
   extends Recognizer<RotateRecognizerOptions, RotateEvent>
   implements RotateRecognizerInterface

@@ -8,6 +8,8 @@ import {
   SwipeRecognizerOptions,
 } from "./SwipeRecognizerInterface"
 
+export { type SwipeEvent }
+
 export class SwipeRecognizer
   extends Recognizer<SwipeRecognizerOptions, SwipeEvent>
   implements SwipeRecognizerInterface

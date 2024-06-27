@@ -6,6 +6,8 @@ import {
   PanRecognizerOptions,
 } from "./PanRecognizerInterface"
 
+export { type PanEvent }
+
 export class PanRecognizer
   extends Recognizer<PanRecognizerOptions, PanEvent>
   implements PanRecognizerInterface
