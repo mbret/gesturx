@@ -68,9 +68,12 @@ export const trackPointers =
     const pointerMove$ = pointerEvent$.pipe(
       filter((event) => event.type === "pointermove"),
     )
+    const contextMenu$ = fromEvent<PointerEvent>(window, "contextmenu")
 
     const isPointerRemoved = (event: PointerEvent) =>
-      ["pointercancel", "pointerleave", "pointerup"].includes(event.type)
+      ["pointercancel", "pointerleave", "pointerup", "contextmenu"].includes(
+        event.type,
+      )
 
     return stream.pipe(
       mergeMap((pointerDown) => {
@@ -78,7 +81,13 @@ export const trackPointers =
 
         const tracking$ = merge(
           pointerDown$,
-          merge(pointerMove$, pointerCancel$, pointerLeave$, pointerUp$),
+          merge(
+            pointerMove$,
+            pointerCancel$,
+            pointerLeave$,
+            pointerUp$,
+            contextMenu$,
+          ),
         ).pipe(
           matchPointer(pointerDown),
           takeWhile((event) => !isPointerRemoved(event), true),
