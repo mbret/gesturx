@@ -39,12 +39,15 @@ export class TapRecognizer
 
     this.events$ = this.config$.pipe(
       switchMap((config) => {
-        const {
-          multiTapThreshold = 0,
-          maximumPressTime = 150,
-          maxTaps = 1,
-          tolerance = 10,
-        } = config.options ?? {}
+        const maxTaps = config.options?.maxTaps ?? 1
+        /**
+         * We default to reasonable multiplier of 100 to give time
+         * for each tap
+         */
+        const multiTapThreshold =
+          config.options?.multiTapThreshold ?? 100 * (maxTaps - 1)
+
+        const { maximumPressTime = 150, tolerance = 10 } = config.options ?? {}
 
         const activePointers$ = this.pointerDown$.pipe(
           trackPointers({
