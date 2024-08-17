@@ -90,9 +90,11 @@ export class PanRecognizer
       ),
     )
 
-    this.start$ = panStart$
+    this.start$ = this.events$.pipe(
+      filter((event) => event.type === "panStart"),
+    )
 
-    this.end$ = panEnd$
+    this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"))
   }
 
   public update(config: RecognizerConfig<PanRecognizerOptions>) {

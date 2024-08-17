@@ -27,6 +27,7 @@ export class PinchRecognizer
   public events$: Observable<PinchEvent>
 
   public start$: Observable<PinchEvent>
+  public end$: Observable<PinchEvent>
 
   constructor(config?: RecognizerConfig<PinchRecognizerOptions>) {
     super(config, {
@@ -86,7 +87,11 @@ export class PinchRecognizer
       share(),
     )
 
-    this.start$ = pinchStart$
+    this.start$ = this.events$.pipe(
+      filter((event) => event.type === "pinchStart"),
+    )
+
+    this.end$ = this.events$.pipe(filter((event) => event.type === "pinchEnd"))
   }
 
   public update(options: RecognizerConfig<PinchRecognizerOptions>) {
