@@ -26,27 +26,31 @@ export class PinchRecognizer
 {
   public events$: Observable<PinchEvent>
 
+  public start$: Observable<PinchEvent>
+
   constructor(config?: RecognizerConfig<PinchRecognizerOptions>) {
     super(config, {
       ...config?.options,
       numInputs: 2,
     })
 
+    const pinchStart$ = this.panStart$.pipe(
+      switchMap((event) =>
+        of(event).pipe(
+          mapPanEventToPinchEvent({
+            type: "pinchStart",
+            initialEvent: undefined,
+          }),
+        ),
+      ),
+      share(),
+    )
+
     this.events$ = this.config$.pipe(
       switchMap(() => {
-        const pinchStart$ = this.panStart$.pipe(
-          switchMap((event) =>
-            of(event).pipe(
-              mapPanEventToPinchEvent({
-                type: "pinchStart",
-                initialEvent: undefined,
-              }),
-            ),
-          ),
-          shareReplay(1),
-        )
+        const pinchStarted$ = pinchStart$.pipe(shareReplay(1))
 
-        const pinchMove$ = pinchStart$.pipe(
+        const pinchMove$ = pinchStarted$.pipe(
           switchMap((initialEvent) => {
             return this.pan$.pipe(
               takeWhile((event) => event.type !== "end"),
@@ -58,7 +62,7 @@ export class PinchRecognizer
           }),
         )
 
-        const pinchEnd$ = pinchStart$.pipe(
+        const pinchEnd$ = pinchStarted$.pipe(
           switchMap((pinchStartEvent) =>
             this.pan$.pipe(
               // we cannot have a panEnd without a previous event so it will always emit
@@ -77,10 +81,12 @@ export class PinchRecognizer
           ),
         )
 
-        return merge(pinchStart$, pinchMove$, pinchEnd$)
+        return merge(pinchStarted$, pinchMove$, pinchEnd$)
       }),
       share(),
     )
+
+    this.start$ = pinchStart$
   }
 
   public update(options: RecognizerConfig<PinchRecognizerOptions>) {

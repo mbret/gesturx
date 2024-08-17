@@ -3,6 +3,7 @@ import {
   BehaviorSubject,
   NEVER,
   Observable,
+  distinctUntilChanged,
   exhaustMap,
   filter,
   first,
@@ -78,7 +79,7 @@ export abstract class Recognizer<
 
   protected failWith$: Observable<unknown>
 
-  protected config$ = this.configSubject.pipe(isValidConfig)
+  public config$ = this.configSubject.pipe(isValidConfig)
 
   constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
     const stateSubject = new BehaviorSubject<State>({
@@ -113,6 +114,9 @@ export abstract class Recognizer<
     this.pointerOff$ = this.pointerEvent$.pipe(filterPointerOff)
 
     this.failWith$ = this.config$.pipe(
+      distinctUntilChanged(
+        (previous, current) => previous.failWith === current.failWith,
+      ),
       switchMap(({ failWith }) =>
         !failWith?.length
           ? NEVER
