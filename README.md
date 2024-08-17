@@ -4,7 +4,7 @@ Modern multi touch gesture recognizer using rxjs.
 
 # Documentation
 
-Head over the [documentation](https://github.com/mbret/gesturx/wiki/Documentation).
+Head over the [documentation](https://bret-maxime.gitbook.io/gesturx).
 
 # Demo
 
