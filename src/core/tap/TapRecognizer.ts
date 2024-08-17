@@ -98,7 +98,7 @@ export class TapRecognizer
             )
 
             const takeUntil$ = merge(
-              this.failWith$,
+              this.failWithActive$.pipe(filter((active) => active)),
               this.pointerCancel$,
               hasMoreThanOneActivePointer$,
               clickedTooFarFromOriginalTap$,

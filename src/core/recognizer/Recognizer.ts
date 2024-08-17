@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   BehaviorSubject,
-  NEVER,
   Observable,
+  combineLatest,
   distinctUntilChanged,
   exhaustMap,
   filter,
@@ -14,6 +14,7 @@ import {
   share,
   shareReplay,
   skip,
+  startWith,
   switchMap,
   takeUntil,
   tap,
@@ -41,7 +42,7 @@ export type RecognizerConfig<Options> = {
   container?: HTMLElement
   afterEventReceived?: (event: PointerEvent) => PointerEvent
   options?: Options
-  failWith?: { start$: Observable<unknown> }[]
+  failWith?: { start$: Observable<unknown>; end$: Observable<unknown> }[]
 }
 
 export interface RecognizerPanEvent extends RecognizerEvent {
@@ -74,12 +75,14 @@ export abstract class Recognizer<
   protected pointerOff$: Observable<PointerEvent>
 
   public state$: Observable<State>
+  public config$ = this.configSubject.pipe(isValidConfig)
 
   abstract events$: Observable<Event>
 
-  protected failWith$: Observable<unknown>
-
-  public config$ = this.configSubject.pipe(isValidConfig)
+  /**
+   * Track active running failWith recognizers
+   */
+  protected failWithActive$: Observable<boolean>
 
   constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
     const stateSubject = new BehaviorSubject<State>({
@@ -113,15 +116,34 @@ export abstract class Recognizer<
 
     this.pointerOff$ = this.pointerEvent$.pipe(filterPointerOff)
 
-    this.failWith$ = this.config$.pipe(
-      distinctUntilChanged(
-        (previous, current) => previous.failWith === current.failWith,
-      ),
-      switchMap(({ failWith }) =>
-        !failWith?.length
-          ? NEVER
-          : merge(...(failWith?.map(({ start$ }) => start$) ?? [])),
-      ),
+    const failWith$ = this.config$.pipe(
+      map(({ failWith }) => failWith),
+      distinctUntilChanged(),
+    )
+
+    this.failWithActive$ = failWith$.pipe(
+      switchMap((failWith) => {
+        const areRunnings$ = failWith?.map((recognizer) => {
+          const start$ = recognizer.start$.pipe(map(() => true))
+
+          const end$ = recognizer.end$.pipe(map(() => false))
+
+          const isRunning$ = merge(start$, end$).pipe(
+            startWith(false),
+            shareReplay(1),
+          )
+
+          return isRunning$
+        })
+
+        if (!areRunnings$?.length) {
+          return combineLatest([of(false)])
+        }
+
+        return combineLatest(areRunnings$)
+      }),
+      map((runnings) => runnings.some((running) => running)),
+      shareReplay(1),
     )
 
     this.pan$ = this.configSubject.pipe(

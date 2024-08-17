@@ -6,7 +6,7 @@ import { useSwipe } from "./swipes/useSwipe"
 import { useTrackFingers } from "./trackers/useTrackFingers"
 import { Pan } from "./Pan"
 import { GesturesBox } from "./gesturesBox/GesturesBox"
-import { useState } from "react"
+import { memo, useState } from "react"
 import { Controls } from "./controls/Controls"
 
 export type Settings = {
@@ -76,4 +76,4 @@ function App() {
   )
 }
 
-export default App
+export default memo(App)

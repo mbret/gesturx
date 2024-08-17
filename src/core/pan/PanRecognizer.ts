@@ -1,4 +1,16 @@
-import { Observable, map, merge, share } from "rxjs"
+import {
+  Observable,
+  filter,
+  first,
+  map,
+  merge,
+  of,
+  share,
+  switchMap,
+  takeUntil,
+  tap,
+  withLatestFrom,
+} from "rxjs"
 import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
 import {
   PanEvent,
@@ -27,6 +39,9 @@ export class PanRecognizer
         type: "panStart" as const,
         ...event,
       })),
+      withLatestFrom(this.failWithActive$),
+      filter(([, failWithActive]) => !failWithActive),
+      map(([event]) => event),
       share(),
     )
 
@@ -38,15 +53,41 @@ export class PanRecognizer
       share(),
     )
 
+    const panMove$ = this.panMove$.pipe(
+      map((event) => ({
+        type: "panMove" as const,
+        ...event,
+      })),
+    )
+
     this.events$ = merge(
-      panStart$,
-      this.panMove$.pipe(
-        map((event) => ({
-          type: "panMove" as const,
-          ...event,
-        })),
+      panStart$.pipe(
+        switchMap((panStartEvent) => {
+          let latestEvent: PanEvent = panStartEvent
+
+          const failingActive$ = this.failWithActive$.pipe(
+            filter((isActive) => isActive),
+            first(),
+          )
+
+          const events$ = merge(of(panStartEvent), panMove$, panEnd$).pipe(
+            tap((event) => {
+              latestEvent = event
+            }),
+            takeUntil(failingActive$),
+          )
+
+          const tailingEndEventIfFailed$ = failingActive$.pipe(
+            map(() => ({
+              ...latestEvent,
+              type: "panEnd" as const,
+            })),
+            takeUntil(panEnd$),
+          )
+
+          return merge(events$, tailingEndEventIfFailed$)
+        }),
       ),
-      panEnd$,
     )
 
     this.start$ = panStart$
