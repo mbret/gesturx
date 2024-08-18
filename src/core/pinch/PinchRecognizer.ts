@@ -1,16 +1,24 @@
 import {
+  NEVER,
   Observable,
+  defaultIfEmpty,
   filter,
+  first,
+  map,
   merge,
   of,
-  pairwise,
   share,
   shareReplay,
-  startWith,
   switchMap,
+  takeUntil,
   takeWhile,
+  withLatestFrom,
 } from "rxjs"
-import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
+import {
+  Recognizer,
+  RecognizerConfig,
+  RecognizerPanEvent,
+} from "../recognizer/Recognizer"
 import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
 import {
   PinchEvent,
@@ -36,20 +44,24 @@ export class PinchRecognizer
     })
 
     const pinchStart$ = this.panStart$.pipe(
-      switchMap((event) =>
-        of(event).pipe(
-          mapPanEventToPinchEvent({
-            type: "pinchStart",
-            initialEvent: undefined,
-          }),
-        ),
-      ),
+      withLatestFrom(this.failWithActive$),
+      filter(([, failWithActive]) => !failWithActive),
+      map(([event]) => event),
+      mapPanEventToPinchEvent({
+        type: "pinchStart",
+        initialEvent: undefined,
+      }),
       share(),
     )
 
     this.events$ = this.config$.pipe(
       switchMap(() => {
         const pinchStarted$ = pinchStart$.pipe(shareReplay(1))
+
+        const failingActive$ = this.failWithActive$.pipe(
+          filter((isActive) => isActive),
+          first(),
+        )
 
         const pinchMove$ = pinchStarted$.pipe(
           switchMap((initialEvent) => {
@@ -61,25 +73,35 @@ export class PinchRecognizer
               }),
             )
           }),
+          takeUntil(failingActive$),
         )
 
         const pinchEnd$ = pinchStarted$.pipe(
-          switchMap((pinchStartEvent) =>
-            this.pan$.pipe(
-              // we cannot have a panEnd without a previous event so it will always emit
-              startWith(pinchStartEvent),
-              pairwise(),
-              filter(([, currEvent]) => currEvent.type === "end"),
-              switchMap(([previousEvent, currEvent]) =>
-                of(currEvent).pipe(
-                  mapPanEventToPinchEvent({
-                    type: "pinchEnd",
-                    initialEvent: previousEvent,
-                  }),
-                ),
+          switchMap((pinchStartEvent) => {
+            let latestEvent: PinchEvent | RecognizerPanEvent = pinchStartEvent
+
+            return this.pan$.pipe(
+              switchMap((event) => {
+                if (event.type === "end") {
+                  return of(event)
+                }
+
+                latestEvent = event
+
+                return NEVER
+              }),
+              takeUntil(failingActive$),
+              defaultIfEmpty(null),
+              map((endEventOrNull) =>
+                endEventOrNull ? endEventOrNull : latestEvent,
               ),
-            ),
-          ),
+              mapPanEventToPinchEvent({
+                type: "pinchEnd",
+                initialEvent: latestEvent,
+              }),
+              share(),
+            )
+          }),
         )
 
         return merge(pinchStarted$, pinchMove$, pinchEnd$)

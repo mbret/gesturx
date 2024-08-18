@@ -64,19 +64,21 @@ export class PanRecognizer
       switchMap((panStartEvent) => {
         let latestEvent: PanEvent = panStartEvent
 
+        const panStarted$ = of(panStartEvent)
+
         const failingActive$ = this.failWithActive$.pipe(
           filter((isActive) => isActive),
           first(),
         )
 
-        const events$ = merge(of(panStartEvent), panMove$, panEnd$).pipe(
+        const events$ = merge(panStarted$, panMove$, panEnd$).pipe(
           tap((event) => {
             latestEvent = event
           }),
           takeUntil(failingActive$),
         )
 
-        const tailingEndEventIfFailed$ = failingActive$.pipe(
+        const trailingEndEventIfFailed$ = failingActive$.pipe(
           map(() => ({
             ...latestEvent,
             type: "panEnd" as const,
@@ -84,7 +86,7 @@ export class PanRecognizer
           takeUntil(panEnd$),
         )
 
-        return merge(events$, tailingEndEventIfFailed$)
+        return merge(events$, trailingEndEventIfFailed$)
       }),
       share(),
     )
