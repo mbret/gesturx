@@ -60,34 +60,33 @@ export class PanRecognizer
       })),
     )
 
-    this.events$ = merge(
-      panStart$.pipe(
-        switchMap((panStartEvent) => {
-          let latestEvent: PanEvent = panStartEvent
+    this.events$ = panStart$.pipe(
+      switchMap((panStartEvent) => {
+        let latestEvent: PanEvent = panStartEvent
 
-          const failingActive$ = this.failWithActive$.pipe(
-            filter((isActive) => isActive),
-            first(),
-          )
+        const failingActive$ = this.failWithActive$.pipe(
+          filter((isActive) => isActive),
+          first(),
+        )
 
-          const events$ = merge(of(panStartEvent), panMove$, panEnd$).pipe(
-            tap((event) => {
-              latestEvent = event
-            }),
-            takeUntil(failingActive$),
-          )
+        const events$ = merge(of(panStartEvent), panMove$, panEnd$).pipe(
+          tap((event) => {
+            latestEvent = event
+          }),
+          takeUntil(failingActive$),
+        )
 
-          const tailingEndEventIfFailed$ = failingActive$.pipe(
-            map(() => ({
-              ...latestEvent,
-              type: "panEnd" as const,
-            })),
-            takeUntil(panEnd$),
-          )
+        const tailingEndEventIfFailed$ = failingActive$.pipe(
+          map(() => ({
+            ...latestEvent,
+            type: "panEnd" as const,
+          })),
+          takeUntil(panEnd$),
+        )
 
-          return merge(events$, tailingEndEventIfFailed$)
-        }),
-      ),
+        return merge(events$, tailingEndEventIfFailed$)
+      }),
+      share(),
     )
 
     this.start$ = this.events$.pipe(
