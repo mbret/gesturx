@@ -3,7 +3,7 @@ import { Observable, map, scan } from "rxjs"
 import { PinchEvent } from "./PinchRecognizerInterface"
 import { RecognizerEvent } from "../recognizer/RecognizerEvent"
 
-export const mapPanEventToPinchEvent =
+export const scanPanEventToPinchEvent =
   ({
     type,
     initialEvent,

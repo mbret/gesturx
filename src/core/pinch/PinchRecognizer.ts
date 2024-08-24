@@ -19,7 +19,7 @@ import {
   RecognizerConfig,
   RecognizerPanEvent,
 } from "../recognizer/Recognizer"
-import { mapPanEventToPinchEvent } from "./mapPanEventToPinchEvent"
+import { scanPanEventToPinchEvent } from "./scanPanEventToPinchEvent"
 import {
   PinchEvent,
   PinchRecognizerInterface,
@@ -43,20 +43,23 @@ export class PinchRecognizer
       numInputs: 2,
     })
 
-    const pinchStart$ = this.panStart$.pipe(
-      withLatestFrom(this.failWithActive$),
-      filter(([, failWithActive]) => !failWithActive),
-      map(([event]) => event),
-      mapPanEventToPinchEvent({
-        type: "pinchStart",
-        initialEvent: undefined,
-      }),
-      share(),
-    )
-
     this.events$ = this.config$.pipe(
       switchMap(() => {
-        const pinchStarted$ = pinchStart$.pipe(shareReplay(1))
+        const pinchStarted$ = this.panStart$.pipe(
+          withLatestFrom(this.failWithActive$),
+          filter(([, failWithActive]) => !failWithActive),
+          map(([event]) => event),
+          switchMap((event) =>
+            of(event).pipe(
+              // we don't want a scan on pinch start
+              scanPanEventToPinchEvent({
+                type: "pinchStart",
+                initialEvent: undefined,
+              }),
+            ),
+          ),
+          shareReplay(1),
+        )
 
         const failingActive$ = this.failWithActive$.pipe(
           filter((isActive) => isActive),
@@ -67,7 +70,7 @@ export class PinchRecognizer
           switchMap((initialEvent) => {
             return this.pan$.pipe(
               takeWhile((event) => event.type !== "end"),
-              mapPanEventToPinchEvent({
+              scanPanEventToPinchEvent({
                 type: "pinchMove",
                 initialEvent,
               }),
@@ -95,7 +98,7 @@ export class PinchRecognizer
               map((endEventOrNull) =>
                 endEventOrNull ? endEventOrNull : latestEvent,
               ),
-              mapPanEventToPinchEvent({
+              scanPanEventToPinchEvent({
                 type: "pinchEnd",
                 initialEvent: latestEvent,
               }),

@@ -11,8 +11,6 @@ export const usePinch = ({
   settings: Settings
 }) => {
   const [boxScale, setBoxScale] = useState(1)
-  const [scale, setScale] = useState(1)
-  const [distance, setDistance] = useState(0)
 
   useEffect(() => {
     const sub = recognizable.events$.subscribe((e) => {
@@ -22,14 +20,10 @@ export const usePinch = ({
 
       if (e.type === "pinchMove") {
         setBoxScale((value) => value * e.deltaDistanceScale)
-        setScale(e.scale)
-        setDistance(e.distance)
       }
 
       if (e.type === "pinchEnd") {
         setBoxScale((value) => value * e.deltaDistanceScale)
-        setScale(1)
-        setDistance(0)
       }
     })
 
@@ -38,14 +32,5 @@ export const usePinch = ({
     }
   }, [recognizable])
 
-  const pinchDebug = (
-    <ControlBox>
-      pinch:
-      <Text>
-        {scale.toFixed(1)}% {distance.toFixed(0)}px
-      </Text>
-    </ControlBox>
-  )
-
-  return { boxScale, pinchDebug }
+  return { boxScale }
 }
