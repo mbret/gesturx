@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react"
 import { AppRecognizable } from "../useRecognizable"
-import { ControlBox } from "../controls/ControlBox"
-import { Text } from "@chakra-ui/react"
 import { Settings } from "../App"
 
 export const usePinch = ({
