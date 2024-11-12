@@ -52,25 +52,28 @@ export class Recognizable<T extends Recognizer<any, any>[]>
     this.update(options)
   }
 
-  public update(options: RecognizableOptions<T>) {
-    if (options.container) {
+  public update({
+    disableTextSelection,
+    ...rest
+  }: Partial<RecognizableOptions<T>>) {
+    if (rest.container) {
       /**
        * We have to disable touch-action otherwise every events will be followed
        * by a cancel event since the browser will try to handle touch.
        * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
        */
-      options.container.style.touchAction = `none`
+      rest.container.style.touchAction = `none`
 
       /**
        *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
        */
-      if (options.disableTextSelection) {
-        options.container.style.userSelect = `none`
+      if (disableTextSelection) {
+        rest.container.style.userSelect = `none`
       }
     }
 
     this.options.recognizers.forEach((recognizer) => {
-      recognizer.update(options)
+      recognizer.update(rest)
     })
   }
 }
