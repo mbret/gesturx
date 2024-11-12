@@ -13,6 +13,16 @@ import {
   RecognizableState,
 } from "./RecognizableInterface"
 
+type RecognizableOptions<T extends Recognizer<any, any>[]> = {
+  recognizers: T
+  /**
+   * If you don't need to have text selection, set this to true
+   * to improve dragging gesture. This will prevent accidental
+   * text selection on your component.
+   */
+  disableTextSelection?: boolean
+} & RecognizerConfig<unknown>
+
 export class Recognizable<T extends Recognizer<any, any>[]>
   implements RecognizableInterface<T>
 {
@@ -22,11 +32,7 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 
   state$: Observable<RecognizableState>
 
-  constructor(
-    protected options: {
-      recognizers: T
-    } & RecognizerConfig<unknown>,
-  ) {
+  constructor(protected options: RecognizableOptions<T>) {
     this.recognizers = options.recognizers
 
     this.events$ = merge(
@@ -46,7 +52,7 @@ export class Recognizable<T extends Recognizer<any, any>[]>
     this.update(options)
   }
 
-  public update(options: RecognizerConfig<unknown>) {
+  public update(options: RecognizableOptions<T>) {
     if (options.container) {
       /**
        * We have to disable touch-action otherwise every events will be followed
@@ -58,7 +64,9 @@ export class Recognizable<T extends Recognizer<any, any>[]>
       /**
        *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
        */
-      options.container.style.userSelect = `none`
+      if (options.disableTextSelection) {
+        options.container.style.userSelect = `none`
+      }
     }
 
     this.options.recognizers.forEach((recognizer) => {
