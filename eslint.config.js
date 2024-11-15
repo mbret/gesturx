@@ -1,7 +1,6 @@
-import globals from "globals"
 import pluginJs from "@eslint/js"
 import tseslint from "typescript-eslint"
-import pluginReactConfig from "eslint-plugin-react/configs/recommended.js"
+import reactPlugin from "eslint-plugin-react"
 
 import { fileURLToPath } from "node:url"
 
@@ -14,18 +13,11 @@ const gitignorePath = path.resolve(__dirname, ".gitignore")
 
 export default [
   includeIgnoreFile(gitignorePath),
-  {
-    languageOptions: {
-      globals: globals.browser,
-      parserOptions: { ecmaFeatures: { jsx: true } },
-    },
-  },
   pluginJs.configs.recommended,
   ...tseslint.configs.recommended,
-  pluginReactConfig,
+  reactPlugin.configs.flat.recommended, // This is not a plugin object, but a shareable config object
+  reactPlugin.configs.flat["jsx-runtime"], // Add this if you are using React 17+
   {
-    rules: {
-      "react/react-in-jsx-scope": "off",
-    },
+    ignores: ["src/demo/chakra/*"],
   },
 ]

@@ -32,7 +32,7 @@ export default defineConfig(({ mode }) => {
         }),
       },
       dts({
-        rollupTypes: libMode
+        rollupTypes: libMode,
       }),
     ],
   }
