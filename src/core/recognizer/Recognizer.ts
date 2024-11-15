@@ -90,12 +90,14 @@ export abstract class Recognizer<
     })
 
     this.pointerEvent$ = this.config$.pipe(
-      switchMap(({ container, afterEventReceived }) =>
-        getPointerEvents({
-          container,
-          afterEventReceived,
-        }),
+      switchMap(
+        ({ container, afterEventReceived }) =>
+          getPointerEvents({
+            container,
+            afterEventReceived,
+          }).pointerEvents$,
       ),
+      share(),
     )
 
     this.pointerDown$ = this.pointerEvent$.pipe(

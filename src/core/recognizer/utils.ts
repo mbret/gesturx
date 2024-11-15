@@ -30,11 +30,20 @@ export const getPointerEvents = ({
     "pointercancel",
   ).pipe(map(afterEventReceived))
 
-  return merge(
+  const pointerEvents$ = merge(
     pointerDown$,
     pointerCancel$,
     pointerLeave$,
     pointerUp$,
     pointerMove$,
   )
+
+  return {
+    pointerEvents$,
+    pointerDown$,
+    pointerCancel$,
+    pointerLeave$,
+    pointerUp$,
+    pointerMove$,
+  }
 }
