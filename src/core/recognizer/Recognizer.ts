@@ -38,11 +38,16 @@ type PanConfig = {
   numInputs?: number
 }
 
+export interface FailWith {
+  start$: Observable<unknown>
+  end$: Observable<unknown>
+}
+
 export type RecognizerConfig<Options> = {
   container?: HTMLElement
   afterEventReceived?: (event: PointerEvent) => PointerEvent
   options?: Options
-  failWith?: { start$: Observable<unknown>; end$: Observable<unknown> }[]
+  failWith?: FailWith[]
 }
 
 export interface RecognizerPanEvent extends RecognizerEvent {
