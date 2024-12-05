@@ -1,7 +1,8 @@
 import { useEffect } from "react"
-import { Stack, Text, useToast } from "@chakra-ui/react"
+import { Stack, Text } from "@chakra-ui/react"
 import { TapRecognizer } from "../../core"
 import { AppRecognizable } from "../useRecognizable"
+import { toaster } from "../chakra/ui/toaster"
 
 export const useTap = ({
   maxTaps,
@@ -10,7 +11,6 @@ export const useTap = ({
   recognizable: AppRecognizable
   maxTaps: number
 }) => {
-  const toast = useToast()
   const tapRecognizer = recognizable.recognizers.find(
     (recognizer) => recognizer instanceof TapRecognizer,
   )
@@ -18,7 +18,7 @@ export const useTap = ({
   useEffect(() => {
     const clickSub = recognizable.events$.subscribe((e) => {
       if (e.type === "tap") {
-        toast({
+        toaster.create({
           title: "Click",
           description: (
             <Stack>
@@ -34,7 +34,7 @@ export const useTap = ({
     return () => {
       clickSub.unsubscribe()
     }
-  }, [recognizable, toast])
+  }, [recognizable])
 
   useEffect(() => {
     tapRecognizer?.update({

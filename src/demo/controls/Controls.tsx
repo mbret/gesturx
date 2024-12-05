@@ -1,11 +1,4 @@
-import {
-  Accordion,
-  AccordionButton,
-  AccordionIcon,
-  AccordionItem,
-  AccordionPanel,
-  Box,
-} from "@chakra-ui/react"
+import { AccordionItemContent, Box } from "@chakra-ui/react"
 import { PinchControls } from "../gesturesBox/PinchControls"
 import { RotateControls } from "../gesturesBox/RotateControls"
 import { HoldControls } from "../holds/HoldControls"
@@ -15,15 +8,19 @@ import { ControlBox } from "./ControlBox"
 import { Settings } from "../App"
 import { PanControl } from "../gesturesBox/PanControls"
 import { ReactNode } from "react"
+import {
+  AccordionItem,
+  AccordionItemTrigger,
+  AccordionRoot,
+} from "../chakra/ui/accordion"
 
 const AccordionControlButton = ({ children }: { children: ReactNode }) => {
   return (
-    <AccordionButton p={1}>
+    <AccordionItemTrigger p={1} value="asdasd">
       <Box as="span" flex="1" textAlign="left">
         {children}
       </Box>
-      <AccordionIcon />
-    </AccordionButton>
+    </AccordionItemTrigger>
   )
 }
 
@@ -41,81 +38,78 @@ export const Controls = ({
   settings: Settings
 }) => {
   return (
-    <Accordion
-      allowMultiple
+    <AccordionRoot
+      collapsible
+      multiple
       position="absolute"
-      reduceMotion
       right={0}
-      top={0}
-      pr={2}
-      pt={2}
       zIndex={1}
       width={150}
       bgColor="white"
-      p={0}
+      color="black"
     >
-      <AccordionItem defaultChecked>
+      <AccordionItem defaultChecked value="fingers">
         <AccordionControlButton>fingers</AccordionControlButton>
-        <AccordionPanel p={1}>
+        <AccordionItemContent p={1}>
           <ControlBox>fingers: {fingers}</ControlBox>
-        </AccordionPanel>
+        </AccordionItemContent>
       </AccordionItem>
 
-      <AccordionItem>
+      <AccordionItem value="taps">
         <AccordionControlButton>taps</AccordionControlButton>
-        <AccordionPanel p={1}>
+        <AccordionItemContent p={1}>
           <TapControls
             value={settings.maxTaps}
             onChange={(value) => {
               onSettingsChange({ ...settings, maxTaps: value })
             }}
           />
-        </AccordionPanel>
+        </AccordionItemContent>
       </AccordionItem>
 
-      <AccordionItem>
+      <AccordionItem value="pan">
         <AccordionControlButton>pan</AccordionControlButton>
-        <AccordionPanel p={1}>
+        <AccordionItemContent p={1}>
           <PanControl
             recognizable={recognizable}
             settings={settings}
             setSettings={setSettings}
           />
-        </AccordionPanel>
+        </AccordionItemContent>
       </AccordionItem>
 
-      <AccordionItem>
+      <AccordionItem value="hold">
         <AccordionControlButton>hold</AccordionControlButton>
-        <AccordionPanel p={1}>
+        <AccordionItemContent p={1}>
           <HoldControls
             recognizable={recognizable}
             settings={settings}
             setSettings={setSettings}
           />
-        </AccordionPanel>
+        </AccordionItemContent>
       </AccordionItem>
 
-      <AccordionItem>
+      <AccordionItem value="rotate">
         <AccordionControlButton>rotate</AccordionControlButton>
-        <AccordionPanel p={1}>
+        <AccordionItemContent p={1}>
           <RotateControls
             recognizable={recognizable}
             settings={settings}
             setSettings={setSettings}
           />
-        </AccordionPanel>
+        </AccordionItemContent>
       </AccordionItem>
 
-      <AccordionItem>
+      <AccordionItem value="pinch">
         <AccordionControlButton>pinch</AccordionControlButton>
-        <AccordionPanel p={1}>
+        <AccordionItemContent p={1}>
           <PinchControls
             recognizable={recognizable}
             settings={settings}
             setSettings={setSettings}
           />
-        </AccordionPanel>
+        </AccordionItemContent>
       </AccordionItem>
-    </Accordion>
+    </AccordionRoot>
   )
 }

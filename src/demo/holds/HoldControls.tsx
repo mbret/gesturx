@@ -1,16 +1,11 @@
-import {
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  Stack,
-  Text,
-} from "@chakra-ui/react"
+import { Stack, Text } from "@chakra-ui/react"
 import { ControlBox } from "../controls/ControlBox"
 import { AppRecognizable } from "../useRecognizable"
 import { useEffect, useState } from "react"
 import { HoldRecognizer } from "../../core/hold/HoldRecognizer"
 import { Settings } from "../App"
+import { Field } from "../chakra/ui/field"
+import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input"
 
 export const HoldControls = ({
   recognizable,
@@ -58,57 +53,54 @@ export const HoldControls = ({
     <ControlBox>
       <Stack>
         <Text fontSize="small">Hold: {isHolding ? "true" : "false"}</Text>
-        <FormControl>
-          <FormLabel fontSize="small">numInputs</FormLabel>
-          <NumberInput
-            defaultValue={settings.holdNumInputs}
+
+        <Field label="numInputs" mt={1}>
+          <NumberInputRoot
+            defaultValue={settings.holdNumInputs.toString()}
             min={1}
             max={5}
-            size="sm"
-            onChange={(valueString) =>
+            onValueChange={(e) =>
               setSettings((state) => ({
                 ...state,
-                holdNumInputs: parseInt(valueString) || 0,
+                holdNumInputs: parseInt(e.value),
               }))
             }
           >
             <NumberInputField />
-          </NumberInput>
-        </FormControl>
-        <FormControl>
-          <FormLabel fontSize="small">posThreshold (px)</FormLabel>
-          <NumberInput
-            size="sm"
-            defaultValue={settings.holdPosThreshold}
+          </NumberInputRoot>
+        </Field>
+
+        <Field label="posThreshold (px)" mt={1}>
+          <NumberInputRoot
+            defaultValue={settings.holdPosThreshold.toString()}
             min={0}
             max={100}
-            onChange={(valueString) =>
+            onValueChange={(e) =>
               setSettings((state) => ({
                 ...state,
-                holdPosThreshold: parseInt(valueString) || 0,
+                holdPosThreshold: parseInt(e.value),
               }))
             }
           >
             <NumberInputField />
-          </NumberInput>
-        </FormControl>
-        <FormControl>
-          <FormLabel fontSize="small">delay (seconds)</FormLabel>
-          <NumberInput
-            size="sm"
-            defaultValue={settings.holdDelay}
+          </NumberInputRoot>
+        </Field>
+
+        <Field label="delay (seconds)" mt={1}>
+          <NumberInputRoot
+            defaultValue={settings.holdDelay.toString()}
             min={0}
             max={9999}
-            onChange={(valueString) =>
+            onValueChange={(e) =>
               setSettings((state) => ({
                 ...state,
-                holdDelay: parseInt(valueString) || 0,
+                holdDelay: parseInt(e.value),
               }))
             }
           >
             <NumberInputField />
-          </NumberInput>
-        </FormControl>
+          </NumberInputRoot>
+        </Field>
       </Stack>
     </ControlBox>
   )

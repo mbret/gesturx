@@ -1,16 +1,11 @@
-import {
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  Stack,
-  Text,
-} from "@chakra-ui/react"
+import { Stack, Text } from "@chakra-ui/react"
 import { ControlBox } from "../controls/ControlBox"
 import { AppRecognizable } from "../useRecognizable"
 import { useEffect, useState } from "react"
 import { Settings } from "../App"
 import { PanRecognizer } from "../../core"
+import { Field } from "../chakra/ui/field"
+import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input"
 
 export const PanControl = ({
   recognizable,
@@ -61,57 +56,53 @@ export const PanControl = ({
     <ControlBox>
       <Stack>
         <Text fontSize="small">Pan: {isHolding ? "true" : "false"}</Text>
-        <FormControl>
-          <FormLabel fontSize="small">numInputs</FormLabel>
-          <NumberInput
-            defaultValue={settings.panNumInputs}
+        <Field label="numInputs" mt={1}>
+          <NumberInputRoot
+            defaultValue={settings.panNumInputs.toString()}
             min={1}
             max={99}
-            size="sm"
-            onChange={(valueString) =>
+            onValueChange={(e) =>
               setSettings((state) => ({
                 ...state,
-                panNumInputs: parseInt(valueString),
+                panNumInputs: parseInt(e.value),
               }))
             }
           >
             <NumberInputField />
-          </NumberInput>
-        </FormControl>
-        <FormControl>
-          <FormLabel fontSize="small">posThreshold (px)</FormLabel>
-          <NumberInput
-            size="sm"
-            defaultValue={settings.panPosThreshold}
+          </NumberInputRoot>
+        </Field>
+
+        <Field label="posThreshold (px)" mt={1}>
+          <NumberInputRoot
+            defaultValue={settings.panPosThreshold.toString()}
             min={0}
             max={9999}
-            onChange={(valueString) =>
+            onValueChange={(e) =>
               setSettings((state) => ({
                 ...state,
-                panPosThreshold: parseInt(valueString),
+                panPosThreshold: parseInt(e.value),
               }))
             }
           >
             <NumberInputField />
-          </NumberInput>
-        </FormControl>
-        <FormControl>
-          <FormLabel fontSize="small">delay (seconds)</FormLabel>
-          <NumberInput
-            size="sm"
-            defaultValue={settings.panDelay}
+          </NumberInputRoot>
+        </Field>
+
+        <Field label="delay (seconds)" mt={1}>
+          <NumberInputRoot
+            defaultValue={settings.panDelay.toString()}
             min={0}
             max={9999}
-            onChange={(valueString) =>
+            onValueChange={(e) =>
               setSettings((state) => ({
                 ...state,
-                panDelay: parseInt(valueString),
+                panDelay: parseInt(e.value),
               }))
             }
           >
             <NumberInputField />
-          </NumberInput>
-        </FormControl>
+          </NumberInputRoot>
+        </Field>
       </Stack>
     </ControlBox>
   )

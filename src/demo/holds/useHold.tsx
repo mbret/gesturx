@@ -1,7 +1,8 @@
 import { useEffect } from "react"
-import { ToastId, useToast } from "@chakra-ui/react"
+// import { ToastId, useToast } from "@chakra-ui/react"
 import { AppRecognizable } from "../useRecognizable"
 import { Settings } from "../App"
+import { toaster } from "../chakra/ui/toaster"
 
 export const useHold = ({
   recognizable,
@@ -9,14 +10,14 @@ export const useHold = ({
   recognizable: AppRecognizable
   settings: Settings
 }) => {
-  const toast = useToast()
+  // const toast = useToast()
 
   useEffect(() => {
-    let toastId: ToastId | undefined
+    let toastId: string | undefined
 
     const clickSub = recognizable.events$.subscribe((e) => {
       if (e.type === "holdStart") {
-        toastId = toast({
+        toastId = toaster.create({
           title: "Holding",
           duration: 9999999,
         })
@@ -24,7 +25,7 @@ export const useHold = ({
 
       if (e.type === "holdEnd") {
         if (toastId) {
-          toast.close(toastId)
+          toaster.remove(toastId)
         }
       }
     })
@@ -32,5 +33,5 @@ export const useHold = ({
     return () => {
       clickSub.unsubscribe()
     }
-  }, [recognizable, toast])
+  }, [recognizable])
 }

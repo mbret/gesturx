@@ -1,16 +1,12 @@
-import { ArrowForwardIcon } from "@chakra-ui/icons"
+import { IoArrowForward } from "react-icons/io5"
 import { ControlBox } from "../controls/ControlBox"
 import { AppRecognizable } from "../useRecognizable"
 import { useEffect, useState } from "react"
-import {
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  Text,
-} from "@chakra-ui/react"
+import { Text } from "@chakra-ui/react"
 import { Settings } from "../App"
 import { RotateRecognizer } from "../../core"
+import { Field } from "../chakra/ui/field"
+import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input"
 
 export const RotateControls = ({
   recognizable,
@@ -60,46 +56,41 @@ export const RotateControls = ({
   return (
     <ControlBox>
       <Text fontSize="xs">
-        rotation:{" "}
-        <ArrowForwardIcon boxSize={4} transform={`rotate(${rotation}deg)`} />{" "}
+        rotation: <IoArrowForward size="20" transform={`rotate(${rotation})`} />{" "}
         {rotation.toFixed(0)} deg
       </Text>
 
-      <FormControl mt={1}>
-        <FormLabel fontSize="xs">posThreshold (px)</FormLabel>
-        <NumberInput
-          size="sm"
-          defaultValue={settings.rotatePosThreshold}
+      <Field label="posThreshold (px)" mt={1}>
+        <NumberInputRoot
+          defaultValue={settings.rotatePosThreshold.toString()}
           min={0}
           max={9999}
-          onChange={(valueString) =>
+          onValueChange={(e) =>
             setSettings((state) => ({
               ...state,
-              rotatePosThreshold: parseInt(valueString),
+              rotatePosThreshold: parseInt(e.value),
             }))
           }
         >
           <NumberInputField />
-        </NumberInput>
-      </FormControl>
+        </NumberInputRoot>
+      </Field>
 
-      <FormControl mt={1}>
-        <FormLabel fontSize="xs">numInputs</FormLabel>
-        <NumberInput
-          size="sm"
-          defaultValue={settings.rotateNumInputs}
+      <Field label="numInputs" mt={1}>
+        <NumberInputRoot
+          defaultValue={settings.rotateNumInputs.toString()}
           min={0}
           max={9999}
-          onChange={(valueString) =>
+          onValueChange={(e) =>
             setSettings((state) => ({
               ...state,
-              rotateNumInputs: parseInt(valueString),
+              rotateNumInputs: parseInt(e.value),
             }))
           }
         >
           <NumberInputField />
-        </NumberInput>
-      </FormControl>
+        </NumberInputRoot>
+      </Field>
     </ControlBox>
   )
 }

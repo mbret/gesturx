@@ -1,15 +1,11 @@
 import { useEffect, useState } from "react"
 import { AppRecognizable } from "../useRecognizable"
 import { ControlBox } from "../controls/ControlBox"
-import {
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  Text,
-} from "@chakra-ui/react"
+import { Text } from "@chakra-ui/react"
 import { Settings } from "../App"
 import { PinchEvent, PinchRecognizer } from "../../core"
+import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input"
+import { Field } from "../chakra/ui/field"
 
 export const PinchControls = ({
   recognizable,
@@ -65,23 +61,21 @@ export const PinchControls = ({
         scaleDelta {(event?.deltaDistanceScale ?? 1).toFixed(5)}%{" "}
       </Text>
       <Text fontSize="xs">distance {(event?.distance ?? 0).toFixed(0)}px</Text>
-      <FormControl mt={1}>
-        <FormLabel fontSize="xs">posThreshold (px)</FormLabel>
-        <NumberInput
-          size="sm"
-          defaultValue={settings.pinchPosThreshold}
+      <Field label="posThreshold (px)" mt={1}>
+        <NumberInputRoot
+          defaultValue={settings.pinchPosThreshold.toString()}
           min={0}
           max={9999}
-          onChange={(valueString) =>
+          onValueChange={(e) => {
             setSettings((state) => ({
               ...state,
-              pinchPosThreshold: parseInt(valueString),
+              pinchPosThreshold: parseInt(e.value),
             }))
-          }
+          }}
         >
           <NumberInputField />
-        </NumberInput>
-      </FormControl>
+        </NumberInputRoot>
+      </Field>
     </ControlBox>
   )
 }

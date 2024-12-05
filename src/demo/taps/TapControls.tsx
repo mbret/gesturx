@@ -1,15 +1,7 @@
-import {
-  Stack,
-  FormControl,
-  FormLabel,
-  NumberInput,
-  NumberInputField,
-  NumberInputStepper,
-  NumberIncrementStepper,
-  NumberDecrementStepper,
-  Text,
-} from "@chakra-ui/react"
+import { Stack } from "@chakra-ui/react"
 import { ControlBox } from "../controls/ControlBox"
+import { Field } from "../chakra/ui/field"
+import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input"
 
 export const TapControls = ({
   value,
@@ -21,23 +13,16 @@ export const TapControls = ({
   return (
     <ControlBox>
       <Stack>
-        <Text>Tap:</Text>
-        <FormControl>
-          <FormLabel>max taps</FormLabel>
-          <NumberInput
-            defaultValue={value}
+        <Field label="max taps">
+          <NumberInputRoot
+            defaultValue={value.toString()}
             min={1}
             max={20}
-            onChange={(valueString) => onChange(parseInt(valueString))}
-            maxWidth={100}
+            onValueChange={(e) => onChange(parseInt(e.value))}
           >
             <NumberInputField />
-            <NumberInputStepper>
-              <NumberIncrementStepper />
-              <NumberDecrementStepper />
-            </NumberInputStepper>
-          </NumberInput>
-        </FormControl>
+          </NumberInputRoot>
+        </Field>
       </Stack>
     </ControlBox>
   )

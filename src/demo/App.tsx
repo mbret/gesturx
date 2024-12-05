@@ -8,6 +8,7 @@ import { Pan } from "./Pan"
 import { GesturesBox } from "./gesturesBox/GesturesBox"
 import { memo, useState } from "react"
 import { Controls } from "./controls/Controls"
+import { Toaster } from "./chakra/ui/toaster"
 
 export type Settings = {
   maxTaps: number
@@ -72,6 +73,7 @@ function App() {
         <GesturesBox recognizable={recognizable} settings={settings} />
         <CenterTracker recognizable={recognizable} />
       </Pan>
+      <Toaster />
     </>
   )
 }
