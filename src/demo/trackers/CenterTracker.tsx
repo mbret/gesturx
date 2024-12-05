@@ -33,6 +33,7 @@ export const CenterTracker = ({
     <Box
       position="absolute"
       bgColor="white"
+      pointerEvents="none"
       width={4}
       height={4}
       borderRadius="50%"

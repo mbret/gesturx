@@ -1,4 +1,4 @@
-import { Stack } from "@chakra-ui/react"
+import { Stack, Text } from "@chakra-ui/react"
 import { ReactNode } from "react"
 
 export const Pan = ({
@@ -19,6 +19,8 @@ export const Pan = ({
       overflow="hidden"
       ref={containerRef}
     >
+      <Text color="white">Select me to cancel pan/swipe</Text>
+
       {children}
     </Stack>
   )

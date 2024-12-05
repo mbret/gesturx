@@ -12,6 +12,10 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+::selection {
+  background: rgba(255, 255, 0, 0.24);
+}
+
 html {
   height: 100%;
 }

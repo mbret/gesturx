@@ -1,4 +1,12 @@
-import { Observable, map, share, switchMap } from "rxjs"
+import {
+  Observable,
+  filter,
+  map,
+  share,
+  switchMap,
+  takeUntil,
+  withLatestFrom,
+} from "rxjs"
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry"
 import { isRecognizedAsSwipe } from "./operators"
 import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
@@ -27,7 +35,9 @@ export class SwipeRecognizer
         const { escapeVelocity = 0.9 } = initializedWith.options ?? {}
 
         return this.panStart$.pipe(
-          switchMap((startEvent) => {
+          withLatestFrom(this.failWithActive$),
+          filter(([, failWithActive]) => !failWithActive),
+          switchMap(([startEvent]) => {
             return this.panEnd$.pipe(
               isRecognizedAsSwipe(escapeVelocity),
               map((event) => {
@@ -40,6 +50,9 @@ export class SwipeRecognizer
                   ...event,
                 }
               }),
+              takeUntil(
+                this.failWithActive$.pipe(filter((isActive) => isActive)),
+              ),
             )
           }),
           share(),

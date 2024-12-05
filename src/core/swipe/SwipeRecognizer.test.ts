@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest"
-import { buffer, first, lastValueFrom, tap, timer } from "rxjs"
+import { buffer, first, lastValueFrom, NEVER, Subject, tap, timer } from "rxjs"
 import { SwipeRecognizer } from "./SwipeRecognizer"
 
 const waitFor = (time: number) =>
@@ -149,6 +149,111 @@ describe("SwipeRecognizer", () => {
           },
         }),
         buffer(waitLongEnough$),
+        first(),
+      ),
+    )
+
+    expect(values).toMatchObject([])
+  })
+
+  it("should not start detecting a swipe when failWith is active", async () => {
+    const finishSubject = new Subject<void>()
+    const startFailSubject = new Subject<void>()
+
+    const recognizer = new SwipeRecognizer({
+      container,
+      failWith: [
+        {
+          start$: startFailSubject,
+          end$: NEVER,
+        },
+      ],
+    })
+
+    const values = await lastValueFrom(
+      recognizer.events$.pipe(
+        tap({
+          subscribe: async () => {
+            // shoudl work
+            await createVelocityOfOnePanMoving()
+
+            startFailSubject.next()
+
+            // should not
+            await createVelocityOfOnePanMoving()
+
+            finishSubject.next()
+          },
+        }),
+        buffer(finishSubject),
+        first(),
+      ),
+    )
+
+    expect(values.length).toBe(1)
+    expect(values).toMatchObject([{ type: "swipe" }])
+  })
+
+  it("should cancel an in-progress swipe when failWith becomes active", async () => {
+    const finishSubject = new Subject<void>()
+    const failWithStart$ = new Subject<void>()
+    const recognizer = new SwipeRecognizer({
+      container,
+      failWith: [
+        {
+          start$: failWithStart$,
+          end$: NEVER,
+        },
+      ],
+      options: {
+        escapeVelocity: 0.1,
+      },
+    })
+
+    const values = await lastValueFrom(
+      recognizer.events$.pipe(
+        tap({
+          subscribe: async () => {
+            // Start the swipe gesture
+            await waitFor(1)
+            sendPointerEvent({
+              container,
+              identifier: 1,
+              type: "pointerdown",
+              x: 0,
+              y: 0,
+            })
+
+            await waitFor(10)
+
+            sendPointerEvent({
+              container,
+              identifier: 1,
+              type: "pointermove",
+              x: 10,
+              y: 0,
+            })
+
+            // Trigger failWith mid-swipe
+            failWithStart$.next()
+
+            await waitFor(10)
+
+            // Complete the swipe motion, but it should be cancelled
+            sendPointerEvent({
+              container,
+              identifier: 1,
+              type: "pointerup",
+              x: 20,
+              y: 0,
+            })
+
+            await waitFor(10)
+
+            finishSubject.next()
+          },
+        }),
+        buffer(finishSubject),
         first(),
       ),
     )
