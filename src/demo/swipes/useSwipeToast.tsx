@@ -13,7 +13,10 @@ export const useSwipeToast = () => {
         <Stack>
           <Text display="flex" gap={4}>
             Direction:{" "}
-            <IoArrowForward size="20" transform={`rotate(${e.angle.toFixed(0)})`} />{" "}
+            <IoArrowForward
+              size="20"
+              transform={`rotate(${e.angle.toFixed(0)})`}
+            />{" "}
           </Text>
           <Text display="flex" gap={4}>
             Velocity: X: <b>{e.velocityX.toFixed(2)}</b> / Y:{" "}
