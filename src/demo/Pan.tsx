@@ -20,7 +20,7 @@ export const Pan = ({
       ref={containerRef}
     >
       <Text color="white">Select me to cancel pan/swipe</Text>
-
+      <img src="/image.jpg" height={100} width={100} />
       {children}
     </Stack>
   )

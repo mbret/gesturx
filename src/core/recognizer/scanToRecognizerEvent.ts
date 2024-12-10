@@ -62,14 +62,24 @@ export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
       const hasAtLeastOneFinger = currActivePointersNumber > 0
 
       const { deltaX, deltaY } =
-        hasAddedOrRemovedAFinger && hasAtLeastOneFinger
+        (hasAddedOrRemovedAFinger && hasAtLeastOneFinger) ||
+        /**
+         * A pointercancel cean come after a drag event and heven being completely
+         * desync, leading to erroned values. We should just ignore it.
+         */
+        curr.event.type === "pointercancel"
           ? calculateNewDelta(newCenter, newCenter, prevDeltaX, prevDeltaY)
           : calculateNewDelta(newCenter, prevCenter, prevDeltaX, prevDeltaY)
 
       const { degreesDelta: deltaPointersAngle } =
         prevActivePointersNumber === currActivePointersNumber &&
         prevActivePointersNumber >= 2 &&
-        currActivePointersNumber >= 2
+        currActivePointersNumber >= 2 &&
+        /**
+         * A pointercancel cean come after a drag event and heven being completely
+         * desync, leading to erroned values. We should just ignore it.
+         */
+        curr.event.type !== "pointercancel"
           ? calculateAngleDelta(
               acc?.latestActivePointers ?? [],
               curr.latestActivePointers ?? [],
