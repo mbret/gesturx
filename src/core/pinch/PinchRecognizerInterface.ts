@@ -1,31 +1,31 @@
-import { Observable } from "rxjs"
-import { RecognizerEvent } from "../recognizer/RecognizerEvent"
-import { Recognizer, RecognizerConfig } from "../recognizer/Recognizer"
+import type { Observable } from "rxjs";
+import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer";
+import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
 
 export interface PinchEvent extends RecognizerEvent {
-  type: "pinchStart" | "pinchMove" | "pinchEnd"
-  scale: number
-  /**
-   * Distance between start and current
-   */
-  distance: number
-  /**
-   * Delta distance between events
-   */
-  deltaDistance: number
-  /**
-   * Delta scale between events
-   */
-  deltaDistanceScale: number
+	type: "pinchStart" | "pinchMove" | "pinchEnd";
+	scale: number;
+	/**
+	 * Distance between start and current
+	 */
+	distance: number;
+	/**
+	 * Delta distance between events
+	 */
+	deltaDistance: number;
+	/**
+	 * Delta scale between events
+	 */
+	deltaDistanceScale: number;
 }
 
 export interface PinchRecognizerOptions {
-  posThreshold?: number
+	posThreshold?: number;
 }
 
 export interface PinchRecognizerInterface
-  extends Recognizer<PinchRecognizerOptions, PinchEvent> {
-  events$: Observable<PinchEvent>
+	extends Recognizer<PinchRecognizerOptions, PinchEvent> {
+	events$: Observable<PinchEvent>;
 
-  update(options: RecognizerConfig<PinchRecognizerOptions>): void
+	update(options: RecognizerConfig<PinchRecognizerOptions>): void;
 }

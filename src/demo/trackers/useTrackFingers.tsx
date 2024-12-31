@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { AppRecognizable } from "../useRecognizable"
+import { useEffect, useState } from "react";
+import type { AppRecognizable } from "../useRecognizable";
 
 /**
  * To track fingers we simply need to observe the state of the
@@ -7,17 +7,17 @@ import { AppRecognizable } from "../useRecognizable"
  * used by whatever recognizers.
  */
 export const useTrackFingers = (recognizable: AppRecognizable) => {
-  const [fingers, setFingers] = useState(0)
+	const [fingers, setFingers] = useState(0);
 
-  useEffect(() => {
-    const sub = recognizable.state$.subscribe(({ fingers }) => {
-      setFingers(fingers)
-    })
+	useEffect(() => {
+		const sub = recognizable.state$.subscribe(({ fingers }) => {
+			setFingers(fingers);
+		});
 
-    return () => {
-      sub?.unsubscribe()
-    }
-  }, [recognizable])
+		return () => {
+			sub?.unsubscribe();
+		};
+	}, [recognizable]);
 
-  return { fingers }
-}
+	return { fingers };
+};

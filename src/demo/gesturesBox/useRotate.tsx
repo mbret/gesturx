@@ -1,26 +1,26 @@
-import { useEffect, useState } from "react"
-import { AppRecognizable } from "../useRecognizable"
-import { Settings } from "../App"
+import { useEffect, useState } from "react";
+import type { Settings } from "../App";
+import type { AppRecognizable } from "../useRecognizable";
 
 export const useRotate = ({
-  recognizable,
+	recognizable,
 }: {
-  recognizable: AppRecognizable
-  settings: Settings
+	recognizable: AppRecognizable;
+	settings: Settings;
 }) => {
-  const [boxAngle, setBoxAngle] = useState(0)
+	const [boxAngle, setBoxAngle] = useState(0);
 
-  useEffect(() => {
-    const sub = recognizable.events$.subscribe((e) => {
-      if (e.type === "rotateMove") {
-        setBoxAngle((state) => state + e.deltaAngle)
-      }
-    })
+	useEffect(() => {
+		const sub = recognizable.events$.subscribe((e) => {
+			if (e.type === "rotateMove") {
+				setBoxAngle((state) => state + e.deltaAngle);
+			}
+		});
 
-    return () => {
-      sub.unsubscribe()
-    }
-  }, [recognizable])
+		return () => {
+			sub.unsubscribe();
+		};
+	}, [recognizable]);
 
-  return { boxAngle }
-}
+	return { boxAngle };
+};

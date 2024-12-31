@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react"
-import { AppRecognizable } from "../useRecognizable"
-import { Box } from "@chakra-ui/react"
+import { Box } from "@chakra-ui/react";
+import { useEffect, useState } from "react";
+import type { AppRecognizable } from "../useRecognizable";
 
 /**
  * Track center of pointer events by moving a box.
@@ -13,33 +13,33 @@ import { Box } from "@chakra-ui/react"
  * the center.
  */
 export const CenterTracker = ({
-  recognizable,
+	recognizable,
 }: {
-  recognizable: AppRecognizable
+	recognizable: AppRecognizable;
 }) => {
-  const [position, setPosition] = useState({ x: 0, y: 0 })
+	const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    const sub = recognizable.events$.subscribe((event) => {
-      setPosition(event.center)
-    })
+	useEffect(() => {
+		const sub = recognizable.events$.subscribe((event) => {
+			setPosition(event.center);
+		});
 
-    return () => {
-      sub.unsubscribe()
-    }
-  }, [recognizable])
+		return () => {
+			sub.unsubscribe();
+		};
+	}, [recognizable]);
 
-  return (
-    <Box
-      position="absolute"
-      bgColor="white"
-      pointerEvents="none"
-      width={4}
-      height={4}
-      borderRadius="50%"
-      left={`${position.x}px`}
-      top={`${position.y}px`}
-      transform="translate(-50%, -50%)"
-    />
-  )
-}
+	return (
+		<Box
+			position="absolute"
+			bgColor="white"
+			pointerEvents="none"
+			width={4}
+			height={4}
+			borderRadius="50%"
+			left={`${position.x}px`}
+			top={`${position.y}px`}
+			transform="translate(-50%, -50%)"
+		/>
+	);
+};

@@ -1,37 +1,37 @@
-import { useEffect } from "react"
+import { useEffect } from "react";
+import type { Settings } from "../App";
+import { toaster } from "../chakra/ui/toaster";
 // import { ToastId, useToast } from "@chakra-ui/react"
-import { AppRecognizable } from "../useRecognizable"
-import { Settings } from "../App"
-import { toaster } from "../chakra/ui/toaster"
+import type { AppRecognizable } from "../useRecognizable";
 
 export const useHold = ({
-  recognizable,
+	recognizable,
 }: {
-  recognizable: AppRecognizable
-  settings: Settings
+	recognizable: AppRecognizable;
+	settings: Settings;
 }) => {
-  // const toast = useToast()
+	// const toast = useToast()
 
-  useEffect(() => {
-    let toastId: string | undefined
+	useEffect(() => {
+		let toastId: string | undefined;
 
-    const clickSub = recognizable.events$.subscribe((e) => {
-      if (e.type === "holdStart") {
-        toastId = toaster.create({
-          title: "Holding",
-          duration: 9999999,
-        })
-      }
+		const clickSub = recognizable.events$.subscribe((e) => {
+			if (e.type === "holdStart") {
+				toastId = toaster.create({
+					title: "Holding",
+					duration: 9999999,
+				});
+			}
 
-      if (e.type === "holdEnd") {
-        if (toastId) {
-          toaster.remove(toastId)
-        }
-      }
-    })
+			if (e.type === "holdEnd") {
+				if (toastId) {
+					toaster.remove(toastId);
+				}
+			}
+		});
 
-    return () => {
-      clickSub.unsubscribe()
-    }
-  }, [recognizable])
-}
+		return () => {
+			clickSub.unsubscribe();
+		};
+	}, [recognizable]);
+};

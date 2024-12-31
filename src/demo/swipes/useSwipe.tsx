@@ -1,23 +1,23 @@
-import { useEffect } from "react"
-import { AppRecognizable } from "../useRecognizable"
-import { useSwipeToast } from "./useSwipeToast"
+import { useEffect } from "react";
+import type { AppRecognizable } from "../useRecognizable";
+import { useSwipeToast } from "./useSwipeToast";
 
 export const useSwipe = ({
-  recognizable,
+	recognizable,
 }: {
-  recognizable: AppRecognizable
+	recognizable: AppRecognizable;
 }) => {
-  const swipeDebugToast = useSwipeToast()
+	const swipeDebugToast = useSwipeToast();
 
-  useEffect(() => {
-    const sub = recognizable.events$.subscribe((e) => {
-      if (e.type === "swipe") {
-        swipeDebugToast(e)
-      }
-    })
+	useEffect(() => {
+		const sub = recognizable.events$.subscribe((e) => {
+			if (e.type === "swipe") {
+				swipeDebugToast(e);
+			}
+		});
 
-    return () => {
-      sub.unsubscribe()
-    }
-  }, [recognizable])
-}
+		return () => {
+			sub.unsubscribe();
+		};
+	}, [recognizable, swipeDebugToast]);
+};
