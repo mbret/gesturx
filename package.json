@@ -34,7 +34,7 @@
 		"@vitejs/plugin-react": "^4.3.0",
 		"@vitest/coverage-v8": "^2.1.5",
 		"cross-env": "^7.0.3",
-		"framer-motion": "^11.2.6",
+		"framer-motion": "^12.4.2",
 		"globals": "^15.6.0",
 		"happy-dom": "^16.2.6",
 		"husky": "^9.1.7",
