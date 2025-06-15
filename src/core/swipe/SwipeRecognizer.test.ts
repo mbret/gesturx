@@ -73,8 +73,14 @@ describe("SwipeRecognizer", () => {
 		container.dispatchEvent(event);
 	}
 
-	// ~0.8 velocityX
-	const createVelocityOfOnePanMoving = async () => {
+	const createVelocityOfOnePanMoving = async (velocityXThreshold = 0.9) => {
+		// Calculate required distance to achieve velocity above threshold
+		// velocity = distance/time, so distance = velocity * time
+		// We use 20ms as total time (10ms + 10ms)
+		const requiredDistance = velocityXThreshold * 20;
+		// Add a small buffer to ensure we're above threshold
+		const actualDistance = requiredDistance + 4;
+
 		await waitFor(1);
 
 		sendPointerEvent({
@@ -91,7 +97,7 @@ describe("SwipeRecognizer", () => {
 			container,
 			identifier: 1,
 			type: "pointermove",
-			x: 10,
+			x: actualDistance / 2,
 			y: 0,
 		});
 
@@ -101,7 +107,7 @@ describe("SwipeRecognizer", () => {
 			container,
 			identifier: 1,
 			type: "pointerup",
-			x: 20,
+			x: actualDistance,
 			y: 0,
 		});
 	};
@@ -172,7 +178,7 @@ describe("SwipeRecognizer", () => {
 			recognizer.events$.pipe(
 				tap({
 					subscribe: async () => {
-						// shoudl work
+						// should work
 						await createVelocityOfOnePanMoving();
 
 						startFailSubject.next();
@@ -188,6 +194,7 @@ describe("SwipeRecognizer", () => {
 			),
 		);
 
+		// we should be getting only the first swipe, before the failing subject hit
 		expect(values.length).toBe(1);
 		expect(values).toMatchObject([{ type: "swipe" }]);
 	});
