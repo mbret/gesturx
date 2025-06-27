@@ -12,7 +12,7 @@ import type {
 	RecognizableState,
 } from "./RecognizableInterface";
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: TODO
 type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	recognizers: T;
 	/**
@@ -23,11 +23,14 @@ type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	disableTextSelection?: boolean;
 } & RecognizerConfig<unknown>;
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: TODO
 export class Recognizable<T extends Recognizer<any, any>[]>
 	implements RecognizableInterface<T>
 {
-	events$: Observable<ObservedValueOf<T[number]["events$"]>>;
+	events$: Observable<{
+		event: ObservedValueOf<T[number]["events$"]>;
+		recognizer: T[number];
+	}>;
 
 	recognizers: T;
 
@@ -37,7 +40,9 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 		this.recognizers = options.recognizers;
 
 		this.events$ = merge(
-			...options.recognizers.map((recognizer) => recognizer.events$),
+			...options.recognizers.map((recognizer) =>
+				recognizer.events$.pipe(map((event) => ({ event, recognizer }))),
+			),
 		).pipe(share());
 
 		this.state$ = combineLatest(
@@ -56,7 +61,7 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 	public update({
 		disableTextSelection,
 		...rest
-	}: Partial<RecognizableOptions<T>>) {
+	}: Partial<Omit<RecognizableOptions<T>, "recognizers">>) {
 		if (rest.container) {
 			/**
 			 * We have to disable touch-action otherwise every events will be followed

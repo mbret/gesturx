@@ -15,15 +15,15 @@ export const useHold = ({
 	useEffect(() => {
 		let toastId: string | undefined;
 
-		const clickSub = recognizable.events$.subscribe((e) => {
-			if (e.type === "holdStart") {
+		const clickSub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "holdStart") {
 				toastId = toaster.create({
 					title: "Holding",
 					duration: 9999999,
 				});
 			}
 
-			if (e.type === "holdEnd") {
+			if (event.type === "holdEnd") {
 				if (toastId) {
 					toaster.remove(toastId);
 				}

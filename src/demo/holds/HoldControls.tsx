@@ -34,12 +34,12 @@ export const HoldControls = ({
 	}, [holdRecognizer, holdDelay, holdNumInputs, holdPosThreshold]);
 
 	useEffect(() => {
-		const clickSub = recognizable.events$.subscribe((e) => {
-			if (e.type === "holdStart") {
+		const clickSub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "holdStart") {
 				setIsHolding(true);
 			}
 
-			if (e.type === "holdEnd") {
+			if (event.type === "holdEnd") {
 				setIsHolding(false);
 			}
 		});

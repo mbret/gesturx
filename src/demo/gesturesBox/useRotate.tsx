@@ -11,9 +11,9 @@ export const useRotate = ({
 	const [boxAngle, setBoxAngle] = useState(0);
 
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((e) => {
-			if (e.type === "rotateMove") {
-				setBoxAngle((state) => state + e.deltaAngle);
+		const sub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "rotateMove") {
+				setBoxAngle((state) => state + event.deltaAngle);
 			}
 		});
 

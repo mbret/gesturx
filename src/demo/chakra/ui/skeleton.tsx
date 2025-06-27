@@ -33,7 +33,7 @@ export const SkeletonText = React.forwardRef<HTMLDivElement, SkeletonTextProps>(
 				{Array.from({ length: noOfLines }).map((_, index) => (
 					<ChakraSkeleton
 						height="4"
-						// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+						// biome-ignore lint/suspicious/noArrayIndexKey: TODO
 						key={index}
 						{...props}
 						_last={{ maxW: "80%" }}

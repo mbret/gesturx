@@ -10,9 +10,9 @@ export const useSwipe = ({
 	const swipeDebugToast = useSwipeToast();
 
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((e) => {
-			if (e.type === "swipe") {
-				swipeDebugToast(e);
+		const sub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "swipe") {
+				swipeDebugToast(event);
 			}
 		});
 

@@ -20,7 +20,7 @@ export const CenterTracker = ({
 	const [position, setPosition] = useState({ x: 0, y: 0 });
 
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((event) => {
+		const sub = recognizable.events$.subscribe(({ event }) => {
 			setPosition(event.center);
 		});
 

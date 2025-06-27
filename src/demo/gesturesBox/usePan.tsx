@@ -18,7 +18,7 @@ export const usePan = ({
 	 * Subscribe to pan events
 	 */
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((event) => {
+		const sub = recognizable.events$.subscribe(({ event }) => {
 			if (
 				event.type === "panMove" ||
 				event.type === "panEnd" ||

@@ -21,12 +21,12 @@ export const RotateControls = ({
 	const { rotateNumInputs, rotatePosThreshold } = settings;
 
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((e) => {
-			if (e.type === "rotateMove") {
-				setRotation(e.angle);
+		const sub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "rotateMove") {
+				setRotation(event.angle);
 			}
 
-			if (e.type === "rotateEnd") {
+			if (event.type === "rotateEnd") {
 				setRotation(0);
 			}
 		});

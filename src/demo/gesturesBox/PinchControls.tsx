@@ -35,16 +35,16 @@ export const PinchControls = ({
 	}, [pinchRecognizer, pinchPosThreshold]);
 
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((e) => {
+		const sub = recognizable.events$.subscribe(({ event }) => {
 			if (
-				e.type === "pinchEnd" ||
-				e.type === "pinchMove" ||
-				e.type === "pinchStart"
+				event.type === "pinchEnd" ||
+				event.type === "pinchMove" ||
+				event.type === "pinchStart"
 			) {
-				setEvent(e);
+				setEvent(event);
 			}
 
-			if (e.type === "pinchEnd") {
+			if (event.type === "pinchEnd") {
 				setEvent(undefined);
 			}
 		});

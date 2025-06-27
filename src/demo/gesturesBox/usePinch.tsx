@@ -11,17 +11,17 @@ export const usePinch = ({
 	const [boxScale, setBoxScale] = useState(1);
 
 	useEffect(() => {
-		const sub = recognizable.events$.subscribe((e) => {
-			if (e.type === "pinchStart") {
-				setBoxScale((value) => value * e.deltaDistanceScale);
+		const sub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "pinchStart") {
+				setBoxScale((value) => value * event.deltaDistanceScale);
 			}
 
-			if (e.type === "pinchMove") {
-				setBoxScale((value) => value * e.deltaDistanceScale);
+			if (event.type === "pinchMove") {
+				setBoxScale((value) => value * event.deltaDistanceScale);
 			}
 
-			if (e.type === "pinchEnd") {
-				setBoxScale((value) => value * e.deltaDistanceScale);
+			if (event.type === "pinchEnd") {
+				setBoxScale((value) => value * event.deltaDistanceScale);
 			}
 		});
 

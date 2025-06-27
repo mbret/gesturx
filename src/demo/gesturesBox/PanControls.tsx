@@ -37,12 +37,12 @@ export const PanControl = ({
 	}, [panRecognizer, panDelay, panNumInputs, panPosThreshold]);
 
 	useEffect(() => {
-		const clickSub = recognizable.events$.subscribe((e) => {
-			if (e.type === "panStart") {
+		const clickSub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "panStart") {
 				setIsHolding(true);
 			}
 
-			if (e.type === "panEnd") {
+			if (event.type === "panEnd") {
 				setIsHolding(false);
 			}
 		});

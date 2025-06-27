@@ -13,7 +13,7 @@ export type RecognizableState = {
 	fingers: number;
 };
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+// biome-ignore lint/suspicious/noExplicitAny: TODO
 export interface RecognizableInterface<T extends Recognizer<any, any>[]> {
 	/**
 	 * List of recognizers registered.
@@ -25,7 +25,10 @@ export interface RecognizableInterface<T extends Recognizer<any, any>[]> {
 	/**
 	 * Dispatch events from all recognizer in one place.
 	 */
-	readonly events$: Observable<ObservedValueOf<T[number]["events$"]>>;
+	readonly events$: Observable<{
+		event: ObservedValueOf<T[number]["events$"]>;
+		recognizer: T[number];
+	}>;
 
 	/**
 	 * Global state based on registered recognizers.
@@ -40,7 +43,7 @@ export interface RecognizableInterface<T extends Recognizer<any, any>[]> {
 	 *
 	 * The options are in fact passed down to all of the recognizers.
 	 * Use it to initialize the container when you want to start
-	 * listenin to gesture events.
+	 * listening to gesture events.
 	 */
 	update(options: RecognizerConfig<unknown>): void;
 }

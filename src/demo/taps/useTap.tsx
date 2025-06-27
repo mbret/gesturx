@@ -16,14 +16,14 @@ export const useTap = ({
 	);
 
 	useEffect(() => {
-		const clickSub = recognizable.events$.subscribe((e) => {
-			if (e.type === "tap") {
+		const clickSub = recognizable.events$.subscribe(({ event }) => {
+			if (event.type === "tap") {
 				toaster.create({
 					title: "Click",
 					description: (
 						<Stack>
 							<Text display="flex" gap={4}>
-								Taps: <b>{e.taps}</b>
+								Taps: <b>{event.taps}</b>
 							</Text>
 						</Stack>
 					),
