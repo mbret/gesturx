@@ -69,7 +69,7 @@ export const PinchControls = ({
 					onValueChange={(e) => {
 						setSettings((state) => ({
 							...state,
-							pinchPosThreshold: Number.parseInt(e.value),
+							pinchPosThreshold: Number.parseInt(e.value, 10),
 						}));
 					}}
 				>

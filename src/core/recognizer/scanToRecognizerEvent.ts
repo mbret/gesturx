@@ -87,7 +87,7 @@ export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
 					: { degreesDelta: 0 };
 
 			return {
-				startTime: new Date().getTime(),
+				startTime: Date.now(),
 				...acc,
 				...curr,
 				center: newCenter,

@@ -62,7 +62,7 @@ export const HoldControls = ({
 						onValueChange={(e) =>
 							setSettings((state) => ({
 								...state,
-								holdNumInputs: Number.parseInt(e.value),
+								holdNumInputs: Number.parseInt(e.value, 10),
 							}))
 						}
 					>
@@ -78,7 +78,7 @@ export const HoldControls = ({
 						onValueChange={(e) =>
 							setSettings((state) => ({
 								...state,
-								holdPosThreshold: Number.parseInt(e.value),
+								holdPosThreshold: Number.parseInt(e.value, 10),
 							}))
 						}
 					>
@@ -94,7 +94,7 @@ export const HoldControls = ({
 						onValueChange={(e) =>
 							setSettings((state) => ({
 								...state,
-								holdDelay: Number.parseInt(e.value),
+								holdDelay: Number.parseInt(e.value, 10),
 							}))
 						}
 					>
