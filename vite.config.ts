@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => {
 			minify: true,
 			cssMinify: true,
 			...(libMode && {
+				// Vite 7+ defaults to "baseline-widely-available". Keep Vite 6's default
+				// target so the published bundles still support the same browsers.
+				target: ["es2020", "edge88", "firefox78", "chrome87", "safari14"],
 				lib: {
 					entry: resolve(import.meta.dirname, "src/core/index.ts"),
 					name: "gesturx",
