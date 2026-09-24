@@ -1,8 +1,8 @@
 import {
-	type Observable,
 	filter,
 	map,
 	merge,
+	type Observable,
 	scan,
 	share,
 	shareReplay,

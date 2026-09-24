@@ -1,9 +1,9 @@
 import {
-	type Observable,
-	type ObservedValueOf,
 	combineLatest,
 	map,
 	merge,
+	type Observable,
+	type ObservedValueOf,
 	share,
 } from "rxjs";
 import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer";

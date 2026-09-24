@@ -1,4 +1,4 @@
-import { type Observable, filter } from "rxjs";
+import { filter, type Observable } from "rxjs";
 import { isPointerOffEvent } from "../utils/events";
 
 export const isValidConfig = <T extends { container?: HTMLElement }>(

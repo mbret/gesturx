@@ -1,4 +1,4 @@
-import { type Observable, filter } from "rxjs";
+import { filter, type Observable } from "rxjs";
 import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
 
 export const isRecognizedAsSwipe =

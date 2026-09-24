@@ -13,13 +13,20 @@ export default defineConfig(({ mode }) => {
 			cssMinify: true,
 			...(libMode && {
 				lib: {
-					entry: resolve(__dirname, "src/core/index.ts"),
+					entry: resolve(import.meta.dirname, "src/core/index.ts"),
 					name: "gesturx",
 					fileName: "index",
 				},
 			}),
 			emptyOutDir: mode !== "development",
 			sourcemap: true,
+			rolldownOptions: {
+				output: {
+					// Rollup always emitted "use strict" in non-ESM (UMD) output, Rolldown
+					// only does so when the source has the directive.
+					strict: true,
+				},
+			},
 		},
 		plugins: [
 			react(),
@@ -32,7 +39,12 @@ export default defineConfig(({ mode }) => {
 				}),
 			},
 			dts({
-				rollupTypes: libMode,
+				bundleTypes: libMode && {
+					// TypeScript 7 no longer ships lib typings in `typescript/lib`, which
+					// is where the plugin tells api-extractor to look. Unset it so
+					// api-extractor uses the libs of its own bundled compiler.
+					invokeOptions: { typescriptCompilerFolder: undefined },
+				},
 			}),
 		],
 	};

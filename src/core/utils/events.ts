@@ -1,11 +1,11 @@
 import {
-	type Observable,
 	defer,
 	filter,
 	fromEvent,
 	map,
 	merge,
 	mergeMap,
+	type Observable,
 	of,
 	scan,
 	takeWhile,

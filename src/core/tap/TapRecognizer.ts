@@ -1,6 +1,5 @@
 import {
 	buffer,
-	type Observable,
 	debounceTime,
 	exhaustMap,
 	filter,
@@ -8,6 +7,7 @@ import {
 	ignoreElements,
 	map,
 	merge,
+	type Observable,
 	of,
 	share,
 	shareReplay,
@@ -19,12 +19,12 @@ import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import { scanToRecognizerEvent } from "../recognizer/scanToRecognizerEvent";
 import { trackPointers } from "../utils/events";
 import { filterNotEmpty } from "../utils/utils";
+import { takeWhenOutsideThreshold, takeWhenPressedTooLong } from "./operators";
 import type {
 	TapEvent,
 	TapRecognizerInterface,
 	TapRecognizerOptions,
 } from "./TapRecognizerInterface";
-import { takeWhenOutsideThreshold, takeWhenPressedTooLong } from "./operators";
 
 export type { TapEvent };
 

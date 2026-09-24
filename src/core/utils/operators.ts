@@ -1,4 +1,4 @@
-import { type Observable, distinctUntilChanged, filter } from "rxjs";
+import { distinctUntilChanged, filter, type Observable } from "rxjs";
 
 export const emitOnceWhen =
 	<T>(condition: (value: T) => boolean) =>

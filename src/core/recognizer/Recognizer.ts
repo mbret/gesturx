@@ -1,6 +1,5 @@
 import {
 	BehaviorSubject,
-	type Observable,
 	combineLatest,
 	distinctUntilChanged,
 	exhaustMap,
@@ -9,6 +8,7 @@ import {
 	map,
 	merge,
 	mergeMap,
+	type Observable,
 	of,
 	share,
 	shareReplay,
@@ -22,8 +22,8 @@ import {
 } from "rxjs";
 import { matchPointer, trackPointers } from "../utils/events";
 import { isWithinPosThreshold } from "../utils/utils";
-import type { RecognizerEvent } from "./RecognizerEvent";
 import { filterPointerOff, isValidConfig } from "./operators";
+import type { RecognizerEvent } from "./RecognizerEvent";
 import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
 import { getPointerEvents } from "./utils";
 

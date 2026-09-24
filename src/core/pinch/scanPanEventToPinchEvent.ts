@@ -1,4 +1,4 @@
-import { type Observable, map, scan } from "rxjs";
+import { map, type Observable, scan } from "rxjs";
 import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
 import type { PinchEvent } from "./PinchRecognizerInterface";
 
@@ -31,7 +31,7 @@ export const scanPanEventToPinchEvent =
 				 */
 				const initialPointersAverageDistance = hasChangedFingers
 					? curr.pointersAverageDistance
-					: !!acc && "initialPointersAverageDistance" in acc
+					: acc && "initialPointersAverageDistance" in acc
 						? acc.initialPointersAverageDistance
 						: curr.pointersAverageDistance;
 

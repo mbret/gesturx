@@ -1,7 +1,7 @@
 import {
-	type Observable,
 	filter,
 	map,
+	type Observable,
 	share,
 	switchMap,
 	takeUntil,
@@ -9,12 +9,12 @@ import {
 } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry";
+import { isRecognizedAsSwipe } from "./operators";
 import type {
 	SwipeEvent,
 	SwipeRecognizerInterface,
 	SwipeRecognizerOptions,
 } from "./SwipeRecognizerInterface";
-import { isRecognizedAsSwipe } from "./operators";
 
 export type { SwipeEvent };
 
