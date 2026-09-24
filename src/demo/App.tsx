@@ -1,9 +1,9 @@
 import { memo, useState } from "react";
-import { Pan } from "./Pan";
 import { Toaster } from "./chakra/ui/toaster";
 import { Controls } from "./controls/Controls";
 import { GesturesBox } from "./gesturesBox/GesturesBox";
 import { useHold } from "./holds/useHold";
+import { Pan } from "./Pan";
 import { useSwipe } from "./swipes/useSwipe";
 import { useTap } from "./taps/useTap";
 import { CenterTracker } from "./trackers/CenterTracker";

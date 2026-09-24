@@ -1,7 +1,7 @@
 import {
-	type Observable,
 	filter,
 	mergeMap,
+	type Observable,
 	takeUntil,
 	takeWhile,
 	timer,

@@ -1,4 +1,4 @@
-import { type Observable, map, scan } from "rxjs";
+import { map, type Observable, scan } from "rxjs";
 import {
 	calculateAngleDelta,
 	calculateAverageDistance,

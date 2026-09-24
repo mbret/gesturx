@@ -1,8 +1,8 @@
 import {
 	buffer,
-	type Observable,
 	first,
 	lastValueFrom,
+	type Observable,
 	tap,
 	timer,
 } from "rxjs";
@@ -53,9 +53,9 @@ describe("Given a press of a button other than the primary one", () => {
 			bubbles: true,
 		});
 
-		// @ts-ignore
+		// @ts-expect-error
 		event.x = x;
-		// @ts-ignore
+		// @ts-expect-error
 		event.y = 0;
 
 		container.dispatchEvent(event);

@@ -1,9 +1,9 @@
 import {
-	type Observable,
 	filter,
 	first,
 	map,
 	merge,
+	type Observable,
 	of,
 	share,
 	switchMap,

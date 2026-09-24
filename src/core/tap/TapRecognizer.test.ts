@@ -32,9 +32,9 @@ describe("TapGestureRecognizer", () => {
 			bubbles: true,
 		});
 
-		// @ts-ignore
+		// @ts-expect-error
 		event.x = x;
-		// @ts-ignore
+		// @ts-expect-error
 		event.y = y;
 
 		return event;

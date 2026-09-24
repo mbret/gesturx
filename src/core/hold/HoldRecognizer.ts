@@ -1,4 +1,4 @@
-import { type Observable, map, merge, share } from "rxjs";
+import { map, merge, type Observable, share } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import type {
 	HoldEvent,

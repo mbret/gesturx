@@ -12,7 +12,9 @@
 			"require": "./dist/index.umd.cjs"
 		}
 	},
-	"files": ["dist"],
+	"files": [
+		"dist"
+	],
 	"scripts": {
 		"dev": "vite",
 		"build": "tsc && vite build",
@@ -24,31 +26,33 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "1.9.4",
-		"@chakra-ui/react": "^3.7.0",
-		"@emotion/react": "^11.11.4",
-		"@emotion/styled": "^11.11.5",
-		"@types/node": "^24.0.1",
-		"@types/react": "^19.0.0",
-		"@types/react-dom": "^19.0.0",
-		"@vitejs/plugin-react": "^4.3.0",
-		"@vitest/coverage-v8": "^3.0.5",
-		"cross-env": "^7.0.3",
-		"framer-motion": "^12.4.2",
-		"globals": "^16.2.0",
-		"happy-dom": "^18.0.1",
+		"@biomejs/biome": "2.5.14",
+		"@chakra-ui/react": "^3.37.0",
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.1",
+		"@microsoft/api-extractor": "^7.59.2",
+		"@types/node": "^26.6.2",
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0",
+		"@typescript/typescript6": "^6.0.2",
+		"@vitejs/plugin-react": "^6.1.1",
+		"@vitest/coverage-v8": "^5.0.1",
+		"cross-env": "^10.1.0",
+		"framer-motion": "^13.4.3",
+		"globals": "^17.12.0",
+		"happy-dom": "^20.14.5",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.1.0",
-		"react": "^19.0.0",
-		"react-dom": "^19.0.0",
-		"rollup-plugin-node-externals": "^8.0.0",
-		"rxjs": "^7.8.1",
-		"typescript": "^5.6.3",
-		"vite": "^6.0.3",
-		"vite-plugin-dts": "^4.3.0",
-		"vitest": "^3.0.5",
-		"next-themes": "^0.4.3",
-		"react-icons": "^5.4.0"
+		"lint-staged": "^17.5.1",
+		"next-themes": "^0.4.6",
+		"react": "^19.3.0",
+		"react-dom": "^19.3.0",
+		"react-icons": "^5.7.0",
+		"rollup-plugin-node-externals": "^9.0.1",
+		"rxjs": "^7.8.2",
+		"typescript": "^7.0.2",
+		"vite": "^8.3.1",
+		"vite-plugin-dts": "^5.1.1",
+		"vitest": "^5.0.1"
 	},
 	"peerDependencies": {
 		"rxjs": "7.x"

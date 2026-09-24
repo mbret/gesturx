@@ -1,10 +1,10 @@
 import {
 	Toaster as ChakraToaster,
+	createToaster,
 	Portal,
 	Spinner,
 	Stack,
 	Toast,
-	createToaster,
 } from "@chakra-ui/react";
 import { memo } from "react";
 

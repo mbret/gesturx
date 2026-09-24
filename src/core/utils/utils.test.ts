@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Point, calculateCentroid } from "./geometry";
+import { calculateCentroid, type Point } from "./geometry";
 
 describe("calculateCentroid", () => {
 	it("calculates the correct center for a list of pointer events", () => {
