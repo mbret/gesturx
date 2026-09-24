@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
 	const libMode = process.env.LIB_MODE === "true";
 
 	return {
+		// public/ holds demo assets, keep them out of the published library.
+		publicDir: libMode ? false : "public",
 		build: {
 			minify: true,
 			cssMinify: true,

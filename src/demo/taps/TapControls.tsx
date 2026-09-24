@@ -18,7 +18,7 @@ export const TapControls = ({
 						defaultValue={value.toString()}
 						min={1}
 						max={20}
-						onValueChange={(e) => onChange(Number.parseInt(e.value))}
+						onValueChange={(e) => onChange(Number.parseInt(e.value, 10))}
 					>
 						<NumberInputField />
 					</NumberInputRoot>

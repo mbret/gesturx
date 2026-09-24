@@ -68,7 +68,7 @@ export const RotateControls = ({
 					onValueChange={(e) =>
 						setSettings((state) => ({
 							...state,
-							rotatePosThreshold: Number.parseInt(e.value),
+							rotatePosThreshold: Number.parseInt(e.value, 10),
 						}))
 					}
 				>
@@ -84,7 +84,7 @@ export const RotateControls = ({
 					onValueChange={(e) =>
 						setSettings((state) => ({
 							...state,
-							rotateNumInputs: Number.parseInt(e.value),
+							rotateNumInputs: Number.parseInt(e.value, 10),
 						}))
 					}
 				>

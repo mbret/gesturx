@@ -64,7 +64,7 @@ export const PanControl = ({
 						onValueChange={(e) =>
 							setSettings((state) => ({
 								...state,
-								panNumInputs: Number.parseInt(e.value),
+								panNumInputs: Number.parseInt(e.value, 10),
 							}))
 						}
 					>
@@ -80,7 +80,7 @@ export const PanControl = ({
 						onValueChange={(e) =>
 							setSettings((state) => ({
 								...state,
-								panPosThreshold: Number.parseInt(e.value),
+								panPosThreshold: Number.parseInt(e.value, 10),
 							}))
 						}
 					>
@@ -96,7 +96,7 @@ export const PanControl = ({
 						onValueChange={(e) =>
 							setSettings((state) => ({
 								...state,
-								panDelay: Number.parseInt(e.value),
+								panDelay: Number.parseInt(e.value, 10),
 							}))
 						}
 					>
