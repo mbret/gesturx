@@ -24,6 +24,20 @@ export const isPointerOffEvent = (pointerEvent: PointerEvent) =>
 	pointerEvent.type === "pointercancel" ||
 	pointerEvent.type === "pointerup";
 
+/**
+ * A press of the primary button: a left click, a finger or a pen's tip. A
+ * right click is for the context menu, a middle click for the browser, and a
+ * pen's barrel button or eraser for the app.
+ *
+ * @see https://w3c.github.io/pointerevents/#the-button-property
+ */
+const isPrimaryButtonPress = (event: PointerEvent) => event.button === 0;
+
+/**
+ * The presses that start a gesture. Every recognizer tracks a pointer from its
+ * press, so a pointer pressed with another button starts none: no tap, pan or
+ * pinch, and no share of a multi tap.
+ */
 export const fromPointerDown = ({
 	container,
 	afterEventReceived = (event) => event,
@@ -33,6 +47,7 @@ export const fromPointerDown = ({
 }) =>
 	fromEvent<PointerEvent>(container, "pointerdown").pipe(
 		map(afterEventReceived),
+		filter(isPrimaryButtonPress),
 	);
 
 /**
