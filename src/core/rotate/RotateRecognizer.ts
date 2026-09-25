@@ -1,5 +1,6 @@
 import {
 	filter,
+	first,
 	map,
 	merge,
 	type Observable,
@@ -7,6 +8,9 @@ import {
 	share,
 	shareReplay,
 	switchMap,
+	takeUntil,
+	tap,
+	withLatestFrom,
 } from "rxjs";
 import {
 	Recognizer,
@@ -20,6 +24,8 @@ import type {
 } from "./RotateRecognizerInterface";
 
 export type { RotateEvent };
+
+type RotatingEvent = RecognizerPanEvent & { angle: number; deltaAngle: number };
 
 export class RotateRecognizer
 	extends Recognizer<RotateRecognizerOptions, RotateEvent>
@@ -37,7 +43,9 @@ export class RotateRecognizer
 		this.events$ = this.config$.pipe(
 			switchMap(() => {
 				const rotateStart$ = this.panStart$.pipe(
-					map((event) => ({
+					withLatestFrom(this.failWithActive$),
+					filter(([, failWithActive]) => !failWithActive),
+					map(([event]) => ({
 						...event,
 						type: "rotateStart" as const,
 						angle: 0,
@@ -47,24 +55,49 @@ export class RotateRecognizer
 				);
 
 				const rotate$ = rotateStart$.pipe(
-					switchMap(() =>
-						this.pan$.pipe(
-							scan<
-								RecognizerPanEvent,
-								RecognizerPanEvent & { angle: number; deltaAngle: number },
-								undefined
-							>((acc, current) => {
-								const angle = (acc?.angle ?? 0) + current.deltaPointersAngle;
+					switchMap((rotateStartEvent) => {
+						let latestEvent: RotatingEvent = {
+							...rotateStartEvent,
+							type: "start",
+						};
 
-								return {
-									...acc,
-									...current,
-									angle,
-									deltaAngle: current.deltaPointersAngle,
-								};
-							}, undefined),
-						),
-					),
+						const failingActive$ = this.failWithActive$.pipe(
+							filter((isActive) => isActive),
+							first(),
+						);
+
+						const events$ = this.pan$.pipe(
+							scan<RecognizerPanEvent, RotatingEvent, undefined>(
+								(acc, current) => {
+									const angle = (acc?.angle ?? 0) + current.deltaPointersAngle;
+
+									return {
+										...acc,
+										...current,
+										angle,
+										deltaAngle: current.deltaPointersAngle,
+									};
+								},
+								undefined,
+							),
+							tap((event) => {
+								latestEvent = event;
+							}),
+							takeUntil(failingActive$),
+						);
+
+						// cancelled by failWith: it ends on the angle it reached
+						const trailingEndEventIfFailed$ = failingActive$.pipe(
+							map(() => ({
+								...latestEvent,
+								type: "end" as const,
+								deltaAngle: 0,
+							})),
+							takeUntil(this.panEnd$),
+						);
+
+						return merge(events$, trailingEndEventIfFailed$);
+					}),
 					share(),
 				);
 

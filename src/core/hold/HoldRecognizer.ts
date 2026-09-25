@@ -1,4 +1,15 @@
-import { map, merge, type Observable, share } from "rxjs";
+import {
+	filter,
+	first,
+	map,
+	merge,
+	type Observable,
+	of,
+	share,
+	switchMap,
+	takeUntil,
+	withLatestFrom,
+} from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import type {
 	HoldEvent,
@@ -21,7 +32,9 @@ export class HoldRecognizer
 		});
 
 		const start$ = this.panStart$.pipe(
-			map((event) => {
+			withLatestFrom(this.failWithActive$),
+			filter(([, failWithActive]) => !failWithActive),
+			map(([event]) => {
 				return {
 					type: "holdStart" as const,
 					...event,
@@ -29,16 +42,34 @@ export class HoldRecognizer
 			}),
 		);
 
-		const end$ = this.panEnd$.pipe(
-			map((event) => {
-				return {
-					type: "holdEnd" as const,
-					...event,
-				};
-			}),
-		);
+		this.events$ = start$.pipe(
+			switchMap((holdStartEvent) => {
+				const failingActive$ = this.failWithActive$.pipe(
+					filter((isActive) => isActive),
+					first(),
+				);
 
-		this.events$ = merge(start$, end$).pipe(share());
+				const end$ = this.panEnd$.pipe(
+					first(),
+					map((event) => {
+						return {
+							type: "holdEnd" as const,
+							...event,
+						};
+					}),
+					takeUntil(failingActive$),
+				);
+
+				// cancelled by failWith: it ends where it started
+				const trailingEndEventIfFailed$ = failingActive$.pipe(
+					map(() => ({ ...holdStartEvent, type: "holdEnd" as const })),
+					takeUntil(this.panEnd$),
+				);
+
+				return merge(of(holdStartEvent), end$, trailingEndEventIfFailed$);
+			}),
+			share(),
+		);
 	}
 
 	public update(options: RecognizerConfig<HoldRecognizerOptions>) {
