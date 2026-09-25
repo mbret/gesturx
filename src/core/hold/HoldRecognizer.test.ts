@@ -1,3 +1,4 @@
+import { NEVER, Subject } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -96,5 +97,54 @@ describe("HoldRecognizer", () => {
 		const events = await eventsFor(recognizer.events$, () => hold(20));
 
 		expect(events).toEqual([]);
+	});
+
+	describe("with failWith", () => {
+		it("does not start while it is active", async () => {
+			const start$ = new Subject<void>();
+			const end$ = new Subject<void>();
+			const recognizer = new HoldRecognizer({
+				container,
+				failWith: [{ start$, end$ }],
+			});
+
+			const events = await eventsFor(recognizer.events$, async () => {
+				start$.next();
+				await hold(20);
+				end$.next();
+				await hold(20);
+			});
+
+			// only the hold after it ended
+			expect(events.map(({ type }) => type)).toEqual(["holdStart", "holdEnd"]);
+		});
+
+		it("ends an ongoing hold once it becomes active", async () => {
+			const start$ = new Subject<void>();
+			const recognizer = new HoldRecognizer({
+				container,
+				failWith: [{ start$, end$: NEVER }],
+			});
+			const types: string[] = [];
+			const subscription = recognizer.events$.subscribe(({ type }) =>
+				types.push(type),
+			);
+
+			await waitFor(1);
+			sendPointer(container, "pointerdown", { x: 100, y: 0 });
+			await waitFor(10);
+			start$.next();
+
+			expect(types).toEqual(["holdStart", "holdEnd"]);
+
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 100, y: 0 });
+			await waitFor(10);
+
+			// not again once released
+			expect(types).toEqual(["holdStart", "holdEnd"]);
+
+			subscription.unsubscribe();
+		});
 	});
 });

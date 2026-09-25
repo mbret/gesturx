@@ -1,3 +1,4 @@
+import { NEVER, Subject } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -125,5 +126,69 @@ describe("RotateRecognizer", () => {
 		);
 
 		expect(events).toEqual([]);
+	});
+
+	describe("with failWith", () => {
+		it("does not start while it is active", async () => {
+			const start$ = new Subject<void>();
+			const end$ = new Subject<void>();
+			const recognizer = new RotateRecognizer({
+				container,
+				options: { posThreshold: 0 },
+				failWith: [{ start$, end$ }],
+			});
+
+			const events = await eventsFor(recognizer.events$, async () => {
+				start$.next();
+				await turn([0, 30, 60]);
+				end$.next();
+				await turn([0, 30, 60]);
+			});
+
+			// only the turn after it ended
+			expect(events.map(({ type }) => type)).toEqual([
+				"rotateStart",
+				"rotateMove",
+				"rotateMove",
+				"rotateMove",
+				"rotateMove",
+				"rotateEnd",
+			]);
+		});
+
+		it("ends an ongoing rotation once it becomes active", async () => {
+			const start$ = new Subject<void>();
+			const recognizer = new RotateRecognizer({
+				container,
+				options: { posThreshold: 0 },
+				failWith: [{ start$, end$: NEVER }],
+			});
+
+			const events = await eventsFor(recognizer.events$, async () => {
+				sendPointer(container, "pointerdown", onCircle(0), 1);
+				await waitFor(5);
+				sendPointer(container, "pointerdown", onCircle(180), 2);
+				await waitFor(5);
+				sendPointer(container, "pointermove", onCircle(30), 1);
+				await waitFor(5);
+				sendPointer(container, "pointermove", onCircle(210), 2);
+				await waitFor(5);
+				start$.next();
+				sendPointer(container, "pointermove", onCircle(60), 1);
+				await waitFor(5);
+				sendPointer(container, "pointerup", onCircle(60), 1);
+				sendPointer(container, "pointerup", onCircle(210), 2);
+			});
+
+			expect(events.map(({ type }) => type)).toEqual([
+				"rotateStart",
+				"rotateMove",
+				"rotateMove",
+				"rotateEnd",
+			]);
+			// on the angle it reached, then nothing more
+			expect(events[3]).toMatchObject({ deltaAngle: 0 });
+			expect(events[3]?.angle).toBeCloseTo(30);
+		});
 	});
 });
