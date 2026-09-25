@@ -6,7 +6,7 @@ import {
 	type Point,
 	sendPointer,
 	waitFor,
-} from "../testing";
+} from "../../tests/utils";
 import { PanRecognizer } from "./PanRecognizer";
 
 describe("PanRecognizer", () => {
