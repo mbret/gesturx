@@ -84,22 +84,23 @@ export class PinchRecognizer
 							filter((event) => event.type === "end"),
 							takeUntil(failingActive$),
 							defaultIfEmpty(null),
-							switchMap((endEvent) =>
-								endEvent
-									? of(endEvent).pipe(
-											scanPanEventToPinchEvent({
-												type: "pinchEnd",
-												initialEvent: pinchStartEvent,
-											}),
-										)
-									: // cancelled by failWith: nothing changed since the latest event
-										of({
-											...(latestPinchEvent ?? pinchStartEvent),
-											type: "pinchEnd" as const,
-											deltaDistance: 0,
-											deltaDistanceScale: 1,
-										}),
-							),
+							map((endEvent) => {
+								const latestEvent = latestPinchEvent ?? pinchStartEvent;
+
+								/**
+								 * It ends where it got to: lifting a finger leaves too few
+								 * to measure the distance, and a failWith cancelling it
+								 * moves none. So nothing changed since the latest event.
+								 */
+								return {
+									...(endEvent ?? latestEvent),
+									type: "pinchEnd" as const,
+									scale: latestEvent.scale,
+									distance: latestEvent.distance,
+									deltaDistance: 0,
+									deltaDistanceScale: 1,
+								};
+							}),
 							share(),
 						),
 					),

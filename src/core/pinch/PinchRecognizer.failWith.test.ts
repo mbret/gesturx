@@ -119,6 +119,8 @@ describe("PinchRecognizer with failWith", () => {
 			{
 				type: "pinchEnd",
 				pointersAverageDistance: 150,
+				scale: 1.5,
+				distance: 50,
 				deltaDistance: 0,
 				deltaDistanceScale: 1,
 			},
