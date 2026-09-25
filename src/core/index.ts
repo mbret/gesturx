@@ -1,3 +1,4 @@
+export * from "./hold/HoldRecognizer";
 export * from "./pan/PanRecognizer";
 export * from "./pinch/PinchRecognizer";
 export * from "./recognizable/Recognizable";
