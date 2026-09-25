@@ -30,7 +30,7 @@ export class PanRecognizer
 
 	constructor(config?: RecognizerConfig<PanRecognizerOptions>) {
 		super(config, {
-			...config,
+			...config?.options,
 			posThreshold: config?.options?.posThreshold ?? 15,
 		});
 
