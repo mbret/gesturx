@@ -54,7 +54,7 @@ export class TapRecognizer
 						pointerEvent$: this.pointerEvent$,
 						trackMove: true,
 					}),
-					shareReplay(1),
+					shareReplay({ bufferSize: 1, refCount: true }),
 				);
 
 				const hasMoreThanOneActivePointer$ = activePointers$.pipe(
@@ -75,7 +75,7 @@ export class TapRecognizer
 						const pointerDowns$ = merge(
 							of(initialPointerEvent),
 							this.pointerDown$,
-						).pipe(shareReplay(1));
+						).pipe(shareReplay({ bufferSize: 1, refCount: true }));
 
 						const pointerDownsBuffered$ =
 							pointerDowns$.pipe(bufferPointerDowns);
@@ -118,7 +118,7 @@ export class TapRecognizer
 								latestActivePointers: events,
 								event: events[0],
 							})),
-							shareReplay(1),
+							shareReplay({ bufferSize: 1, refCount: true }),
 						);
 
 						return rawEvent$.pipe(

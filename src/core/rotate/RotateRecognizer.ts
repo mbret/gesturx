@@ -51,7 +51,7 @@ export class RotateRecognizer
 						angle: 0,
 						deltaAngle: 0,
 					})),
-					shareReplay(1),
+					shareReplay({ bufferSize: 1, refCount: true }),
 				);
 
 				const rotate$ = rotateStart$.pipe(

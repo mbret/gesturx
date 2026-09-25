@@ -134,10 +134,7 @@ export abstract class Recognizer<
 
 					const end$ = recognizer.end$.pipe(map(() => false));
 
-					const isRunning$ = merge(start$, end$).pipe(
-						startWith(false),
-						shareReplay(1),
-					);
+					const isRunning$ = merge(start$, end$).pipe(startWith(false));
 
 					return isRunning$;
 				});
@@ -149,6 +146,11 @@ export abstract class Recognizer<
 				return combineLatest(areRunnings$);
 			}),
 			map((runnings) => runnings.some((running) => running)),
+			/**
+			 * Keeps following the failWith recognizers once subscribed: they can't
+			 * be asked whether they run, so a recognizer subscribing again later
+			 * would miss the gesture of one that started in between.
+			 */
 			shareReplay(1),
 		);
 
@@ -164,7 +166,8 @@ export abstract class Recognizer<
 						pointerEvent$: this.pointerEvent$,
 						trackMove: true,
 					}),
-					shareReplay(1),
+					// releases the pointer listeners along with the last subscriber
+					shareReplay({ bufferSize: 1, refCount: true }),
 				);
 
 				const hasEnoughFingers = (
@@ -227,7 +230,7 @@ export abstract class Recognizer<
 							})),
 							shareReplay({
 								bufferSize: 1,
-								refCount: false,
+								refCount: true,
 							}),
 							takeUntil(panReleased$),
 						);
@@ -259,7 +262,7 @@ export abstract class Recognizer<
 						);
 
 						const rawEvent$ = merge(panStart$, panUpdate$, panEnd$).pipe(
-							shareReplay(1),
+							shareReplay({ bufferSize: 1, refCount: true }),
 						);
 
 						return rawEvent$.pipe(
@@ -278,7 +281,13 @@ export abstract class Recognizer<
 					fingers: event.pointers.length,
 				});
 			}),
-			share(),
+			share({
+				/**
+				 * A tick later, so that resubscribing right away, as a React effect
+				 * does, keeps following the fingers already pressed.
+				 */
+				resetOnRefCountZero: () => timer(0),
+			}),
 		);
 
 		this.panStart$ = this.pan$.pipe(
