@@ -6,7 +6,6 @@ import {
 	type Observable,
 	scan,
 	share,
-	shareReplay,
 	switchMap,
 	takeUntil,
 	tap,
@@ -17,6 +16,7 @@ import {
 	type RecognizerConfig,
 	type RecognizerPanEvent,
 } from "../recognizer/Recognizer";
+import { shareLatest } from "../utils/operators";
 import type {
 	RotateEvent,
 	RotateRecognizerInterface,
@@ -51,7 +51,7 @@ export class RotateRecognizer
 						angle: 0,
 						deltaAngle: 0,
 					})),
-					shareReplay({ bufferSize: 1, refCount: true }),
+					shareLatest(),
 				);
 
 				const rotate$ = rotateStart$.pipe(

@@ -21,6 +21,7 @@ import {
 	withLatestFrom,
 } from "rxjs";
 import { matchPointer, trackPointers } from "../utils/events";
+import { shareLatest } from "../utils/operators";
 import { isWithinPosThreshold } from "../utils/utils";
 import { filterPointerOff, isValidConfig } from "./operators";
 import type { RecognizerEvent } from "./RecognizerEvent";
@@ -166,8 +167,7 @@ export abstract class Recognizer<
 						pointerEvent$: this.pointerEvent$,
 						trackMove: true,
 					}),
-					// releases the pointer listeners along with the last subscriber
-					shareReplay({ bufferSize: 1, refCount: true }),
+					shareLatest(),
 				);
 
 				const hasEnoughFingers = (
@@ -228,10 +228,7 @@ export abstract class Recognizer<
 								event,
 								latestActivePointers: pointers,
 							})),
-							shareReplay({
-								bufferSize: 1,
-								refCount: true,
-							}),
+							shareLatest(),
 							takeUntil(panReleased$),
 						);
 
@@ -262,7 +259,7 @@ export abstract class Recognizer<
 						);
 
 						const rawEvent$ = merge(panStart$, panUpdate$, panEnd$).pipe(
-							shareReplay({ bufferSize: 1, refCount: true }),
+							shareLatest(),
 						);
 
 						return rawEvent$.pipe(

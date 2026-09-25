@@ -7,7 +7,6 @@ import {
 	type Observable,
 	of,
 	share,
-	shareReplay,
 	switchMap,
 	takeUntil,
 	takeWhile,
@@ -15,6 +14,7 @@ import {
 	withLatestFrom,
 } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
+import { shareLatest } from "../utils/operators";
 import type {
 	PinchEvent,
 	PinchRecognizerInterface,
@@ -56,7 +56,7 @@ export class PinchRecognizer
 							}),
 						),
 					),
-					shareReplay({ bufferSize: 1, refCount: true }),
+					shareLatest(),
 				);
 
 				const failingActive$ = this.failWithActive$.pipe(
