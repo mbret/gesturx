@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createContainer, eventsFor, sendPointer, waitFor } from "../testing";
+import {
+	createContainer,
+	eventsFor,
+	sendPointer,
+	waitFor,
+} from "../../tests/utils";
 import { RotateRecognizer } from "./RotateRecognizer";
 
 /** A point at `degrees` on a circle of radius 100 around (200, 200). */
