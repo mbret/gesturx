@@ -118,6 +118,25 @@ describe("PinchRecognizer", () => {
 		},
 	);
 
+	it.each([
+		["spreading", [200, 250, 300], 2, 100],
+		["closing", [200, 175, 150], 0.5, -50],
+	])(
+		"ends on the scale and distance it reached when %s",
+		async (_, xs, scale, distance) => {
+			const recognizer = new PinchRecognizer({ container });
+
+			const events = await eventsFor(recognizer.events$, () => pinch(xs));
+
+			// even though a lifted finger leaves too few to measure them
+			expect(events[events.length - 1]).toMatchObject({
+				type: "pinchEnd",
+				scale,
+				distance,
+			});
+		},
+	);
+
 	it("starts after moving posThreshold", async () => {
 		const recognizer = new PinchRecognizer({
 			container,
