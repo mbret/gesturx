@@ -86,4 +86,45 @@ describe("PinchRecognizer with failWith", () => {
 			"pinchEnd",
 		]);
 	});
+
+	it("ends a cancelled pinch on its latest state, without repeating its deltas", async () => {
+		const start$ = new Subject<void>();
+		const recognizer = new PinchRecognizer({
+			container,
+			failWith: [{ start$, end$: NEVER }],
+		});
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendPointer(container, "pointerdown", { x: 100, y: 0 }, 1);
+			await waitFor(5);
+			sendPointer(container, "pointerdown", { x: 200, y: 0 }, 2);
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 250, y: 0 }, 2);
+			await waitFor(5);
+			start$.next();
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 250, y: 0 }, 2);
+			sendPointer(container, "pointerup", { x: 100, y: 0 }, 1);
+		});
+
+		expect(events).toMatchObject([
+			{ type: "pinchStart" },
+			{ type: "pinchMove" },
+			// the fingers are still 150px apart, nothing changed since the move
+			{
+				type: "pinchEnd",
+				pointersAverageDistance: 150,
+				deltaDistance: 0,
+				deltaDistanceScale: 1,
+			},
+		]);
+
+		// so compounding the scale counts the move once: 150 / 100
+		const compounded = events.reduce(
+			(value, { deltaDistanceScale }) => value * deltaDistanceScale,
+			1,
+		);
+
+		expect(compounded).toBeCloseTo(1.5);
+	});
 });

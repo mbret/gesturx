@@ -4,7 +4,6 @@ import {
 	first,
 	map,
 	merge,
-	NEVER,
 	type Observable,
 	of,
 	share,
@@ -12,13 +11,10 @@ import {
 	switchMap,
 	takeUntil,
 	takeWhile,
+	tap,
 	withLatestFrom,
 } from "rxjs";
-import {
-	Recognizer,
-	type RecognizerConfig,
-	type RecognizerPanEvent,
-} from "../recognizer/Recognizer";
+import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import type {
 	PinchEvent,
 	PinchRecognizerInterface,
@@ -45,6 +41,8 @@ export class PinchRecognizer
 
 		this.events$ = this.config$.pipe(
 			switchMap(() => {
+				let latestPinchEvent: PinchEvent | undefined;
+
 				const pinchStarted$ = this.panStart$.pipe(
 					withLatestFrom(this.failWithActive$),
 					filter(([, failWithActive]) => !failWithActive),
@@ -81,34 +79,37 @@ export class PinchRecognizer
 				);
 
 				const pinchEnd$ = pinchStarted$.pipe(
-					switchMap((pinchStartEvent) => {
-						let latestEvent: PinchEvent | RecognizerPanEvent = pinchStartEvent;
-
-						return this.pan$.pipe(
-							switchMap((event) => {
-								if (event.type === "end") {
-									return of(event);
-								}
-
-								latestEvent = event;
-
-								return NEVER;
-							}),
+					switchMap((pinchStartEvent) =>
+						this.pan$.pipe(
+							filter((event) => event.type === "end"),
 							takeUntil(failingActive$),
 							defaultIfEmpty(null),
-							map((endEventOrNull) =>
-								endEventOrNull ? endEventOrNull : latestEvent,
+							switchMap((endEvent) =>
+								endEvent
+									? of(endEvent).pipe(
+											scanPanEventToPinchEvent({
+												type: "pinchEnd",
+												initialEvent: pinchStartEvent,
+											}),
+										)
+									: // cancelled by failWith: nothing changed since the latest event
+										of({
+											...(latestPinchEvent ?? pinchStartEvent),
+											type: "pinchEnd" as const,
+											deltaDistance: 0,
+											deltaDistanceScale: 1,
+										}),
 							),
-							scanPanEventToPinchEvent({
-								type: "pinchEnd",
-								initialEvent: latestEvent,
-							}),
 							share(),
-						);
-					}),
+						),
+					),
 				);
 
-				return merge(pinchStarted$, pinchMove$, pinchEnd$);
+				return merge(pinchStarted$, pinchMove$, pinchEnd$).pipe(
+					tap((event) => {
+						latestPinchEvent = event;
+					}),
+				);
 			}),
 			share(),
 		);
