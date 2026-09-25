@@ -2,14 +2,14 @@ import { useEffect, useState } from "react";
 import { filter, fromEvent } from "rxjs";
 import {
 	type FailWith,
+	HoldRecognizer,
 	PanRecognizer,
+	PinchRecognizer,
 	Recognizable,
+	RotateRecognizer,
 	SwipeRecognizer,
 	TapRecognizer,
 } from "../core";
-import { HoldRecognizer } from "../core/hold/HoldRecognizer";
-import { PinchRecognizer } from "../core/pinch/PinchRecognizer";
-import { RotateRecognizer } from "../core/rotate/RotateRecognizer";
 
 export type AppRecognizable = ReturnType<
 	typeof useRecognizable

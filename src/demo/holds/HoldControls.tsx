@@ -1,6 +1,6 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { HoldRecognizer } from "../../core/hold/HoldRecognizer";
+import { HoldRecognizer } from "../../core";
 import type { Settings } from "../App";
 import { Field } from "../chakra/ui/field";
 import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input";
