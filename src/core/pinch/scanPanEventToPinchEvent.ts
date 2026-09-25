@@ -26,14 +26,16 @@ export const scanPanEventToPinchEvent =
 					acc?.pointersAverageDistance ?? curr.pointersAverageDistance;
 
 				/**
-				 * initial average distance is reset every time we change fingers
+				 * initial average distance is reset every time we change fingers,
+				 * otherwise it is the one of the event we continue from (the pinch
+				 * start for the first move)
 				 * @important in case of 1 finger, distance will be 0
 				 */
 				const initialPointersAverageDistance = hasChangedFingers
 					? curr.pointersAverageDistance
 					: acc && "initialPointersAverageDistance" in acc
 						? acc.initialPointersAverageDistance
-						: curr.pointersAverageDistance;
+						: previousPointersAverageDistance;
 
 				/**
 				 * @important When finger is 1, distance is 0
@@ -46,8 +48,9 @@ export const scanPanEventToPinchEvent =
 				const distance =
 					curr.pointersAverageDistance - initialPointersAverageDistance;
 
-				const deltaDistance =
-					curr.pointersAverageDistance - initialPointersAverageDistance;
+				const deltaDistance = hasChangedFingers
+					? 0
+					: curr.pointersAverageDistance - previousPointersAverageDistance;
 
 				/**
 				 * @important When finger is 1, distance is 0
