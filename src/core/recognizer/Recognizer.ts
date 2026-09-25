@@ -4,6 +4,7 @@ import {
 	distinctUntilChanged,
 	exhaustMap,
 	filter,
+	finalize,
 	first,
 	map,
 	merge,
@@ -55,6 +56,12 @@ export interface RecognizerPanEvent extends RecognizerEvent {
 }
 
 export type State = {
+	/**
+	 * Fingers of the gesture the recognizer recognizes, as of its latest
+	 * event, from its start event until its end event. None the rest of the
+	 * time, and none for a gesture recognized once the fingers are lifted,
+	 * as a tap or a swipe.
+	 */
 	fingers: number;
 };
 
@@ -67,6 +74,9 @@ export abstract class Recognizer<
 			panConfig?: PanConfig;
 		}
 	>({});
+	private stateSubject = new BehaviorSubject<State>({
+		fingers: 0,
+	});
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
 	protected panMove$: Observable<RecognizerEvent>;
@@ -89,11 +99,25 @@ export abstract class Recognizer<
 	 */
 	protected failWithActive$: Observable<boolean>;
 
-	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
-		const stateSubject = new BehaviorSubject<State>({
-			fingers: 0,
-		});
+	/**
+	 * Reports in state$ the fingers of the gesture the recognizer's events
+	 * recognize, until `isEnd` tells its end event, or until nothing listens
+	 * to them anymore.
+	 */
+	protected reportFingers =
+		(isEnd: (event: Event) => boolean) => (events$: Observable<Event>) =>
+			events$.pipe(
+				tap((event) => {
+					this.stateSubject.next({
+						fingers: isEnd(event) ? 0 : event.pointers.length,
+					});
+				}),
+				finalize(() => {
+					this.stateSubject.next({ fingers: 0 });
+				}),
+			);
 
+	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
 		this.pointerEvent$ = this.config$.pipe(
 			switchMap(
 				({ container, afterEventReceived }) =>
@@ -273,11 +297,6 @@ export abstract class Recognizer<
 					}),
 				);
 			}),
-			tap((event) => {
-				stateSubject.next({
-					fingers: event.pointers.length,
-				});
-			}),
 			share({
 				/**
 				 * A tick later, so that resubscribing right away, as a React effect
@@ -302,7 +321,11 @@ export abstract class Recognizer<
 			map(({ type, ...rest }) => rest),
 		);
 
-		this.state$ = stateSubject.asObservable();
+		this.state$ = this.stateSubject.pipe(
+			distinctUntilChanged(
+				(previous, current) => previous.fingers === current.fingers,
+			),
+		);
 
 		this.updateInternal(config ?? {}, panConfig);
 	}

@@ -1,5 +1,6 @@
 import {
 	combineLatest,
+	distinctUntilChanged,
 	map,
 	merge,
 	type Observable,
@@ -52,6 +53,9 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 				states.reduce((acc, state) => ({
 					fingers: Math.max(acc.fingers, state.fingers),
 				})),
+			),
+			distinctUntilChanged(
+				(previous, current) => previous.fingers === current.fingers,
 			),
 		);
 

@@ -70,6 +70,7 @@ export class HoldRecognizer
 
 				return merge(of(holdStartEvent), end$, trailingEndEventIfFailed$);
 			}),
+			this.reportFingers((event) => event.type === "holdEnd"),
 			share(),
 		);
 	}
