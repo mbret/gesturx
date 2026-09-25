@@ -74,9 +74,10 @@ export class PinchRecognizer
 								type: "pinchMove",
 								initialEvent,
 							}),
+							// only for this pinch, the next ones may move again
+							takeUntil(failingActive$),
 						);
 					}),
-					takeUntil(failingActive$),
 				);
 
 				const pinchEnd$ = pinchStarted$.pipe(
