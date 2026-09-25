@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { createContainer, eventsFor, sendPointer, waitFor } from "../testing";
+import {
+	createContainer,
+	eventsFor,
+	sendPointer,
+	waitFor,
+} from "../../tests/utils";
 import { PinchRecognizer } from "./PinchRecognizer";
 
 describe("PinchRecognizer", () => {
