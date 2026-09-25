@@ -113,6 +113,7 @@ export class RotateRecognizer
 
 				return merge(rotateStart$, rotateMove$, rotateEnd$);
 			}),
+			this.reportFingers((event) => event.type === "rotateEnd"),
 			share(),
 		);
 	}
