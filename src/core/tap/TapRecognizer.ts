@@ -10,7 +10,6 @@ import {
 	type Observable,
 	of,
 	share,
-	shareReplay,
 	switchMap,
 	takeUntil,
 	withLatestFrom,
@@ -18,6 +17,7 @@ import {
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import { scanToRecognizerEvent } from "../recognizer/scanToRecognizerEvent";
 import { trackPointers } from "../utils/events";
+import { shareLatest } from "../utils/operators";
 import { filterNotEmpty } from "../utils/utils";
 import { takeWhenOutsideThreshold, takeWhenPressedTooLong } from "./operators";
 import type {
@@ -54,7 +54,7 @@ export class TapRecognizer
 						pointerEvent$: this.pointerEvent$,
 						trackMove: true,
 					}),
-					shareReplay({ bufferSize: 1, refCount: true }),
+					shareLatest(),
 				);
 
 				const hasMoreThanOneActivePointer$ = activePointers$.pipe(
@@ -75,7 +75,7 @@ export class TapRecognizer
 						const pointerDowns$ = merge(
 							of(initialPointerEvent),
 							this.pointerDown$,
-						).pipe(shareReplay({ bufferSize: 1, refCount: true }));
+						).pipe(shareLatest());
 
 						const pointerDownsBuffered$ =
 							pointerDowns$.pipe(bufferPointerDowns);
@@ -118,7 +118,7 @@ export class TapRecognizer
 								latestActivePointers: events,
 								event: events[0],
 							})),
-							shareReplay({ bufferSize: 1, refCount: true }),
+							shareLatest(),
 						);
 
 						return rawEvent$.pipe(
