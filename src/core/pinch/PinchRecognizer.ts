@@ -56,7 +56,7 @@ export class PinchRecognizer
 							}),
 						),
 					),
-					shareReplay(1),
+					shareReplay({ bufferSize: 1, refCount: true }),
 				);
 
 				const failingActive$ = this.failWithActive$.pipe(
