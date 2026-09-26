@@ -1,5 +1,6 @@
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
+import { createContainer, sendPointer } from "../../tests/utils";
 import { TapRecognizer } from "./TapRecognizer";
 
 const waitFor = (time: number) =>
@@ -574,5 +575,55 @@ describe("TapGestureRecognizer", () => {
 		);
 
 		expect(values.length).toBe(0);
+	});
+});
+
+describe("TapRecognizer with a press still down when the taps would end", () => {
+	/**
+	 * Taps once, then presses again and keeps the finger down for `holdFor`
+	 * ms, longer than `multiTapThreshold`. Logs the taps, and when the finger
+	 * is lifted.
+	 */
+	const tapThenHold = async (
+		options: { maximumPressTime: number },
+		holdFor: number,
+	) => {
+		const container = createContainer();
+		const recognizer = new TapRecognizer({
+			container,
+			options: { maxTaps: 2, multiTapThreshold: 50, ...options },
+		});
+		const log: string[] = [];
+		const subscription = recognizer.events$.subscribe(({ taps }) => {
+			log.push(`taps: ${taps}`);
+		});
+
+		await waitFor(1);
+		sendPointer(container, "pointerdown", { x: 0, y: 0 });
+		await waitFor(10);
+		sendPointer(container, "pointerup", { x: 0, y: 0 });
+		await waitFor(10);
+		sendPointer(container, "pointerdown", { x: 0, y: 0 });
+		await waitFor(holdFor);
+		log.push("lifted");
+		sendPointer(container, "pointerup", { x: 0, y: 0 });
+		await waitFor(200);
+
+		subscription.unsubscribe();
+
+		return log;
+	};
+
+	it("counts it once it's lifted", async () => {
+		expect(await tapThenHold({ maximumPressTime: 5000 }, 100)).toEqual([
+			"lifted",
+			"taps: 2",
+		]);
+	});
+
+	it("ignores the taps if it's held longer than maximumPressTime", async () => {
+		expect(await tapThenHold({ maximumPressTime: 100 }, 200)).toEqual([
+			"lifted",
+		]);
 	});
 });
