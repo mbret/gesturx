@@ -37,9 +37,6 @@ const countListeners = (target: EventTarget) => {
 	};
 };
 
-/** A recognizer lets go of the pointers a tick after its last unsubscribe. */
-const afterTeardown = () => waitFor(5);
-
 type AnyRecognizer = new (config: {
 	container: HTMLElement;
 	failWith?: FailWith[];
@@ -85,7 +82,6 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		expect(listeners.count).toBeGreaterThan(0);
 
 		subscription.unsubscribe();
-		await afterTeardown();
 
 		expect(listeners.count).toBe(0);
 	});
@@ -119,7 +115,6 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		await waitFor(20);
 
 		subscription.unsubscribe();
-		await afterTeardown();
 
 		expect(listeners.count).toBe(0);
 	});
@@ -138,7 +133,6 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			expect(window$.listeners.count).toBeGreaterThan(0);
 
 			subscription.unsubscribe();
-			await afterTeardown();
 
 			expect(listeners.count).toBe(0);
 			expect(window$.listeners.count).toBe(0);
@@ -158,7 +152,6 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		recognizer.update({ options: {} });
 
 		subscription.unsubscribe();
-		await afterTeardown();
 
 		expect(listeners.count).toBe(0);
 	});
@@ -281,21 +274,23 @@ describe("with failWith", () => {
 		expect(listeners.count).toBe(0);
 
 		subscription.unsubscribe();
-		await afterTeardown();
 
 		expect(listeners.count).toBe(0);
 	});
 });
 
-describe("when resubscribed right away", () => {
+describe("when subscribed again right after an unsubscribe", () => {
 	let container = createContainer();
 
 	beforeEach(() => {
 		container = createContainer();
 	});
 
-	/** Subscribes, presses a finger, then subscribes again in place. */
-	const resubscribeWithAFingerPressed = async (recognizer: {
+	/**
+	 * Subscribes, presses a finger, then unsubscribes. The caller subscribes
+	 * again right away, as a React effect does when its dependencies change.
+	 */
+	const unsubscribeWithAFingerPressed = async (recognizer: {
 		events$: Observable<unknown>;
 	}) => {
 		const subscription = recognizer.events$.subscribe();
@@ -307,37 +302,35 @@ describe("when resubscribed right away", () => {
 		subscription.unsubscribe();
 	};
 
-	it.each<[string, AnyRecognizer, string]>([
-		["PinchRecognizer", PinchRecognizer, "pinchStart"],
-		["RotateRecognizer", RotateRecognizer, "rotateStart"],
-	])(
-		"%s still counts the finger pressed before",
-		async (_, Recognizer, start) => {
-			const recognizer = new Recognizer({ container });
+	it.each<[string, AnyRecognizer]>([
+		["PinchRecognizer", PinchRecognizer],
+		["RotateRecognizer", RotateRecognizer],
+	])("%s doesn't count the finger pressed before", async (_, Recognizer) => {
+		const recognizer = new Recognizer({ container });
 
-			await resubscribeWithAFingerPressed(recognizer);
+		await unsubscribeWithAFingerPressed(recognizer);
 
-			const events = await eventsFor(recognizer.events$, async () => {
-				sendPointer(container, "pointerdown", { x: 200, y: 100 }, 2);
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendPointer(container, "pointerdown", { x: 200, y: 100 }, 2);
 
-				for (const x of [230, 260, 290]) {
-					await waitFor(8);
-					sendPointer(container, "pointermove", { x, y: x - 100 }, 2);
-				}
-
+			for (const x of [230, 260, 290]) {
 				await waitFor(8);
-				sendPointer(container, "pointerup", { x: 290, y: 190 }, 2);
-				sendPointer(container, "pointerup", { x: 100, y: 100 }, 1);
-			});
+				sendPointer(container, "pointermove", { x, y: x - 100 }, 2);
+			}
 
-			expect(events[0]).toMatchObject({ type: start });
-		},
-	);
+			await waitFor(8);
+			sendPointer(container, "pointerup", { x: 290, y: 190 }, 2);
+			sendPointer(container, "pointerup", { x: 100, y: 100 }, 1);
+		});
 
-	it("PanRecognizer still follows the finger pressed before", async () => {
+		// it only knows the second finger, and needs two
+		expect(events).toEqual([]);
+	});
+
+	it("PanRecognizer doesn't follow the finger pressed before", async () => {
 		const recognizer = new PanRecognizer({ container });
 
-		await resubscribeWithAFingerPressed(recognizer);
+		await unsubscribeWithAFingerPressed(recognizer);
 
 		const events = await eventsFor(recognizer.events$, async () => {
 			for (const x of [130, 160, 200]) {
@@ -349,11 +342,6 @@ describe("when resubscribed right away", () => {
 			sendPointer(container, "pointerup", { x: 200, y: 100 }, 1);
 		});
 
-		expect(events.map(({ type }) => type)).toEqual([
-			"panStart",
-			"panMove",
-			"panMove",
-			"panEnd",
-		]);
+		expect(events).toEqual([]);
 	});
 });
