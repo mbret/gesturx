@@ -61,9 +61,18 @@ export class TapRecognizer
 					filter(({ pointers }) => pointers.length > 1),
 				);
 
+				/**
+				 * Collects the presses until `multiTapThreshold` after a release
+				 * that no press followed: a press still down is part of the taps.
+				 */
 				const bufferPointerDowns = (stream: Observable<PointerEvent>) =>
 					stream.pipe(
-						buffer(this.pointerUp$.pipe(debounceTime(multiTapThreshold))),
+						buffer(
+							merge(this.pointerDown$, this.pointerUp$).pipe(
+								debounceTime(multiTapThreshold),
+								filter((event) => event.type === "pointerup"),
+							),
+						),
 						first(),
 					);
 
