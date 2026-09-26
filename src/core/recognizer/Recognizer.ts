@@ -297,13 +297,7 @@ export abstract class Recognizer<
 					}),
 				);
 			}),
-			share({
-				/**
-				 * A tick later, so that resubscribing right away, as a React effect
-				 * does, keeps following the fingers already pressed.
-				 */
-				resetOnRefCountZero: () => timer(0),
-			}),
+			share(),
 		);
 
 		this.panStart$ = this.pan$.pipe(
