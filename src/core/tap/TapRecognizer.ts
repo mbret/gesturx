@@ -121,12 +121,17 @@ export class TapRecognizer
 						const rawEvent$ = pointerDownsBuffered$.pipe(
 							filterNotEmpty,
 							filter((events) => events.length <= maxTaps),
-							map((events) => ({
-								type: "tap" as const,
-								taps: events.length,
-								latestActivePointers: events,
-								event: events[0],
-							})),
+							map((events) => {
+								// the finger, where it last pressed: `taps` counts the presses
+								const lastPress = events[events.length - 1] ?? events[0];
+
+								return {
+									type: "tap" as const,
+									taps: events.length,
+									latestActivePointers: [lastPress],
+									event: lastPress,
+								};
+							}),
 							shareLatest(),
 						);
 

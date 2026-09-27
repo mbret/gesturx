@@ -1,6 +1,6 @@
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createContainer, sendPointer } from "../../tests/utils";
+import { createContainer, eventsFor, sendPointer } from "../../tests/utils";
 import { TapRecognizer } from "./TapRecognizer";
 
 const waitFor = (time: number) =>
@@ -624,6 +624,36 @@ describe("TapRecognizer with a press still down when the taps would end", () => 
 	it("ignores the taps if it's held longer than maximumPressTime", async () => {
 		expect(await tapThenHold({ maximumPressTime: 100 }, 200)).toEqual([
 			"lifted",
+		]);
+	});
+});
+
+describe("TapRecognizer with a multi-tap", () => {
+	it("reports the finger once, where it last pressed", async () => {
+		const container = createContainer();
+		const recognizer = new TapRecognizer({
+			container,
+			options: { maxTaps: 2, multiTapThreshold: 50 },
+		});
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendPointer(container, "pointerdown", { x: 0, y: 0 }, 1);
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 0, y: 0 }, 1);
+			await waitFor(10);
+			sendPointer(container, "pointerdown", { x: 6, y: 0 }, 2);
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 6, y: 0 }, 2);
+			await waitFor(150);
+		});
+
+		expect(events).toMatchObject([
+			{
+				taps: 2,
+				pointers: [{ pointerId: 2 }],
+				event: { pointerId: 2 },
+				center: { x: 6, y: 0 },
+			},
 		]);
 	});
 });
