@@ -1,0 +1,15 @@
+# Table of contents
+
+* [Introduction](README.md)
+* [Getting Started](getting-started.md)
+* [Recognizable](recognizable.md)
+* [Recognizers](recognizers.md)
+* [Gestures](gestures/README.md)
+  * [Tap](gestures/tap.md)
+  * [Hold](gestures/hold.md)
+  * [Pan](gestures/pan.md)
+  * [Pinch](gestures/pinch.md)
+  * [Swipe](gestures/swipe.md)
+  * [Rotate](gestures/rotate.md)
+* [Important Notes](important-notes.md)
+* [Custom Gesture](custom-gesture.md)
