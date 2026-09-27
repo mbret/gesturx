@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { calculateCentroid, type Point } from "./geometry";
+import { omitUnset } from "./utils";
 
 describe("calculateCentroid", () => {
 	it("calculates the correct center for a list of pointer events", () => {
@@ -22,5 +23,17 @@ describe("calculateCentroid", () => {
 		const events = [{ x: 5, y: 5 }];
 		const center = calculateCentroid(events);
 		expect(center).toEqual({ x: 5, y: 5 });
+	});
+});
+
+describe("omitUnset", () => {
+	it("leaves out undefined and NaN, and keeps the rest", () => {
+		expect(
+			omitUnset({ a: undefined, b: Number.NaN, c: 0, d: false, e: 15 }),
+		).toEqual({ c: 0, d: false, e: 15 });
+	});
+
+	it("gives an empty object for undefined", () => {
+		expect(omitUnset(undefined)).toEqual({});
 	});
 });

@@ -7,6 +7,18 @@ export function isDefined<T>(
 	return arg !== null && arg !== undefined;
 }
 
+/**
+ * `values` without the ones that aren't set: `undefined`, as forwarding an
+ * optional value passes, or `NaN`, as `parseInt` gives for an empty field.
+ * Spread over defaults or current values, they then leave them alone.
+ */
+export const omitUnset = <T extends object>(values: T | undefined) =>
+	Object.fromEntries(
+		Object.entries(values ?? {}).filter(
+			([, value]) => value !== undefined && !Number.isNaN(value),
+		),
+	) as Partial<T>;
+
 export const hasAtLeastOneItem = <T>(events: T[]): events is [T, ...T[]] =>
 	events.length > 0;
 

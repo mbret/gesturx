@@ -23,7 +23,7 @@ import {
 } from "rxjs";
 import { matchPointer, trackPointers } from "../utils/events";
 import { shareLatest } from "../utils/operators";
-import { isWithinPosThreshold } from "../utils/utils";
+import { isWithinPosThreshold, omitUnset } from "../utils/utils";
 import { filterPointerOff, isValidConfig } from "./operators";
 import type { RecognizerEvent } from "./RecognizerEvent";
 import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
@@ -333,12 +333,20 @@ export abstract class Recognizer<
 		this.configSubject.next({
 			...existingConfig,
 			...config,
+			// unset, as when forwarding an optional value, they stay as they are
+			failWith: config.failWith ?? existingConfig.failWith,
+			afterEventReceived:
+				config.afterEventReceived ?? existingConfig.afterEventReceived,
 			...(config.options && {
-				options: { ...existingConfig.options, ...config.options },
+				// every option is optional, so leaving out the unset ones keeps them valid
+				options: {
+					...existingConfig.options,
+					...omitUnset(config.options),
+				} as Options,
 			}),
 			panConfig: {
 				...existingConfig.panConfig,
-				...panConfig,
+				...omitUnset(panConfig),
 			},
 		});
 	}
