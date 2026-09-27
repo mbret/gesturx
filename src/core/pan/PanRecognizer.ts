@@ -12,6 +12,7 @@ import {
 	withLatestFrom,
 } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
+import { omitUnset } from "../utils/utils";
 import type {
 	PanEvent,
 	PanRecognizerInterface,
@@ -30,8 +31,8 @@ export class PanRecognizer
 
 	constructor(config?: RecognizerConfig<PanRecognizerOptions>) {
 		super(config, {
-			...config?.options,
-			posThreshold: config?.options?.posThreshold ?? 15,
+			posThreshold: 15,
+			...omitUnset(config?.options),
 		});
 
 		const panStart$ = this.panStart$.pipe(
