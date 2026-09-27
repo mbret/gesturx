@@ -44,6 +44,11 @@ export default defineConfig(({ mode }) => {
 				}),
 			},
 			dts({
+				...(libMode && {
+					// Also dist/index.d.cts, the types for `require` in package.json: with
+					// "type": "module", TypeScript reads index.d.ts as an ES module.
+					outDirs: ["dist", { dir: "dist", moduleFormat: "cjs" }],
+				}),
 				bundleTypes: libMode && {
 					// TypeScript 7 no longer ships lib typings in `typescript/lib`, which
 					// is where the plugin tells api-extractor to look. Unset it so

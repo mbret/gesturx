@@ -23,5 +23,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm run build:lib
+      - name: Check that CommonJS and ES module consumers get the package's types
+        run: npx --yes @arethetypeswrong/cli@0.18.5 --pack .
       - name: Verify the integrity of provenance attestations and registry signatures for installed dependencies
         run: npm audit signatures
