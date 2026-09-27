@@ -19,19 +19,12 @@ export default defineConfig(({ mode }) => {
 				target: ["es2020", "edge88", "firefox78", "chrome87", "safari14"],
 				lib: {
 					entry: resolve(import.meta.dirname, "src/core/index.ts"),
-					name: "gesturx",
+					formats: ["es"],
 					fileName: "index",
 				},
 			}),
 			emptyOutDir: mode !== "development",
 			sourcemap: true,
-			rolldownOptions: {
-				output: {
-					// Rollup always emitted "use strict" in non-ESM (UMD) output, Rolldown
-					// only does so when the source has the directive.
-					strict: true,
-				},
-			},
 		},
 		plugins: [
 			react(),
