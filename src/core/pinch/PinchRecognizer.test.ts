@@ -137,6 +137,91 @@ describe("PinchRecognizer", () => {
 		},
 	);
 
+	describe("when a finger touches and lifts during the pinch", () => {
+		/**
+		 * Two fingers 100px apart spread to 200px. A third finger touches, moves
+		 * `thirdFingerMove` px down, and lifts. The two then spread to 210px
+		 * apart, and lift.
+		 */
+		const pinchWithAThirdFinger = async (thirdFingerMove: number) => {
+			sendPointer(container, "pointerdown", { x: 100, y: 0 }, 1);
+			await waitFor(5);
+			sendPointer(container, "pointerdown", { x: 200, y: 0 }, 2);
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 300, y: 0 }, 2);
+			await waitFor(5);
+
+			const third = { x: 200, y: 100 + thirdFingerMove };
+
+			sendPointer(container, "pointerdown", { x: 200, y: 100 }, 3);
+			await waitFor(5);
+			if (thirdFingerMove) {
+				sendPointer(container, "pointermove", third, 3);
+				await waitFor(5);
+			}
+			sendPointer(container, "pointerup", third, 3);
+			await waitFor(5);
+
+			sendPointer(container, "pointermove", { x: 310, y: 0 }, 2);
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 310, y: 0 }, 2);
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 100, y: 0 }, 1);
+		};
+
+		it("keeps the scale and distance it reached, and continues from there", async () => {
+			const recognizer = new PinchRecognizer({ container });
+
+			const events = await eventsFor(recognizer.events$, () =>
+				pinchWithAThirdFinger(0),
+			);
+
+			expect(events).toMatchObject([
+				{ type: "pinchStart", scale: 1, distance: 0 },
+				{ type: "pinchMove", scale: 2, distance: 100 },
+				// the third finger touches
+				{
+					type: "pinchMove",
+					pointers: [{ pointerId: 1 }, { pointerId: 2 }, { pointerId: 3 }],
+					scale: 2,
+					distance: 100,
+				},
+				// it lifts
+				{
+					type: "pinchMove",
+					pointers: [{ pointerId: 1 }, { pointerId: 2 }],
+					scale: 2,
+					distance: 100,
+				},
+				// from 200 to 210px apart
+				{ type: "pinchMove", scale: 2.1, distance: 110 },
+				{ type: "pinchEnd", scale: 2.1, distance: 110 },
+			]);
+		});
+
+		it("adds up the deltas into the scale and distance, the third finger's move included", async () => {
+			const recognizer = new PinchRecognizer({ container });
+
+			const events = await eventsFor(recognizer.events$, () =>
+				pinchWithAThirdFinger(50),
+			);
+
+			const compounded = events.reduce(
+				(value, { deltaDistanceScale }) => value * deltaDistanceScale,
+				1,
+			);
+			const summed = events.reduce(
+				(value, { deltaDistance }) => value + deltaDistance,
+				0,
+			);
+			const end = events[events.length - 1];
+
+			expect(end?.type).toBe("pinchEnd");
+			expect(end?.scale).toBeCloseTo(compounded);
+			expect(end?.distance).toBeCloseTo(summed);
+		});
+	});
+
 	it("starts after moving posThreshold", async () => {
 		const recognizer = new PinchRecognizer({
 			container,

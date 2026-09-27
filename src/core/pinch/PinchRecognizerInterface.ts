@@ -4,9 +4,14 @@ import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
 
 export interface PinchEvent extends RecognizerEvent {
 	type: "pinchStart" | "pinchMove" | "pinchEnd";
+	/**
+	 * Scale since the pinch started, from the average distance between the
+	 * fingers. A finger touching or lifting doesn't change it.
+	 */
 	scale: number;
 	/**
-	 * Distance between start and current
+	 * Change in the average distance between the fingers since the pinch
+	 * started. A finger touching or lifting doesn't change it.
 	 */
 	distance: number;
 	/**
