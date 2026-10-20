@@ -17,6 +17,7 @@ import {
 	type RecognizerPanEvent,
 } from "../recognizer/Recognizer";
 import { shareLatest } from "../utils/operators";
+import { omitUnset } from "../utils/utils";
 import type {
 	RotateEvent,
 	RotateRecognizerInterface,
@@ -37,7 +38,7 @@ export class RotateRecognizer
 		super(config, {
 			numInputs: 2,
 			posThreshold: 15,
-			...config.options,
+			...omitUnset(config.options),
 		});
 
 		this.events$ = this.config$.pipe(

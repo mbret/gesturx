@@ -11,6 +11,7 @@ import {
 	withLatestFrom,
 } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
+import { omitUnset } from "../utils/utils";
 import type {
 	HoldEvent,
 	HoldRecognizerInterface,
@@ -30,7 +31,7 @@ export class HoldRecognizer
 			numInputs: 1,
 			delay: 0,
 			posThreshold: 0,
-			...options.options,
+			...omitUnset(options.options),
 		});
 
 		const start$ = this.panStart$.pipe(
