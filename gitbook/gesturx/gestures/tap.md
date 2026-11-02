@@ -10,6 +10,6 @@ A tap is detected when the user touches the screen and releases in quick success
 
 ```typescript
 new TapRecognizer({
-  maxTaps: 3,
+  options: { maxTaps: 3 },
 });
 ```

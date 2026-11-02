@@ -14,7 +14,7 @@ Typically used for zooming in/out features.
 
 ```typescript
 new PinchRecognizer({
-  posThreshold: 0
+  options: { posThreshold: 0 }
 })
 ```
 

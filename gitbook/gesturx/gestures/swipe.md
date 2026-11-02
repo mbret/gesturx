@@ -10,7 +10,7 @@ A swipe is detected when the user touches the screen and moves in a relatively i
 
 ```typescript
 new SwipeRecognizer({
-  escapeVelocity: 1,
+  options: { escapeVelocity: 1 },
 });
 ```
 

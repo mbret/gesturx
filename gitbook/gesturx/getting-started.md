@@ -9,6 +9,8 @@ $ npm install gesturx rxjs
 ## Usage
 
 ```typescript
+import { PanRecognizer, Recognizable, TapRecognizer } from "gesturx"
+
 const panRecognizer = new PanRecognizer()
 
 const recognizable = new Recognizable({
@@ -19,13 +21,13 @@ const recognizable = new Recognizable({
   recognizers: [
     panRecognizer,
     new TapRecognizer({
-      maxTaps: 3,
+      options: { maxTaps: 3 },
       failWith: [panRecognizer],
     })
   ],
 })
 
-recognizable.events$.subscribe((event) => {
+recognizable.events$.subscribe(({ event }) => {
   if (event.type === `tap`) {
     console.log(`You clicked ${event.taps} times!`)
   }
