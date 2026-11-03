@@ -15,7 +15,7 @@ export interface TapRecognizerOptions {
 	 * A longer time will delay the click event but make it easier to multi taps.
 	 * Try to find a good balance between latency and accessibility.
 	 *
-	 * @default 0
+	 * @default 100 * (maxTaps - 1)
 	 */
 	multiTapThreshold?: number;
 

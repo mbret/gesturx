@@ -7,7 +7,7 @@ export interface RecognizerEvent {
 	 */
 	pointers: PointerEvent[];
 	/**
-	 * Delay between the user action and the event recognition
+	 * Time since the start event, in ms
 	 */
 	delay: number;
 	deltaX: number;

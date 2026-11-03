@@ -43,7 +43,7 @@ export function isWithinPosThreshold(
 
 /**
  * Avoid division by zero
- * Calculate velocity in pixels per second
+ * Calculate velocity in pixels per millisecond
  */
 export const calculateVelocity = (
 	delay: number,
