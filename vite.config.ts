@@ -36,14 +36,15 @@ export default defineConfig(({ mode }) => {
 					devDeps: libMode,
 				}),
 			},
-			dts({
-				bundleTypes: libMode && {
-					// TypeScript 7 no longer ships lib typings in `typescript/lib`, which
-					// is where the plugin tells api-extractor to look. Unset it so
-					// api-extractor uses the libs of its own bundled compiler.
-					invokeOptions: { typescriptCompilerFolder: undefined },
-				},
-			}),
+			libMode &&
+				dts({
+					bundleTypes: {
+						// TypeScript 7 no longer ships lib typings in `typescript/lib`, which
+						// is where the plugin tells api-extractor to look. Unset it so
+						// api-extractor uses the libs of its own bundled compiler.
+						invokeOptions: { typescriptCompilerFolder: undefined },
+					},
+				}),
 		],
 	};
 });
