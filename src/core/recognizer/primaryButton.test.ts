@@ -1,12 +1,5 @@
-import {
-	buffer,
-	first,
-	lastValueFrom,
-	type Observable,
-	tap,
-	timer,
-} from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
+import { eventsFor } from "../../tests/utils";
 import { PanRecognizer } from "../pan/PanRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
 
@@ -76,25 +69,6 @@ describe("Given a press of a button other than the primary one", () => {
 		await waitFor(5);
 		send({ type: "pointerup", button, x: 100 });
 	};
-
-	/** Everything `events$` emits for `gesture`, within a window long enough. */
-	const eventsFor = <T>(
-		events$: Observable<T>,
-		gesture: () => void | Promise<void>,
-	) =>
-		lastValueFrom(
-			events$.pipe(
-				tap({
-					subscribe: async () => {
-						await waitFor(1);
-
-						await gesture();
-					},
-				}),
-				buffer(timer(50)),
-				first(),
-			),
-		);
 
 	it.each([
 		["a right click", SECONDARY],
