@@ -25,6 +25,8 @@ export class HoldRecognizer
 	implements HoldRecognizerInterface
 {
 	public events$: Observable<HoldEvent>;
+	public start$: Observable<HoldEvent>;
+	public end$: Observable<HoldEvent>;
 
 	constructor(options: RecognizerConfig<HoldRecognizerOptions> = {}) {
 		super(options, {
@@ -74,6 +76,11 @@ export class HoldRecognizer
 			this.reportFingers((event) => event.type === "holdEnd"),
 			share(),
 		);
+
+		this.start$ = this.events$.pipe(
+			filter((event) => event.type === "holdStart"),
+		);
+		this.end$ = this.events$.pipe(filter((event) => event.type === "holdEnd"));
 	}
 
 	public update(options: RecognizerConfig<HoldRecognizerOptions>) {

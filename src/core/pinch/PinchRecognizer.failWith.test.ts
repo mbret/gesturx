@@ -6,6 +6,7 @@ import {
 	sendPointer,
 	waitFor,
 } from "../../tests/utils";
+import { RotateRecognizer } from "../rotate/RotateRecognizer";
 import { PinchRecognizer } from "./PinchRecognizer";
 
 describe("PinchRecognizer with failWith", () => {
@@ -133,5 +134,32 @@ describe("PinchRecognizer with failWith", () => {
 		);
 
 		expect(compounded).toBeCloseTo(1.5);
+	});
+
+	it("waits for a RotateRecognizer to end", async () => {
+		const rotateContainer = createContainer();
+		const rotate = new RotateRecognizer({ container: rotateContainer });
+		const recognizer = new PinchRecognizer({ container, failWith: [rotate] });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			// two fingers, one moving past the rotate's 15px threshold
+			sendPointer(rotateContainer, "pointerdown", { x: 0, y: 0 }, 8);
+			sendPointer(rotateContainer, "pointerdown", { x: 100, y: 0 }, 9);
+			await waitFor(5);
+			sendPointer(rotateContainer, "pointermove", { x: 100, y: 30 }, 9);
+			await waitFor(5);
+			await pinch();
+			sendPointer(rotateContainer, "pointerup", { x: 100, y: 30 }, 9);
+			sendPointer(rotateContainer, "pointerup", { x: 0, y: 0 }, 8);
+			await waitFor(5);
+			await pinch();
+		});
+
+		// only the pinch after the rotate ended
+		expect(events.map(({ type }) => type)).toEqual([
+			"pinchStart",
+			"pinchMove",
+			"pinchEnd",
+		]);
 	});
 });
