@@ -116,7 +116,6 @@ describe("TapGestureRecognizer", () => {
 
 	it("should detect a double tap", async () => {
 		const multiTapThreshold = 5;
-		const waitLongEnough$ = timer(multiTapThreshold * 2);
 		const recognizer = new TapRecognizer({
 			container,
 			options: {
@@ -125,46 +124,36 @@ describe("TapGestureRecognizer", () => {
 			},
 		});
 
-		const values = await lastValueFrom(
-			recognizer.events$.pipe(
-				tap({
-					subscribe: async () => {
-						await waitFor(1);
-
-						sendPointerEvent({
-							container,
-							identifier: 1,
-							type: "pointerdown",
-							x: 0,
-							y: 0,
-						});
-						sendPointerEvent({
-							container,
-							identifier: 1,
-							type: "pointerup",
-							x: 0,
-							y: 0,
-						});
-						sendPointerEvent({
-							container,
-							identifier: 2,
-							type: "pointerdown",
-							x: 0,
-							y: 0,
-						});
-						sendPointerEvent({
-							container,
-							identifier: 2,
-							type: "pointerup",
-							x: 0,
-							y: 0,
-						});
-					},
-				}),
-				buffer(waitLongEnough$),
-				first(),
-			),
-		);
+		const values = await eventsFor(recognizer.events$, () => {
+			sendPointerEvent({
+				container,
+				identifier: 1,
+				type: "pointerdown",
+				x: 0,
+				y: 0,
+			});
+			sendPointerEvent({
+				container,
+				identifier: 1,
+				type: "pointerup",
+				x: 0,
+				y: 0,
+			});
+			sendPointerEvent({
+				container,
+				identifier: 2,
+				type: "pointerdown",
+				x: 0,
+				y: 0,
+			});
+			sendPointerEvent({
+				container,
+				identifier: 2,
+				type: "pointerup",
+				x: 0,
+				y: 0,
+			});
+		});
 
 		expect(values).toMatchObject([{ type: "tap", taps: 2 }]);
 	});

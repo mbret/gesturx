@@ -1,5 +1,5 @@
 import { buffer, first, lastValueFrom, NEVER, Subject, tap, timer } from "rxjs";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SwipeRecognizer } from "./SwipeRecognizer";
 
 const waitFor = (time: number) =>
@@ -81,35 +81,45 @@ describe("SwipeRecognizer", () => {
 		// Add a small buffer to ensure we're above threshold
 		const actualDistance = requiredDistance + 4;
 
-		await waitFor(1);
+		// The velocity comes from Date.now(). This clock only moves when the
+		// steps below move it, however long a busy machine takes.
+		vi.useFakeTimers({ toFake: ["Date"] });
 
-		sendPointerEvent({
-			container,
-			identifier: 1,
-			type: "pointerdown",
-			x: 0,
-			y: 0,
-		});
+		try {
+			await waitFor(1);
 
-		await waitFor(10);
+			sendPointerEvent({
+				container,
+				identifier: 1,
+				type: "pointerdown",
+				x: 0,
+				y: 0,
+			});
 
-		sendPointerEvent({
-			container,
-			identifier: 1,
-			type: "pointermove",
-			x: actualDistance / 2,
-			y: 0,
-		});
+			// the pan starts on a timer
+			await waitFor(1);
+			vi.advanceTimersByTime(10);
 
-		await waitFor(10);
+			sendPointerEvent({
+				container,
+				identifier: 1,
+				type: "pointermove",
+				x: actualDistance / 2,
+				y: 0,
+			});
 
-		sendPointerEvent({
-			container,
-			identifier: 1,
-			type: "pointerup",
-			x: actualDistance,
-			y: 0,
-		});
+			vi.advanceTimersByTime(10);
+
+			sendPointerEvent({
+				container,
+				identifier: 1,
+				type: "pointerup",
+				x: actualDistance,
+				y: 0,
+			});
+		} finally {
+			vi.useRealTimers();
+		}
 	};
 
 	it("should detect a swipe if above threshold", async () => {
