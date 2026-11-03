@@ -24,7 +24,7 @@ import type {
 	RotateRecognizerOptions,
 } from "./RotateRecognizerInterface";
 
-export type { RotateEvent };
+export type { RotateEvent, RotateRecognizerOptions };
 
 type RotatingEvent = RecognizerPanEvent & { angle: number; deltaAngle: number };
 

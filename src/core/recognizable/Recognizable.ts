@@ -13,6 +13,8 @@ import type {
 	RecognizableState,
 } from "./RecognizableInterface";
 
+export type { RecognizableState };
+
 // biome-ignore lint/suspicious/noExplicitAny: TODO
 type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	recognizers: T;

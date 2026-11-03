@@ -22,7 +22,10 @@ import type {
 } from "./PinchRecognizerInterface";
 import { scanPanEventToPinchEvent } from "./scanPanEventToPinchEvent";
 
-export type { PinchEvent } from "./PinchRecognizerInterface";
+export type {
+	PinchEvent,
+	PinchRecognizerOptions,
+} from "./PinchRecognizerInterface";
 
 export class PinchRecognizer
 	extends Recognizer<PinchRecognizerOptions, PinchEvent>

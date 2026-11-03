@@ -19,7 +19,7 @@ import type {
 	PanRecognizerOptions,
 } from "./PanRecognizerInterface";
 
-export type { PanEvent };
+export type { PanEvent, PanRecognizerOptions };
 
 export class PanRecognizer
 	extends Recognizer<PanRecognizerOptions, PanEvent>
