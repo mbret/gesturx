@@ -10,6 +10,7 @@ Run these before you push:
 - `npx tsc`: the type check, test files included.
 - `npm test`: Vitest with happy-dom.
 - `npm run check:readme`: the type check of the examples in `README.md`.
+- `npm run build`: the demo build.
 - `npm run build:lib`: the published build. It needs Node 24 or later. `.nvmrc` sets Node 26.
 
 ## Documentation
@@ -19,12 +20,13 @@ Run these before you push:
 - If a change alters what users see, update `README.md` in the same PR. That includes an export, an option, a default, an event, an event field and a known limitation.
 - When a fix closes an issue in "Known limitations", remove its line.
 - Write each `ts` example in `README.md` as a complete file, with its own imports from `gesturx`. `npm run check:readme` compiles each example on its own.
+- The doc comments in `src/core` ship in the type declarations. Keep them in line with `README.md`.
 
 ## Releases
 
 semantic-release publishes from `main`. The commit type sets the release:
 
-- `fix:` publishes a patch.
+- `fix:`, `perf:` and reverts publish a patch.
 - `feat:` publishes a minor version.
-- A `BREAKING CHANGE:` footer publishes a major version.
+- A `BREAKING CHANGE:` footer publishes a major version. The analyzer doesn't read a `!` after the type, as in `feat!:`, so use the footer.
 - `docs:`, `test:`, `build:`, `ci:`, `refactor:` and `chore:` publish nothing.

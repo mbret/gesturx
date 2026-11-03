@@ -1,7 +1,7 @@
 # gesturx
 
 [![npm](https://img.shields.io/npm/v/gesturx)](https://www.npmjs.com/package/gesturx)
-[![license](https://img.shields.io/npm/l/gesturx)](LICENSE)
+[![license](https://img.shields.io/npm/l/gesturx)](https://github.com/mbret/gesturx/blob/main/LICENSE)
 
 Gesture recognition for the browser, built on [rxjs](https://rxjs.dev). gesturx turns the pointer events of touch, mouse and pen into taps, pans, pinches, rotations, swipes and holds.
 
@@ -35,7 +35,10 @@ import { PanRecognizer, Recognizable, TapRecognizer } from "gesturx";
 
 const pan = new PanRecognizer();
 // no tap is recognized while a pan runs
-const tap = new TapRecognizer({ options: { maxTaps: 3 }, failWith: [pan] });
+const tap = new TapRecognizer({
+	options: { maxTaps: 3, multiTapThreshold: 300 },
+	failWith: [pan],
+});
 
 const recognizable = new Recognizable({ recognizers: [pan, tap] });
 
@@ -82,33 +85,34 @@ subscription.unsubscribe();
 - `events$` emits `{ event, recognizer }` for the events of all its recognizers.
 - `state$` emits `{ fingers }`: the most fingers that one of its recognizers recognizes at that moment.
 - `update({ container })` sets the element on all its recognizers. Set the options of each recognizer on the recognizer itself.
-- When it gets a container, it sets `touch-action: none` on it. Without that, the browser handles touch gestures itself and cancels the pointer events.
+- When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events.
 - `disableTextSelection: true` also sets `user-select: none` on the container.
 - Give each recognizer to one `Recognizable` only, because each `Recognizable` writes its config to its recognizers.
 - Overlapping elements with their own recognizers can recognize the same gesture.
 
 ## Recognizers
 
-A recognizer also works alone, on any element:
+A recognizer also works alone, on any element. Alone, it doesn't set `touch-action`: set `touch-action: none` on its container yourself.
 
 ```ts
 import { PanRecognizer } from "gesturx";
 
 const card = document.getElementById("card")!;
-// a Recognizable sets this for you
 card.style.touchAction = "none";
 
 const pan = new PanRecognizer({ container: card });
 
 const subscription = pan.events$.subscribe((event) => {
 	if (event.type === "panMove") {
-		card.style.translate = `${event.deltaX}px ${event.deltaY}px`;
+		card.style.transform = `translate(${event.deltaX}px, ${event.deltaY}px)`;
 	}
 });
 
 // to stop recognizing
 subscription.unsubscribe();
 ```
+
+The other examples in this README use a recognizer alone, and expect `touch-action: none` on the container from your CSS.
 
 Every recognizer takes the same config in its constructor and in `update()`:
 
@@ -127,6 +131,8 @@ Every recognizer has:
 
 Only the primary button starts a gesture: a finger, a pen tip or a left click. A right click, a middle click or a pen eraser starts nothing.
 
+The distance thresholds below are measured on each axis: a finger passes a 15 px threshold when it moves 15 px on the x axis or on the y axis.
+
 ### Tap
 
 `TapRecognizer` emits `tap` when fingers press and release quickly. `taps` counts the presses.
@@ -138,7 +144,7 @@ Only the primary button starts a gesture: a finger, a pen tip or a left click. A
 | `maximumPressTime` | `150` ms | A press held longer cancels the gesture. |
 | `tolerance` | `10` px | A press that moves farther than this from the first press cancels the gesture. |
 
-Two fingers down at the same time cancel the gesture too. With `maxTaps` of 2 or more, a single tap is reported only after `multiTapThreshold`.
+Two fingers down at the same time cancel the gesture too. With `maxTaps` of 2 or more, every `tap` comes `multiTapThreshold` after the last release, a double tap too.
 
 ```ts
 import { TapRecognizer } from "gesturx";
@@ -202,7 +208,7 @@ const photo = document.getElementById("photo")!;
 const pinch = new PinchRecognizer({ container: photo });
 
 pinch.events$.subscribe(({ scale }) => {
-	photo.style.scale = `${scale}`;
+	photo.style.transform = `scale(${scale})`;
 });
 ```
 
@@ -226,7 +232,7 @@ const dial = document.getElementById("dial")!;
 const rotate = new RotateRecognizer({ container: dial });
 
 rotate.events$.subscribe(({ angle }) => {
-	dial.style.rotate = `${angle}deg`;
+	dial.style.transform = `rotate(${angle}deg)`;
 });
 ```
 
@@ -264,7 +270,7 @@ swipe.events$.subscribe(({ angle }) => {
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `delay` | `0` ms | The time that the fingers stay pressed before the hold starts. A release in that time cancels the hold. Moving doesn't cancel it. |
+| `delay` | `0` ms | The time that the fingers stay pressed before the hold starts. It counts from the press, or from the threshold when `posThreshold` is set. A release in that time cancels the hold. Moving doesn't cancel it. |
 | `numInputs` | `1` | The fingers it needs. The hold ends when fewer fingers stay pressed. |
 | `posThreshold` | `0` px | The distance that a finger moves before the hold starts. |
 
@@ -288,15 +294,17 @@ The events of every recognizer have these fields:
 | Field | Meaning |
 | --- | --- |
 | `type` | The name of the event, for example `panMove`. |
-| `event` | The `PointerEvent` that caused it. |
-| `pointers` | The latest `PointerEvent` of each finger in the gesture. |
+| `event` | The `PointerEvent` that caused it. For a tap, the last press. |
+| `pointers` | The latest `PointerEvent` of each finger that is still pressed. An end event leaves out the finger that lifted, so a one-finger `panEnd` has none. A tap has its last press. |
 | `center` | The center of the fingers, `{ x, y }`, in client coordinates. |
-| `deltaX`, `deltaY` | The distance that the center moved since the gesture started, in px. |
+| `deltaX`, `deltaY` | The distance that the center moved since the start event, in px. They are 0 at the start event, which comes after the threshold. A finger that touches or lifts doesn't change them. |
 | `velocityX`, `velocityY` | `deltaX` and `deltaY` divided by `delay`, in px/ms. They can be negative. |
-| `delay` | The time since the gesture started, in ms. |
-| `startTime` | The time when the gesture started, from `Date.now()`. |
+| `delay` | The time since the start event, in ms. |
+| `startTime` | The time of the start event, from `Date.now()`. |
 | `deltaPointersAngle` | The angle that the fingers turned since the previous event, in degrees. It is 0 when the number of fingers changed. |
 | `pointersAverageDistance` | The average distance between two fingers, over all pairs, in px. |
+
+A tap is one event, so its `startTime` is the time it is reported, and its `delay`, deltas and velocities are 0.
 
 The package exports the types of the events (`TapEvent`, `PanEvent`, `PinchEvent`, `RotateEvent`, `SwipeEvent`, `HoldEvent` and their base `RecognizerEvent`), of the options (`TapRecognizerOptions` and the others), and `RecognizableState`.
 
@@ -331,7 +339,7 @@ dialogOpened$.next();
 dialogClosed$.next();
 ```
 
-A recognizer subscribes to its `failWith` sources when it gets a subscriber. A recognizer in a `failWith` list therefore recognizes gestures, even without a subscriber of its own.
+A recognizer subscribes to its `failWith` sources by the time it has a subscriber and a container. A recognizer in a `failWith` list therefore recognizes gestures, even without a subscriber of its own. A `TapRecognizer` is the exception: it subscribes to its sources at its first press.
 
 ## Updating a recognizer
 
@@ -357,14 +365,15 @@ pan.update({ options: { posThreshold: 30 } });
 
 ## Custom gestures
 
-To make a gesture of your own, extend `Recognizer`. The second argument of `super()` sets `numInputs`, `posThreshold` and `delay` for the gesture that the base class follows. The base class gives you protected streams:
+To make a gesture of your own, extend `Recognizer`. The second argument of `super()` sets `numInputs`, `posThreshold` and `delay` for the gesture that the base class follows. The base class gives you protected members:
 
-- `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s.
-- `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the pointer events of the container.
-- `failWithActive$`: `true` while one of the `failWith` sources runs.
+- `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s. `pan$` has all of them, with a `type` of `start`, `move` or `end`.
+- `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the pointer events of the container. `pointerDown$` has the presses of the primary button only.
+- `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
+- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. Without it, `state$` stays 0.
 
 ```ts
-import { map, type Observable } from "rxjs";
+import { filter, map, type Observable, withLatestFrom } from "rxjs";
 import {
 	Recognizer,
 	type RecognizerConfig,
@@ -382,7 +391,9 @@ class TwoFingerDragRecognizer extends Recognizer<object, TwoFingerDragEvent> {
 		super(config, { numInputs: 2, posThreshold: 10 });
 
 		this.events$ = this.panMove$.pipe(
-			map((event) => ({ ...event, type: "twoFingerDrag" as const })),
+			withLatestFrom(this.failWithActive$),
+			filter(([, failWithActive]) => !failWithActive),
+			map(([event]) => ({ ...event, type: "twoFingerDrag" as const })),
 		);
 	}
 }
@@ -402,15 +413,21 @@ A `Recognizable` accepts a custom recognizer like the others. For a complete exa
 
 ### pointercancel
 
-The browser sends `pointercancel` when it takes over a pointer, for example to start the native drag of an image. The coordinates of that event can be hundreds of pixels away from the fingers. When a gesture ends with a `pointercancel`, its end event references it, but `deltaX` and `deltaY` stay as they were in the previous event.
+The browser sends `pointercancel` when it takes over a pointer, for example to start the native drag of an image. The coordinates of that event can be hundreds of pixels away from the fingers. When a gesture ends with a `pointercancel`, its end event references it, but `deltaX` and `deltaY` stay as they were in the previous event. `center`, and the `angle` of a swipe, do use its coordinates.
+
+### contextmenu
+
+A `contextmenu` event ends the gesture of its pointer, as a release does. A right click opens the context menu, and so can a long press on a touch screen.
 
 ## Known limitations
 
-- `update()` during a gesture drops the gesture without an end event ([#140](https://github.com/mbret/gesturx/issues/140)). A recognizer with that one in its `failWith` then stays blocked ([#152](https://github.com/mbret/gesturx/issues/152)).
+- `update()` during a gesture drops the gesture without an end event, and `state$` keeps its fingers ([#140](https://github.com/mbret/gesturx/issues/140)). A recognizer with that one in its `failWith` then stays blocked until that one ends a later gesture ([#152](https://github.com/mbret/gesturx/issues/152)).
+- `update({ options: undefined })` resets the options of a `TapRecognizer` or a `SwipeRecognizer` to their defaults. Leave out the `options` key instead.
 - A recognizer keeps its `failWith` sources subscribed after you unsubscribe from it ([#151](https://github.com/mbret/gesturx/issues/151)).
+- A `TapRecognizer` follows its `failWith` sources from its first press. A source that started before that press doesn't block it.
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
-- A `container` set to `undefined` or `null` doesn't detach a recognizer. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
+- A `container` set to `undefined` or `null` doesn't detach a recognizer, and the recognizer ignores the next calls to `update()` until it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
 - A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License
