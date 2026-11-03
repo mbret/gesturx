@@ -15,7 +15,7 @@ const recognizable = new Recognizable({
 
 You should not reuse the same instances in different `Recognizable` since they will each overwrite the previous configuration.
 
-When needed you can create your own `Recognizer` by extending `AbstractPanRecognizer`. You can check the codebase to have an idea how to use it.
+When needed, you can create your own recognizer by extending the `Recognizer` class, as described in [Custom Gesture](custom-gesture.md).
 
 ### `failWith` option
 
@@ -24,7 +24,7 @@ Every recognizer has an option `failWith` option which can be used to explicitel
 ```typescript
 const panRecognizer = new PanRecognizer()
 const tapRecognizer = new TapRecognizer({
-  maxTaps: 3,
+  options: { maxTaps: 3 },
   failWith: [panRecognizer]
 })
 ```
@@ -41,6 +41,6 @@ You can find the [RecognizerEvent definition here](https://github.com/mbret/gest
 
 The default options are configured to match the most common use case.
 
-For example the tap recogniser will recognise up to 2 taps and the pan recogniser will only start registering gesture when the fingers start moving a reasonable threshold.
+For example, the tap recognizer recognizes single taps, and the pan recognizer only starts once a finger has moved 15px.
 
 You will most likely be fine with the default settings but if you need to adjust some values remember you can tinker with the options on the [demo](https://gesturx.vercel.app/) as well.

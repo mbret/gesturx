@@ -1,9 +1,6 @@
 # Rotate
 
-A Rotate is detected when:
-
-* the user has two or more inputs moving about a circle on the edges of a diameter.
-* the user has one input moving in a circular motion around the center point of the bound target element.
+A rotate is detected when the user has two or more inputs moving about a circle on the edges of a diameter.
 
 #### API
 
@@ -13,7 +10,7 @@ A Rotate is detected when:
 
 ```typescript
 new RotateRecognizer({
-  posThreshold: 0
+  options: { posThreshold: 0 }
 })
 ```
 

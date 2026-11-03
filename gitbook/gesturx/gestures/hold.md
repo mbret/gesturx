@@ -12,6 +12,6 @@ Usually not needed if you have other gestures such as pan setup but can be usefu
 
 ```typescript
 new HoldRecognizer({
-  numInputs: 2
+  options: { numInputs: 2 }
 })
 ```

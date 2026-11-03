@@ -14,6 +14,6 @@ Typically used to move elements around the screen.
 
 ```typescript
 new PanRecognizer({
-  numInputs: 2
+  options: { numInputs: 2 }
 })
 ```
