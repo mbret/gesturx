@@ -182,23 +182,30 @@ const recognizers: [string, AnyRecognizer, object, string[], () => unknown][] =
 		["SwipeRecognizer", SwipeRecognizer, {}, ["escapeVelocity"], swipe],
 	];
 
+/** The type, and the taps of a tap, of each event that `gesture` gives. */
+const recognize = async (
+	recognizer: InstanceType<AnyRecognizer>,
+	gesture: () => unknown,
+) => {
+	const events = await eventsFor(recognizer.events$, async () => {
+		await gesture();
+	});
+
+	return events.map((event) => {
+		const { type, taps } = event as { type: string; taps?: number };
+
+		return { type, taps };
+	});
+};
+
 describe.each(recognizers)("%s", (_, Recognizer, options, unset, gesture) => {
-	const recognize = async (recognizer: InstanceType<AnyRecognizer>) => {
-		const events = await eventsFor(recognizer.events$, async () => {
-			await gesture();
-		});
-
-		return events.map((event) => {
-			const { type, taps } = event as { type: string; taps?: number };
-
-			return { type, taps };
-		});
-	};
-
 	it.each(unset)(
 		"treats %s set to undefined or NaN as unset",
 		async (option) => {
-			const expected = await recognize(new Recognizer({ container, options }));
+			const expected = await recognize(
+				new Recognizer({ container, options }),
+				gesture,
+			);
 
 			// the gesture is recognized, so that turning it off shows
 			expect(expected).not.toEqual([]);
@@ -209,17 +216,19 @@ describe.each(recognizers)("%s", (_, Recognizer, options, unset, gesture) => {
 					options: { ...options, [option]: value },
 				});
 
-				expect(await recognize(created), `created with ${value}`).toEqual(
-					expected,
-				);
+				expect(
+					await recognize(created, gesture),
+					`created with ${value}`,
+				).toEqual(expected);
 
 				const updated = new Recognizer({ container, options });
 
 				updated.update({ options: { [option]: value } });
 
-				expect(await recognize(updated), `updated with ${value}`).toEqual(
-					expected,
-				);
+				expect(
+					await recognize(updated, gesture),
+					`updated with ${value}`,
+				).toEqual(expected);
 			}
 		},
 	);
@@ -239,6 +248,39 @@ describe("update()", () => {
 		// it still needs two fingers
 		expect(events).toEqual([]);
 	});
+
+	it.each<[string, AnyRecognizer, object, () => unknown]>([
+		["PanRecognizer", PanRecognizer, { numInputs: 2 }, () => drag([10, 40])],
+		[
+			"RotateRecognizer",
+			RotateRecognizer,
+			{ numInputs: 3 },
+			() => turn([0, 5, 30, 60]),
+		],
+		["PinchRecognizer", PinchRecognizer, { posThreshold: 1000 }, spread],
+		["HoldRecognizer", HoldRecognizer, { delay: 1000 }, press],
+		["TapRecognizer", TapRecognizer, { maxTaps: 2 }, doubleTap],
+		["SwipeRecognizer", SwipeRecognizer, { escapeVelocity: 1000 }, swipe],
+	])(
+		"keeps the options of a %s when passed options: undefined",
+		async (_, Recognizer, options, gesture) => {
+			const expected = await recognize(
+				new Recognizer({ container, options }),
+				gesture,
+			);
+
+			// the options change what the gesture gives, so that losing them shows
+			expect(expected).not.toEqual(
+				await recognize(new Recognizer({ container }), gesture),
+			);
+
+			const updated = new Recognizer({ container, options });
+
+			updated.update({ options: undefined });
+
+			expect(await recognize(updated, gesture)).toEqual(expected);
+		},
+	);
 
 	describe("with failWith", () => {
 		/** A recognizer to fail with, running. */

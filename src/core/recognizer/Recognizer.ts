@@ -339,13 +339,13 @@ export abstract class Recognizer<
 			failWith: config.failWith ?? existingConfig.failWith,
 			afterEventReceived:
 				config.afterEventReceived ?? existingConfig.afterEventReceived,
-			...(config.options && {
-				// every option is optional, so leaving out the unset ones keeps them valid
-				options: {
-					...existingConfig.options,
-					...omitUnset(config.options),
-				} as Options,
-			}),
+			options: config.options
+				? // every option is optional, so leaving out the unset ones keeps them valid
+					({
+						...existingConfig.options,
+						...omitUnset(config.options),
+					} as Options)
+				: existingConfig.options,
 			panConfig: {
 				...existingConfig.panConfig,
 				...omitUnset(panConfig),

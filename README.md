@@ -358,7 +358,7 @@ pan.events$.subscribe(({ type }) => {
 pan.update({ options: { posThreshold: 30 } });
 ```
 
-- The options that you don't pass keep their values.
+- The options that you don't pass keep their values. `options: undefined` keeps all of them.
 - An option passed as `undefined` or `NaN` keeps its value too.
 - `failWith` or `afterEventReceived` passed as `undefined` keep their values. Pass `failWith: []` to remove `failWith`.
 - A new `container` moves the listeners to the new element.
@@ -422,7 +422,6 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 ## Known limitations
 
 - `update()` during a gesture drops the gesture without an end event, and `state$` keeps its fingers ([#140](https://github.com/mbret/gesturx/issues/140)). A recognizer with that one in its `failWith` then stays blocked until that one ends a later gesture ([#152](https://github.com/mbret/gesturx/issues/152)).
-- `update({ options: undefined })` resets the options of a `TapRecognizer` or a `SwipeRecognizer` to their defaults. Leave out the `options` key instead.
 - A recognizer keeps its `failWith` sources subscribed after you unsubscribe from it ([#151](https://github.com/mbret/gesturx/issues/151)).
 - A `TapRecognizer` follows its `failWith` sources from its first press. A source that started before that press doesn't block it.
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
