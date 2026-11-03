@@ -29,6 +29,8 @@ import type { RecognizerEvent } from "./RecognizerEvent";
 import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
 import { getPointerEvents } from "./utils";
 
+export type { RecognizerEvent };
+
 type PanConfig = {
 	posThreshold?: number;
 	delay?: number;

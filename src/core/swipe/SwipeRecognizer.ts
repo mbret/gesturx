@@ -16,7 +16,7 @@ import type {
 	SwipeRecognizerOptions,
 } from "./SwipeRecognizerInterface";
 
-export type { SwipeEvent };
+export type { SwipeEvent, SwipeRecognizerOptions };
 
 export class SwipeRecognizer
 	extends Recognizer<SwipeRecognizerOptions, SwipeEvent>

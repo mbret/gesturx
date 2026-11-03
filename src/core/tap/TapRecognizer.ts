@@ -26,7 +26,7 @@ import type {
 	TapRecognizerOptions,
 } from "./TapRecognizerInterface";
 
-export type { TapEvent };
+export type { TapEvent, TapRecognizerOptions };
 
 export class TapRecognizer
 	extends Recognizer<TapRecognizerOptions, TapEvent>

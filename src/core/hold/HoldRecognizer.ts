@@ -18,7 +18,7 @@ import type {
 	HoldRecognizerOptions,
 } from "./HoldRecognizerInterface";
 
-export type { HoldEvent };
+export type { HoldEvent, HoldRecognizerOptions };
 
 export class HoldRecognizer
 	extends Recognizer<HoldRecognizerOptions, HoldEvent>
