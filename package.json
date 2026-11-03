@@ -21,6 +21,7 @@
 		"build:lib": "tsc && cross-env LIB_MODE=true vite build",
 		"preview": "vite preview",
 		"check": "npx @biomejs/biome check .",
+		"check:readme": "node scripts/check-readme.mjs",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
 		"prepare": "husky"
