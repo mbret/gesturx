@@ -15,6 +15,15 @@ if (examples.length === 0) {
 	throw new Error("README.md has no ts example to check");
 }
 
+// a TypeScript block that the pattern above misses would go unchecked
+const fences = readme.match(/^[ \t]*```[ \t]*(ts|typescript|tsx)\b/gm) ?? [];
+
+if (fences.length !== examples.length) {
+	throw new Error(
+		"README.md has a TypeScript block that this check skips: open it with ```ts at the start of a line, and close it",
+	);
+}
+
 // inside node_modules, so that the examples resolve rxjs like the library
 const dir = join(root, "node_modules", ".cache", "readme-examples");
 
@@ -46,6 +55,11 @@ try {
 		{ stdio: "inherit" },
 	);
 	console.log(`${examples.length} README.md examples type-check`);
-} catch {
+} catch (error) {
+	// tsc already printed its errors; anything else, such as a missing tsc, is thrown
+	if (typeof error.status !== "number") {
+		throw error;
+	}
+
 	process.exitCode = 1;
 }
