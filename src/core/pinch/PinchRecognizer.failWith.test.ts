@@ -136,7 +136,7 @@ describe("PinchRecognizer with failWith", () => {
 		expect(compounded).toBeCloseTo(1.5);
 	});
 
-	it("waits for a RotateRecognizer to end", async () => {
+	it("does not start while a RotateRecognizer in failWith runs", async () => {
 		const rotateContainer = createContainer();
 		const rotate = new RotateRecognizer({ container: rotateContainer });
 		const recognizer = new PinchRecognizer({ container, failWith: [rotate] });

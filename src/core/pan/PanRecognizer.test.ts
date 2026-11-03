@@ -257,7 +257,7 @@ describe("PanRecognizer", () => {
 			]);
 		});
 
-		it("waits for a HoldRecognizer to end", async () => {
+		it("does not start while a HoldRecognizer in failWith runs", async () => {
 			const holdContainer = createContainer();
 			const hold = new HoldRecognizer({ container: holdContainer });
 			const recognizer = new PanRecognizer({ container, failWith: [hold] });
