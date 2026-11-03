@@ -7,6 +7,7 @@ import {
 	sendPointer,
 	waitFor,
 } from "../../tests/utils";
+import { HoldRecognizer } from "../hold/HoldRecognizer";
 import { PanRecognizer } from "./PanRecognizer";
 
 describe("PanRecognizer", () => {
@@ -254,6 +255,24 @@ describe("PanRecognizer", () => {
 				// repeats the latest event, then nothing more
 				{ type: "panEnd", deltaX: 10 },
 			]);
+		});
+
+		it("does not start while a HoldRecognizer in failWith runs", async () => {
+			const holdContainer = createContainer();
+			const hold = new HoldRecognizer({ container: holdContainer });
+			const recognizer = new PanRecognizer({ container, failWith: [hold] });
+
+			const events = await eventsFor(recognizer.events$, async () => {
+				sendPointer(holdContainer, "pointerdown", { x: 0, y: 0 }, 9);
+				await waitFor(5);
+				await drag(along(0, 50));
+				sendPointer(holdContainer, "pointerup", { x: 0, y: 0 }, 9);
+				await waitFor(5);
+				await drag(along(0, 50));
+			});
+
+			// only the drag after the hold ended
+			expect(events.map(({ type }) => type)).toEqual(["panStart", "panEnd"]);
 		});
 	});
 });
