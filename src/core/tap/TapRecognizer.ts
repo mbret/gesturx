@@ -51,6 +51,22 @@ export class TapRecognizer
 					filter(({ pointers }) => pointers.length > 1),
 				);
 
+				/**
+				 * Collects the presses until `multiTapThreshold` after a release
+				 * that no press followed: a press still down is part of the taps.
+				 */
+				const bufferPointerDowns =
+					(multiTapThreshold: number) => (stream: Observable<PointerEvent>) =>
+						stream.pipe(
+							buffer(
+								merge(this.pointerDown$, this.pointerUp$).pipe(
+									debounceTime(multiTapThreshold),
+									filter((event) => event.type === "pointerup"),
+								),
+							),
+							first(),
+						);
+
 				const tap$ = merge(
 					this.pointerDown$,
 					activePointers$.pipe(ignoreElements()),
@@ -67,28 +83,14 @@ export class TapRecognizer
 
 						const { maximumPressTime = 150, tolerance = 10 } = options ?? {};
 
-						/**
-						 * Collects the presses until `multiTapThreshold` after a release
-						 * that no press followed: a press still down is part of the taps.
-						 */
-						const bufferPointerDowns = (stream: Observable<PointerEvent>) =>
-							stream.pipe(
-								buffer(
-									merge(this.pointerDown$, this.pointerUp$).pipe(
-										debounceTime(multiTapThreshold),
-										filter((event) => event.type === "pointerup"),
-									),
-								),
-								first(),
-							);
-
 						const pointerDowns$ = merge(
 							of(initialPointerEvent),
 							this.pointerDown$,
 						).pipe(shareLatest());
 
-						const pointerDownsBuffered$ =
-							pointerDowns$.pipe(bufferPointerDowns);
+						const pointerDownsBuffered$ = pointerDowns$.pipe(
+							bufferPointerDowns(multiTapThreshold),
+						);
 
 						/**
 						 * Exit condition for `tolerance`

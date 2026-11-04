@@ -40,7 +40,7 @@ export class SwipeRecognizer
 							this.configSubject.getValue().options ?? {};
 
 						return this.panEnd$.pipe(
-							// a release lifts the finger, a new container doesn't
+							// with one finger, a release leaves none, and a new container keeps it
 							filter((event) => !event.pointers.length),
 							isRecognizedAsSwipe(escapeVelocity),
 							map((event) => {

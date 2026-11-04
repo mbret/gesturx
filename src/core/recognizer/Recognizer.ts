@@ -42,6 +42,12 @@ type PanConfig = {
 	numInputs?: number;
 };
 
+const panSettingsOf = (panConfig: PanConfig = {}) => ({
+	numInputs: Math.max(1, panConfig.numInputs ?? 1),
+	posThreshold: Math.max(0, panConfig.posThreshold ?? 0),
+	delay: Math.max(0, panConfig.delay ?? 0),
+});
+
 export interface FailWith {
 	start$: Observable<unknown>;
 	end$: Observable<unknown>;
@@ -72,6 +78,7 @@ export abstract class Recognizer<
 	Options extends object = never,
 	Event extends RecognizerEvent = RecognizerEvent,
 > {
+	/** The latest config. Read it, and change it with `update()` only. */
 	protected configSubject = new BehaviorSubject<
 		RecognizerConfig<Options> & {
 			panConfig?: PanConfig;
@@ -80,9 +87,7 @@ export abstract class Recognizer<
 	private stateSubject = new BehaviorSubject<State>({
 		fingers: 0,
 	});
-	/** The latest container set, which the recognizer follows. */
-	private latestContainer?: HTMLElement;
-	/** Emits right before the recognizer follows another container. */
+	private followedContainer?: HTMLElement;
 	private containerChanging = new Subject<void>();
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
@@ -200,9 +205,6 @@ export abstract class Recognizer<
 			shareReplay(1),
 		);
 
-		const numInputsOf = (panConfig?: PanConfig) =>
-			Math.max(1, panConfig?.numInputs ?? 1);
-
 		this.pan$ = this.container$.pipe(
 			switchMap(() => {
 				const trackPointers$ = this.pointerDown$.pipe(
@@ -217,19 +219,17 @@ export abstract class Recognizer<
 					filter(
 						({ pointers }) =>
 							pointers.length >=
-							numInputsOf(this.configSubject.getValue().panConfig),
+							panSettingsOf(this.configSubject.getValue().panConfig).numInputs,
 					),
 					exhaustMap(({ pointers: initialPointerEvents }) => {
-						const { panConfig } = this.configSubject.getValue();
-						const numInputs = numInputsOf(panConfig);
-						const posThreshold = Math.max(0, panConfig?.posThreshold ?? 0);
-						const delay = Math.max(0, panConfig?.delay ?? 0);
+						const { numInputs, posThreshold, delay } = panSettingsOf(
+							this.configSubject.getValue().panConfig,
+						);
 
 						const panReleased$ = merge(
 							trackPointers$.pipe(
 								filter(({ pointers }) => pointers.length < numInputs),
 							),
-							// a new container ends the gesture where the fingers are
 							this.containerChanging.pipe(
 								withLatestFrom(trackPointers$),
 								map(([, latest]) => latest),
@@ -342,22 +342,26 @@ export abstract class Recognizer<
 		panConfig?: PanConfig,
 	) {
 		const { container } = config;
+		const previousContainer = this.followedContainer;
 
 		if (container) {
-			if (this.latestContainer && container !== this.latestContainer) {
-				// before the update, so that its gesture ends while it's still followed
+			this.followedContainer = container;
+
+			if (previousContainer && container !== previousContainer) {
+				// before configSubject.next(), so that pan$ ends its gesture before
+				// container$ switches to the new container
 				this.containerChanging.next();
 			}
-
-			this.latestContainer = container;
 		}
 
-		// read after the end event, which can update the recognizer again
+		// read after the end event, whose handlers can update the recognizer
 		const existingConfig = this.configSubject.getValue();
 
 		this.configSubject.next({
 			...existingConfig,
 			...config,
+			// a container set from an end handler comes later, so it stays
+			...(container && { container: this.followedContainer }),
 			// unset, as when forwarding an optional value, they stay as they are
 			failWith: config.failWith ?? existingConfig.failWith,
 			afterEventReceived:
