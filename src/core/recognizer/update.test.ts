@@ -176,7 +176,7 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 		expect(
 			await typesFor(recognizer, async () => {
 				await gesture(container, () => recognizer.update({ options }));
-				// before the unsubscription, which resets them
+				// before typesFor unsubscribes from events$, which sets them to 0
 				fingers = state.fingers[state.fingers.length - 1];
 			}),
 		).toEqual(expected);
@@ -207,7 +207,7 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 
 		const types = await typesFor(recognizer, async () => {
 			await gesture(container, () => recognizer.update({ container: other }));
-			// before the unsubscription, which resets them
+			// before typesFor unsubscribes from events$, which sets them to 0
 			fingers = state.fingers[state.fingers.length - 1];
 		});
 
@@ -303,7 +303,7 @@ describe("PanRecognizer", () => {
 		expect(received).toEqual(["pointermove", "pointermove", "pointerup"]);
 	});
 
-	it("keeps an update made from the end event of a container change", async () => {
+	it("keeps options set from the end event of a container change", async () => {
 		const recognizer = new PanRecognizer({ container });
 		const ended = recognizer.events$.subscribe((event) => {
 			if (event.type === "panEnd") {
@@ -312,8 +312,10 @@ describe("PanRecognizer", () => {
 		});
 
 		const types = await typesFor(recognizer, async () => {
-			await drag(container, () => recognizer.update({ container: other }));
-			// one finger doesn't pan anymore
+			await drag(container, () =>
+				recognizer.update({ container: other, options: { numInputs: 1 } }),
+			);
+			// the options from the end handler come later, so one finger doesn't pan
 			await drag(other);
 		});
 

@@ -341,27 +341,39 @@ export abstract class Recognizer<
 		config: Partial<RecognizerConfig<Options>>,
 		panConfig?: PanConfig,
 	) {
-		const { container } = config;
-		const previousContainer = this.followedContainer;
+		const { container, ...rest } = config;
+		const changesContainer =
+			!!container &&
+			!!this.followedContainer &&
+			container !== this.followedContainer;
 
 		if (container) {
 			this.followedContainer = container;
-
-			if (previousContainer && container !== previousContainer) {
-				// before configSubject.next(), so that pan$ ends its gesture before
-				// container$ switches to the new container
-				this.containerChanging.next();
-			}
 		}
 
-		// read after the end event, whose handlers can update the recognizer
+		if (!changesContainer) {
+			this.mergeConfig(config, panConfig);
+
+			return;
+		}
+
+		// the other fields first, so that an update from an end handler comes after
+		this.mergeConfig(rest, panConfig);
+		// before container$ switches, so that pan$ ends its gesture while it's followed
+		this.containerChanging.next();
+		// an end handler can set another container, which then stays
+		this.mergeConfig({ container: this.followedContainer });
+	}
+
+	private mergeConfig(
+		config: Partial<RecognizerConfig<Options>>,
+		panConfig?: PanConfig,
+	) {
 		const existingConfig = this.configSubject.getValue();
 
 		this.configSubject.next({
 			...existingConfig,
 			...config,
-			// a container set from an end handler comes later, so it stays
-			...(container && { container: this.followedContainer }),
 			// unset, as when forwarding an optional value, they stay as they are
 			failWith: config.failWith ?? existingConfig.failWith,
 			afterEventReceived:
