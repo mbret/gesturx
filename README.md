@@ -361,7 +361,11 @@ pan.update({ options: { posThreshold: 30 } });
 - The options that you don't pass keep their values. `options: undefined` keeps all of them.
 - An option passed as `undefined` or `NaN` keeps its value too.
 - `failWith` or `afterEventReceived` passed as `undefined` keep their values. Pass `failWith: []` to remove `failWith`.
-- A new `container` moves the listeners to the new element.
+- A gesture keeps the options it had when its fingers pressed. New options apply from the next gesture.
+- A new `afterEventReceived` applies from the next pointer event, also during a gesture.
+- A new `container` moves the listeners to the new element, and ends the gesture in progress:
+  - A pan, a pinch, a rotation or a hold emits its end event. Its `event` is the latest pointer event, and its `pointers` has the fingers that are still pressed.
+  - A tap or a swipe in progress emits nothing.
 
 ## Custom gestures
 
@@ -421,12 +425,12 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 
 ## Known limitations
 
-- `update()` during a gesture drops the gesture without an end event, and `state$` keeps its fingers ([#140](https://github.com/mbret/gesturx/issues/140)). A recognizer with that one in its `failWith` then stays blocked until that one ends a later gesture ([#152](https://github.com/mbret/gesturx/issues/152)).
 - A recognizer keeps its `failWith` sources subscribed after you unsubscribe from it ([#151](https://github.com/mbret/gesturx/issues/151)).
 - A `TapRecognizer` follows its `failWith` sources from its first press. A source that started before that press doesn't block it.
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
-- A `container` set to `undefined` or `null` doesn't detach a recognizer, and the recognizer ignores the next calls to `update()` until it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
+- A `container` set to `undefined` or `null` doesn't detach a recognizer that has a subscriber. A new `failWith` applies only once it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
+- A new `container` passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License
