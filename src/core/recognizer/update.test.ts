@@ -171,17 +171,19 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 
 		const recognizer = new Recognizer({ container });
 		const state = fingersOf(recognizer.state$);
+		let fingers: number | undefined;
 
 		expect(
-			await typesFor(recognizer, () =>
-				gesture(container, () => recognizer.update({ options })),
-			),
+			await typesFor(recognizer, async () => {
+				await gesture(container, () => recognizer.update({ options }));
+				// before the unsubscription, which resets them
+				fingers = state.fingers[state.fingers.length - 1];
+			}),
 		).toEqual(expected);
 
 		state.unsubscribe();
 
-		// the fingers lifted with the end event
-		expect(state.fingers[state.fingers.length - 1]).toBe(0);
+		expect(fingers).toBe(0);
 	});
 
 	it("applies the updated options from the next gesture", async () => {
@@ -201,16 +203,19 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 	it("ends a running gesture when its container is updated", async () => {
 		const recognizer = new Recognizer({ container });
 		const state = fingersOf(recognizer.state$);
+		let fingers: number | undefined;
 
-		const types = await typesFor(recognizer, () =>
-			gesture(container, () => recognizer.update({ container: other })),
-		);
+		const types = await typesFor(recognizer, async () => {
+			await gesture(container, () => recognizer.update({ container: other }));
+			// before the unsubscription, which resets them
+			fingers = state.fingers[state.fingers.length - 1];
+		});
 
 		state.unsubscribe();
 
 		expect(types.filter((type) => type === end)).toEqual([end]);
 		expect(types[types.length - 1]).toBe(end);
-		expect(state.fingers[state.fingers.length - 1]).toBe(0);
+		expect(fingers).toBe(0);
 	});
 
 	it("follows the gestures on the updated container", async () => {
@@ -231,7 +236,7 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 });
 
 describe("PanRecognizer", () => {
-	it("ends at the latest position when its container is updated", async () => {
+	it("ends where the finger is when its container is updated", async () => {
 		const recognizer = new PanRecognizer({ container });
 
 		const events = await eventsFor(recognizer.events$, () =>
@@ -241,6 +246,8 @@ describe("PanRecognizer", () => {
 
 		expect(last?.type).toBe("panEnd");
 		expect(last?.deltaX).toBe(beforeLast?.deltaX);
+		expect(last?.event.type).toBe("pointermove");
+		expect(last?.pointers).toHaveLength(1);
 	});
 
 	it("ends a running pan when its container changes through undefined", async () => {
@@ -263,6 +270,7 @@ describe("PanRecognizer", () => {
 		],
 		["failWith", (pan) => pan.update({ failWith: [] })],
 		["the same container", (pan) => pan.update({ container })],
+		["no container", (pan) => pan.update({ container: undefined })],
 	])("keeps a running pan when updated with %s", async (_, update) => {
 		const expected = await typesFor(new PanRecognizer({ container }), () =>
 			drag(container),
@@ -312,6 +320,28 @@ describe("PanRecognizer", () => {
 		ended.unsubscribe();
 
 		expect(types).toEqual(["panStart", "panMove", "panEnd"]);
+	});
+
+	it("keeps a container set from the end event of a container change", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const third = createContainer();
+		const recognizer = new PanRecognizer({ container });
+		const ended = recognizer.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizer.update({ container: third });
+			}
+		});
+
+		const types = await typesFor(recognizer, async () => {
+			await drag(container, () => recognizer.update({ container: other }));
+			await drag(third);
+		});
+
+		ended.unsubscribe();
+
+		expect(types).toEqual(["panStart", "panMove", "panEnd", ...expected]);
 	});
 });
 
@@ -366,9 +396,13 @@ describe("SwipeRecognizer", () => {
 				sendPointer(container, "pointermove", { x: 100, y: 0 });
 				await waitFor(5);
 				sendPointer(container, "pointermove", { x: 200, y: 0 });
-				const contextMenu = new PointerEvent("contextmenu", { pointerId: 1 });
+				const contextMenu = new PointerEvent("contextmenu", {
+					pointerId: 1,
+					clientX: 200,
+					clientY: 0,
+				});
 
-				// happy-dom doesn't set them
+				// happy-dom does not derive them from clientX and clientY
 				Object.assign(contextMenu, { x: 200, y: 0 });
 				window.dispatchEvent(contextMenu);
 				await waitFor(20);
@@ -402,20 +436,24 @@ describe("TapRecognizer", () => {
 		).toEqual(["tap"]);
 	});
 
-	it("still taps after a pan in its failWith is updated during a drag", async () => {
-		const pan = new PanRecognizer({ container });
-		const recognizer = new TapRecognizer({ container, failWith: [pan] });
-		const panning = pan.events$.subscribe();
+	it.each<[string, (pan: PanRecognizer) => void]>([
+		["options", (pan) => pan.update({ options: { posThreshold: 20 } })],
+		["a container", (pan) => pan.update({ container: other })],
+	])(
+		"still taps after a pan in its failWith gets %s during a drag",
+		async (_, update) => {
+			const pan = new PanRecognizer({ container });
+			const recognizer = new TapRecognizer({ container, failWith: [pan] });
+			const panning = pan.events$.subscribe();
 
-		const types = await typesFor(recognizer, async () => {
-			await drag(container, () =>
-				pan.update({ options: { posThreshold: 20 } }),
-			);
-			await tap(container);
-		});
+			const types = await typesFor(recognizer, async () => {
+				await drag(container, () => update(pan));
+				await tap(container);
+			});
 
-		panning.unsubscribe();
+			panning.unsubscribe();
 
-		expect(types).toEqual(["tap"]);
-	});
+			expect(types).toEqual(["tap"]);
+		},
+	);
 });
