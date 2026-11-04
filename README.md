@@ -429,8 +429,8 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 - A `TapRecognizer` follows its `failWith` sources from its first press. A source that started before that press doesn't block it.
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
-- A `container` set to `undefined` or `null` doesn't detach a recognizer. A subscription that runs keeps the previous container, and a new subscription follows nothing. A new `failWith` applies only once it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
-- If an event handler passes a new `container` to `update()`, the other subscribers get the end event before the event in progress. Call `update()` outside the event handlers of that recognizer.
+- A `container` set to `undefined` or `null` doesn't detach a recognizer that has a subscriber. A new `failWith` applies only once it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
+- A new `container` passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License
