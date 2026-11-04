@@ -11,6 +11,7 @@ import {
 	mergeMap,
 	type Observable,
 	of,
+	Subject,
 	share,
 	shareReplay,
 	skip,
@@ -79,6 +80,10 @@ export abstract class Recognizer<
 	private stateSubject = new BehaviorSubject<State>({
 		fingers: 0,
 	});
+	/** The latest container set, which the recognizer follows. */
+	private latestContainer?: HTMLElement;
+	/** Emits right before the recognizer follows another container. */
+	private containerChanging = new Subject<void>();
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
 	protected panMove$: Observable<RecognizerEvent>;
@@ -93,6 +98,15 @@ export abstract class Recognizer<
 
 	public state$: Observable<State>;
 	public config$ = this.configSubject.pipe(isValidConfig);
+
+	/**
+	 * The container, each time it changes. `pan$` ends its gesture before this
+	 * emits. Switch on it to reset the state of a gesture.
+	 */
+	protected container$ = this.config$.pipe(
+		map(({ container }) => container),
+		distinctUntilChanged(),
+	);
 
 	abstract events$: Observable<Event>;
 
@@ -120,12 +134,17 @@ export abstract class Recognizer<
 			);
 
 	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
-		this.pointerEvent$ = this.config$.pipe(
+		this.pointerEvent$ = this.container$.pipe(
 			switchMap(
-				({ container, afterEventReceived }) =>
+				(container) =>
 					getPointerEvents({
 						container,
-						afterEventReceived,
+						// read at each event, so that an update applies right away
+						afterEventReceived: (event) => {
+							const { afterEventReceived } = this.configSubject.getValue();
+
+							return afterEventReceived ? afterEventReceived(event) : event;
+						},
 					}).pointerEvents$,
 			),
 			share(),
@@ -181,13 +200,11 @@ export abstract class Recognizer<
 			shareReplay(1),
 		);
 
-		this.pan$ = this.configSubject.pipe(
-			isValidConfig,
-			switchMap((config) => {
-				const numInputs = Math.max(1, config.panConfig?.numInputs ?? 1);
-				const posThreshold = Math.max(0, config.panConfig?.posThreshold ?? 0);
-				const delay = Math.max(0, config.panConfig?.delay ?? 0);
+		const numInputsOf = (panConfig?: PanConfig) =>
+			Math.max(1, panConfig?.numInputs ?? 1);
 
+		this.pan$ = this.container$.pipe(
+			switchMap(() => {
 				const trackPointers$ = this.pointerDown$.pipe(
 					trackPointers({
 						pointerEvent$: this.pointerEvent$,
@@ -196,34 +213,28 @@ export abstract class Recognizer<
 					shareLatest(),
 				);
 
-				const hasEnoughFingers = (
-					stream: Observable<{ event: PointerEvent; pointers: PointerEvent[] }>,
-				) =>
-					stream.pipe(
-						filter(
-							(
-								events,
-							): events is { event: PointerEvent; pointers: [PointerEvent] } =>
-								events.pointers.length >= numInputs,
-						),
-					);
-
-				const hasNotEnoughFingers = (
-					stream: Observable<{
-						event: PointerEvent;
-						pointers: PointerEvent[];
-					}>,
-				) =>
-					stream.pipe(filter((events) => events.pointers.length < numInputs));
-
 				return trackPointers$.pipe(
-					hasEnoughFingers,
+					filter(
+						({ pointers }) =>
+							pointers.length >=
+							numInputsOf(this.configSubject.getValue().panConfig),
+					),
 					exhaustMap(({ pointers: initialPointerEvents }) => {
-						const panReleased$ = trackPointers$.pipe(
-							hasNotEnoughFingers,
-							first(),
-							share(),
-						);
+						const { panConfig } = this.configSubject.getValue();
+						const numInputs = numInputsOf(panConfig);
+						const posThreshold = Math.max(0, panConfig?.posThreshold ?? 0);
+						const delay = Math.max(0, panConfig?.delay ?? 0);
+
+						const panReleased$ = merge(
+							trackPointers$.pipe(
+								filter(({ pointers }) => pointers.length < numInputs),
+							),
+							// a new container ends the gesture where the fingers are
+							this.containerChanging.pipe(
+								withLatestFrom(trackPointers$),
+								map(([, latest]) => latest),
+							),
+						).pipe(first(), share());
 
 						const delay$ = timer(delay);
 
@@ -330,6 +341,18 @@ export abstract class Recognizer<
 		config: Partial<RecognizerConfig<Options>>,
 		panConfig?: PanConfig,
 	) {
+		const { container } = config;
+
+		if (container) {
+			if (this.latestContainer && container !== this.latestContainer) {
+				// before the update, so that its gesture ends while it's still followed
+				this.containerChanging.next();
+			}
+
+			this.latestContainer = container;
+		}
+
+		// read after the end event, which can update the recognizer again
 		const existingConfig = this.configSubject.getValue();
 
 		this.configSubject.next({

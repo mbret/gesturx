@@ -9,6 +9,7 @@ import {
 import { HoldRecognizer } from "../hold/HoldRecognizer";
 import { PanRecognizer } from "../pan/PanRecognizer";
 import { PinchRecognizer } from "../pinch/PinchRecognizer";
+import { Recognizable } from "../recognizable/Recognizable";
 import { RotateRecognizer } from "../rotate/RotateRecognizer";
 import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
@@ -129,6 +130,14 @@ type AnyRecognizer = new (config: {
 	update(config: { container?: HTMLElement; options?: object }): void;
 };
 
+/** Every count `state$` reports while it's subscribed. */
+const fingersOf = (state$: Observable<{ fingers: number }>) => {
+	const fingers: number[] = [];
+	const subscription = state$.subscribe((state) => fingers.push(state.fingers));
+
+	return { fingers, unsubscribe: () => subscription.unsubscribe() };
+};
+
 /** The type of each event of `recognizer` while `gesture` runs. */
 const typesFor = async (
 	recognizer: InstanceType<AnyRecognizer>,
@@ -161,12 +170,18 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 		expect(expected).toContain(end);
 
 		const recognizer = new Recognizer({ container });
+		const state = fingersOf(recognizer.state$);
 
 		expect(
 			await typesFor(recognizer, () =>
 				gesture(container, () => recognizer.update({ options })),
 			),
 		).toEqual(expected);
+
+		state.unsubscribe();
+
+		// the fingers lifted with the end event
+		expect(state.fingers[state.fingers.length - 1]).toBe(0);
 	});
 
 	it("applies the updated options from the next gesture", async () => {
@@ -185,10 +200,7 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 
 	it("ends a running gesture when its container is updated", async () => {
 		const recognizer = new Recognizer({ container });
-		const fingers: number[] = [];
-		const state = recognizer.state$.subscribe((state) =>
-			fingers.push(state.fingers),
-		);
+		const state = fingersOf(recognizer.state$);
 
 		const types = await typesFor(recognizer, () =>
 			gesture(container, () => recognizer.update({ container: other })),
@@ -198,7 +210,7 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 
 		expect(types.filter((type) => type === end)).toEqual([end]);
 		expect(types[types.length - 1]).toBe(end);
-		expect(fingers[fingers.length - 1]).toBe(0);
+		expect(state.fingers[state.fingers.length - 1]).toBe(0);
 	});
 
 	it("follows the gestures on the updated container", async () => {
@@ -230,6 +242,93 @@ describe("PanRecognizer", () => {
 		expect(last?.type).toBe("panEnd");
 		expect(last?.deltaX).toBe(beforeLast?.deltaX);
 	});
+
+	it("ends a running pan when its container changes through undefined", async () => {
+		const recognizer = new PanRecognizer({ container });
+
+		const types = await typesFor(recognizer, () =>
+			drag(container, () => {
+				recognizer.update({ container: undefined });
+				recognizer.update({ container: other });
+			}),
+		);
+
+		expect(types[types.length - 1]).toBe("panEnd");
+	});
+
+	it.each<[string, (recognizer: PanRecognizer) => void]>([
+		[
+			"afterEventReceived",
+			(pan) => pan.update({ afterEventReceived: (e) => e }),
+		],
+		["failWith", (pan) => pan.update({ failWith: [] })],
+		["the same container", (pan) => pan.update({ container })],
+	])("keeps a running pan when updated with %s", async (_, update) => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const recognizer = new PanRecognizer({ container });
+
+		expect(
+			await typesFor(recognizer, () =>
+				drag(container, () => update(recognizer)),
+			),
+		).toEqual(expected);
+	});
+
+	it("applies a new afterEventReceived during a pan", async () => {
+		const received: string[] = [];
+		const recognizer = new PanRecognizer({ container });
+
+		await eventsFor(recognizer.events$, () =>
+			drag(container, () =>
+				recognizer.update({
+					afterEventReceived: (event) => {
+						received.push(event.type);
+
+						return event;
+					},
+				}),
+			),
+		);
+
+		expect(received).toEqual(["pointermove", "pointermove", "pointerup"]);
+	});
+
+	it("keeps an update made from the end event of a container change", async () => {
+		const recognizer = new PanRecognizer({ container });
+		const ended = recognizer.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizer.update({ options: { numInputs: 2 } });
+			}
+		});
+
+		const types = await typesFor(recognizer, async () => {
+			await drag(container, () => recognizer.update({ container: other }));
+			// one finger doesn't pan anymore
+			await drag(other);
+		});
+
+		ended.unsubscribe();
+
+		expect(types).toEqual(["panStart", "panMove", "panEnd"]);
+	});
+});
+
+describe("Recognizable", () => {
+	it("keeps a running pan when updated with the same container", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const pan = new PanRecognizer();
+		const recognizable = new Recognizable({ recognizers: [pan], container });
+
+		const events = await eventsFor(recognizable.events$, () =>
+			drag(container, () => recognizable.update({ container })),
+		);
+
+		expect(events.map(({ event }) => event.type)).toEqual(expected);
+	});
 });
 
 describe("SwipeRecognizer", () => {
@@ -256,6 +355,26 @@ describe("SwipeRecognizer", () => {
 			}),
 		).toEqual(["swipe"]);
 	});
+
+	it("still swipes when a contextmenu ends the move", async () => {
+		const recognizer = new SwipeRecognizer({ container });
+
+		expect(
+			await typesFor(recognizer, async () => {
+				sendPointer(container, "pointerdown", { x: 0, y: 0 });
+				await waitFor(5);
+				sendPointer(container, "pointermove", { x: 100, y: 0 });
+				await waitFor(5);
+				sendPointer(container, "pointermove", { x: 200, y: 0 });
+				const contextMenu = new PointerEvent("contextmenu", { pointerId: 1 });
+
+				// happy-dom doesn't set them
+				Object.assign(contextMenu, { x: 200, y: 0 });
+				window.dispatchEvent(contextMenu);
+				await waitFor(20);
+			}),
+		).toEqual(["swipe"]);
+	});
 });
 
 describe("TapRecognizer", () => {
@@ -268,6 +387,17 @@ describe("TapRecognizer", () => {
 					recognizer.update({ options: { maximumPressTime: 1 } }),
 				);
 				await tap(container);
+			}),
+		).toEqual(["tap"]);
+	});
+
+	it("drops a running tap when its container is updated", async () => {
+		const recognizer = new TapRecognizer({ container });
+
+		expect(
+			await typesFor(recognizer, async () => {
+				await tap(container, () => recognizer.update({ container: other }));
+				await tap(other);
 			}),
 		).toEqual(["tap"]);
 	});

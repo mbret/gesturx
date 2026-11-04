@@ -37,18 +37,8 @@ export class TapRecognizer
 	constructor(options?: RecognizerConfig<TapRecognizerOptions>) {
 		super(options);
 
-		this.events$ = this.config$.pipe(
-			switchMap((config) => {
-				const maxTaps = config.options?.maxTaps ?? 1;
-				/**
-				 * We default to reasonable multiplier of 100 to give time
-				 * for each tap
-				 */
-				const multiTapThreshold =
-					config.options?.multiTapThreshold ?? 100 * (maxTaps - 1);
-
-				const { maximumPressTime = 150, tolerance = 10 } = config.options ?? {};
-
+		this.events$ = this.container$.pipe(
+			switchMap(() => {
 				const activePointers$ = this.pointerDown$.pipe(
 					trackPointers({
 						pointerEvent$: this.pointerEvent$,
@@ -61,26 +51,37 @@ export class TapRecognizer
 					filter(({ pointers }) => pointers.length > 1),
 				);
 
-				/**
-				 * Collects the presses until `multiTapThreshold` after a release
-				 * that no press followed: a press still down is part of the taps.
-				 */
-				const bufferPointerDowns = (stream: Observable<PointerEvent>) =>
-					stream.pipe(
-						buffer(
-							merge(this.pointerDown$, this.pointerUp$).pipe(
-								debounceTime(multiTapThreshold),
-								filter((event) => event.type === "pointerup"),
-							),
-						),
-						first(),
-					);
-
 				const tap$ = merge(
 					this.pointerDown$,
 					activePointers$.pipe(ignoreElements()),
 				).pipe(
 					exhaustMap((initialPointerEvent) => {
+						const { options } = this.configSubject.getValue();
+						const maxTaps = options?.maxTaps ?? 1;
+						/**
+						 * We default to reasonable multiplier of 100 to give time
+						 * for each tap
+						 */
+						const multiTapThreshold =
+							options?.multiTapThreshold ?? 100 * (maxTaps - 1);
+
+						const { maximumPressTime = 150, tolerance = 10 } = options ?? {};
+
+						/**
+						 * Collects the presses until `multiTapThreshold` after a release
+						 * that no press followed: a press still down is part of the taps.
+						 */
+						const bufferPointerDowns = (stream: Observable<PointerEvent>) =>
+							stream.pipe(
+								buffer(
+									merge(this.pointerDown$, this.pointerUp$).pipe(
+										debounceTime(multiTapThreshold),
+										filter((event) => event.type === "pointerup"),
+									),
+								),
+								first(),
+							);
+
 						const pointerDowns$ = merge(
 							of(initialPointerEvent),
 							this.pointerDown$,

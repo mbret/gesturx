@@ -42,7 +42,7 @@ export class PinchRecognizer
 			numInputs: 2,
 		});
 
-		this.events$ = this.config$.pipe(
+		this.events$ = this.container$.pipe(
 			switchMap(() => {
 				let latestPinchEvent: PinchEvent | undefined;
 

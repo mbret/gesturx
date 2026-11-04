@@ -42,7 +42,7 @@ type AnyRecognizer = new (config: {
 	failWith?: FailWith[];
 }) => {
 	events$: Observable<unknown>;
-	update(config: { options?: object }): void;
+	update(config: { container?: HTMLElement; options?: object }): void;
 };
 
 const recognizers: [string, AnyRecognizer][] = [
@@ -175,6 +175,36 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			expect(window$.listeners.count).toBe(1);
 
 			sendPointer(container, "pointerup", { x: 0, y: 0 });
+			subscription.unsubscribe();
+		} finally {
+			window$.restore();
+		}
+	});
+
+	it("moves them when its container is updated during a gesture", async () => {
+		const window$ = countListeners(window);
+		const other = createContainer();
+		const otherListeners = countListeners(other).listeners;
+
+		try {
+			const recognizer = new Recognizer({ container });
+			const subscription = recognizer.events$.subscribe();
+
+			await waitFor(1);
+			await pressTwoFingers();
+
+			recognizer.update({ container: other });
+
+			// nothing follows the fingers pressed on the previous container
+			expect(listeners.count).toBe(0);
+			expect(window$.listeners.count).toBe(0);
+			expect(otherListeners.count).toBeGreaterThan(0);
+
+			sendPointer(other, "pointerdown", { x: 0, y: 0 });
+
+			expect(window$.listeners.count).toBe(1);
+
+			sendPointer(other, "pointerup", { x: 0, y: 0 });
 			subscription.unsubscribe();
 		} finally {
 			window$.restore();

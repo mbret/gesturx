@@ -43,7 +43,7 @@ export class RotateRecognizer
 			...omitUnset(config.options),
 		});
 
-		this.events$ = this.config$.pipe(
+		this.events$ = this.container$.pipe(
 			switchMap(() => {
 				const rotateStart$ = this.panStart$.pipe(
 					withLatestFrom(this.failWithActive$),

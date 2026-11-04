@@ -30,15 +30,18 @@ export class SwipeRecognizer
 			numInputs: 1,
 		});
 
-		this.events$ = this.config$.pipe(
-			switchMap((initializedWith) => {
-				const { escapeVelocity = 0.9 } = initializedWith.options ?? {};
-
+		this.events$ = this.container$.pipe(
+			switchMap(() => {
 				return this.panStart$.pipe(
 					withLatestFrom(this.failWithActive$),
 					filter(([, failWithActive]) => !failWithActive),
 					switchMap(([startEvent]) => {
+						const { escapeVelocity = 0.9 } =
+							this.configSubject.getValue().options ?? {};
+
 						return this.panEnd$.pipe(
+							// a release lifts the finger, a new container doesn't
+							filter((event) => !event.pointers.length),
 							isRecognizedAsSwipe(escapeVelocity),
 							map((event) => {
 								return {
