@@ -25,7 +25,7 @@ import {
 import { matchPointer, trackPointers } from "../utils/events";
 import { shareLatest } from "../utils/operators";
 import { isWithinPosThreshold, omitUnset } from "../utils/utils";
-import { filterPointerOff, isValidConfig } from "./operators";
+import { filterPointerOff } from "./operators";
 import type { RecognizerEvent } from "./RecognizerEvent";
 import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
 import { getPointerEvents } from "./utils";
@@ -88,15 +88,17 @@ export abstract class Recognizer<
 > {
 	/** The latest config. Read it, and change it with `update()` only. */
 	protected configSubject = new BehaviorSubject<
-		RecognizerConfig<Options> & {
+		Omit<RecognizerConfig<Options>, "container"> & {
+			/** `null` while the recognizer is detached. */
+			container: HTMLElement | null;
 			panConfig?: PanConfig;
 		}
-	>({});
+	>({ container: null });
 	private stateSubject = new BehaviorSubject<State>({
 		fingers: 0,
 	});
 	/** The container of the latest update that passed one, `null` included. */
-	private requestedContainer?: HTMLElement | null;
+	private requestedContainer: HTMLElement | null = null;
 	private containerChanging = new Subject<void>();
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
@@ -120,7 +122,6 @@ export abstract class Recognizer<
 	 * recognizers reads it.
 	 */
 	public running$: Observable<boolean>;
-	public config$ = this.configSubject.pipe(isValidConfig);
 
 	/**
 	 * The container, each time it changes, and `null` while the recognizer is
@@ -128,7 +129,7 @@ export abstract class Recognizer<
 	 * the state of a gesture.
 	 */
 	protected container$ = this.configSubject.pipe(
-		map(({ container }) => container ?? null),
+		map(({ container }) => container),
 		distinctUntilChanged(),
 	);
 
@@ -357,7 +358,6 @@ export abstract class Recognizer<
 		const { container, ...rest } = config;
 		const currentContainer = this.configSubject.getValue().container;
 
-		// unset, as when forwarding an optional value, it stays as it is
 		if (container !== undefined) {
 			this.requestedContainer = container;
 		}
@@ -369,10 +369,8 @@ export abstract class Recognizer<
 			return;
 		}
 
-		if (currentContainer) {
-			// before container$ switches, so that pan$ ends its gesture while it's followed
-			this.containerChanging.next();
-		}
+		// before container$ switches, so that pan$ ends its gesture while it's followed
+		this.containerChanging.next();
 
 		// an end handler can set another container, which then stays
 		this.mergeConfig({ container: this.requestedContainer });
