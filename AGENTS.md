@@ -35,5 +35,4 @@ semantic-release publishes from `main`. The commit type sets the release:
 
 Choose the better code and API design over backward compatibility. A breaking change is welcome whenever it makes the library better. Users upgrade by following the release notes.
 
-- Write the migration steps in the `BREAKING CHANGE:` footer. semantic-release puts that footer in the GitHub release notes.
-- Update `README.md` to the new API in the same PR.
+- Write the migration steps in the `BREAKING CHANGE:` footer. semantic-release copies it, and every line after it, into the GitHub release notes as Markdown. Put code in backticks.
