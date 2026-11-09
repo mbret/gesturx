@@ -1,4 +1,4 @@
-import type { Observable } from "rxjs";
+import { BehaviorSubject, type Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -507,10 +507,13 @@ describe("Recognizable", () => {
 		ended.unsubscribe();
 
 		// both recognizers read the press with the function of the end handler
-		expect(new Set(received)).toEqual(new Set(["handler"]));
+		// the press and the release, read by each of the two recognizers
+		expect(received).toEqual(["handler", "handler", "handler", "handler"]);
 	});
 
 	it("sets the styles of the container back when it changes", () => {
+		container.style.touchAction = "pan-y";
+
 		const recognizable = new Recognizable({
 			recognizers: [new PanRecognizer()],
 			container,
@@ -520,11 +523,17 @@ describe("Recognizable", () => {
 		expect(container.style.touchAction).toBe("none");
 		expect(container.style.userSelect).toBe("none");
 
+		// the same container, and disableTextSelection left unset
+		recognizable.update({ container });
+
+		expect(container.style.userSelect).toBe("none");
+
 		recognizable.update({ container: other });
 
-		expect(container.style.touchAction).toBe("");
+		expect(container.style.touchAction).toBe("pan-y");
 		expect(container.style.userSelect).toBe("");
 		expect(other.style.touchAction).toBe("none");
+		expect(other.style.userSelect).toBe("none");
 
 		recognizable.update({ container: null });
 
@@ -558,6 +567,37 @@ describe("Recognizable", () => {
 				.filter(({ recognizer }) => recognizer === hold)
 				.map(({ event }) => event.type),
 		).toEqual(["holdStart", "holdEnd", "holdStart", "holdEnd"]);
+		expect(other.style.touchAction).toBe("");
+		expect(third.style.touchAction).toBe("none");
+	});
+
+	it("keeps a container set from an end handler that the other fields run", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const third = createContainer();
+		const pan = new PanRecognizer();
+		const recognizable = new Recognizable({ recognizers: [pan], container });
+		const ended = pan.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizable.update({ container: third, failWith: [] });
+			}
+		});
+
+		const types = await typesFor(pan, async () => {
+			// a failWith source that runs stops the pan before the new container
+			await drag(container, () =>
+				recognizable.update({
+					container: other,
+					failWith: [{ running$: new BehaviorSubject(true) }],
+				}),
+			);
+			await drag(third);
+		});
+
+		ended.unsubscribe();
+
+		expect(types).toEqual(["panStart", "panMove", "panEnd", ...expected]);
 	});
 
 	it("keeps a running pan when updated with the same container", async () => {

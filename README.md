@@ -432,6 +432,7 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
 - A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers. From an end handler, setting the previous container back restarts the gesture without a new press ([#201](https://github.com/mbret/gesturx/issues/201)).
+- A `Recognizable` sets back the `touch-action` and `user-select` it found on its container. So two of them on one element undo each other's styles when one of them leaves.
 - A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License
