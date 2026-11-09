@@ -127,7 +127,7 @@ type AnyRecognizer = new (config: {
 }) => {
 	events$: Observable<{ type: string }>;
 	state$: Observable<{ fingers: number }>;
-	update(config: { container?: HTMLElement; options?: object }): void;
+	update(config: { container?: HTMLElement | null; options?: object }): void;
 };
 
 /** Every count `state$` reports while it's subscribed. */
@@ -216,6 +216,42 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 		expect(types.filter((type) => type === end)).toEqual([end]);
 		expect(types[types.length - 1]).toBe(end);
 		expect(fingers).toBe(0);
+	});
+
+	it("ends a running gesture when it's detached", async () => {
+		const recognizer = new Recognizer({ container });
+		const state = fingersOf(recognizer.state$);
+		let fingers: number | undefined;
+
+		const types = await typesFor(recognizer, async () => {
+			await gesture(container, () => recognizer.update({ container: null }));
+			// before typesFor unsubscribes from events$, which sets them to 0
+			fingers = state.fingers[state.fingers.length - 1];
+			// detached, it follows nothing
+			await gesture(container);
+		});
+
+		state.unsubscribe();
+
+		expect(types.filter((type) => type === end)).toEqual([end]);
+		expect(types[types.length - 1]).toBe(end);
+		expect(fingers).toBe(0);
+	});
+
+	it("follows the gestures once attached again", async () => {
+		const expected = await typesFor(new Recognizer({ container }), () =>
+			gesture(container),
+		);
+		const recognizer = new Recognizer({ container });
+
+		const types = await typesFor(recognizer, async () => {
+			recognizer.update({ container: null });
+			await gesture(container);
+			recognizer.update({ container });
+			await gesture(container);
+		});
+
+		expect(types).toEqual(expected);
 	});
 
 	it("follows the gestures on the updated container", async () => {
@@ -348,6 +384,20 @@ describe("PanRecognizer", () => {
 });
 
 describe("Recognizable", () => {
+	it("detaches all its recognizers", async () => {
+		const recognizable = new Recognizable({
+			recognizers: [new PanRecognizer(), new HoldRecognizer()],
+			container,
+		});
+
+		const events = await eventsFor(recognizable.events$, async () => {
+			recognizable.update({ container: null });
+			await drag(container);
+		});
+
+		expect(events).toEqual([]);
+	});
+
 	it("keeps a running pan when updated with the same container", async () => {
 		const expected = await typesFor(new PanRecognizer({ container }), () =>
 			drag(container),

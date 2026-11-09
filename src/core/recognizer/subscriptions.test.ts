@@ -42,7 +42,7 @@ type AnyRecognizer = new (config: {
 	failWith?: FailWith[];
 }) => {
 	events$: Observable<unknown>;
-	update(config: { container?: HTMLElement; options?: object }): void;
+	update(config: { container?: HTMLElement | null; options?: object }): void;
 };
 
 const recognizers: [string, AnyRecognizer][] = [
@@ -179,6 +179,41 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		} finally {
 			window$.restore();
 		}
+	});
+
+	it("removes them once detached", async () => {
+		const window$ = countListeners(window);
+
+		try {
+			const recognizer = new Recognizer({ container });
+			const subscription = recognizer.events$.subscribe();
+
+			await waitFor(1);
+			await pressTwoFingers();
+
+			recognizer.update({ container: null });
+
+			expect(listeners.count).toBe(0);
+			expect(window$.listeners.count).toBe(0);
+
+			subscription.unsubscribe();
+		} finally {
+			window$.restore();
+		}
+	});
+
+	it("listens for a new subscriber after an update without a container", async () => {
+		const recognizer = new Recognizer({ container });
+
+		recognizer.update({ container: undefined });
+
+		const subscription = recognizer.events$.subscribe();
+
+		await waitFor(1);
+
+		expect(listeners.count).toBeGreaterThan(0);
+
+		subscription.unsubscribe();
 	});
 
 	it("moves them when its container is updated during a gesture", async () => {

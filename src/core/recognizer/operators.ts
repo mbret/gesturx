@@ -1,7 +1,7 @@
 import { filter, type Observable } from "rxjs";
 import { isPointerOffEvent } from "../utils/events";
 
-export const isValidConfig = <T extends { container?: HTMLElement }>(
+export const isValidConfig = <T extends { container?: HTMLElement | null }>(
 	stream: Observable<T>,
 ) =>
 	stream.pipe(

@@ -84,7 +84,7 @@ subscription.unsubscribe();
 
 - `events$` emits `{ event, recognizer }` for the events of all its recognizers.
 - `state$` emits `{ fingers }`: the most fingers that one of its recognizers recognizes at that moment.
-- `update({ container })` sets the element on all its recognizers. Set the options of each recognizer on the recognizer itself.
+- `update({ container })` sets the element on all its recognizers, and `update({ container: null })` detaches them. Set the options of each recognizer on the recognizer itself.
 - When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events.
 - `disableTextSelection: true` also sets `user-select: none` on the container.
 - Give each recognizer to one `Recognizable` only, because each `Recognizable` writes its config to its recognizers.
@@ -118,7 +118,7 @@ Every recognizer takes the same config in its constructor and in `update()`:
 
 | Key | Meaning |
 | --- | --- |
-| `container` | The element to listen on. |
+| `container` | The element to listen on. `null` detaches the recognizer. |
 | `options` | The options of the recognizer, listed in its section below. |
 | `failWith` | Recognizers that block this one while they run. See [failWith](#failwith). |
 | `afterEventReceived` | A function that changes each pointer event before the recognizer reads it. |
@@ -343,7 +343,7 @@ dialogOpen$.next(false);
 - The `running$` of a recognizer is `true` from its start event to its end event, or until the last subscriber of its `events$` leaves.
 - The `running$` of a tap or a swipe stays `false`, so it never blocks. For a single tap that waits for a double tap, use one `TapRecognizer` with `maxTaps: 2` and read `taps`.
 - A recognizer runs only while it has a subscriber, so subscribe to a recognizer that you put in a `failWith` list. A `Recognizable` subscribes to all its recognizers while its `events$` has a subscriber.
-- A recognizer reads its `failWith` sources while it has a subscriber and a container, and lets go of them with its last subscriber. A `TapRecognizer` reads them at each press.
+- A recognizer reads its `failWith` sources while it has a subscriber, and lets go of them with its last subscriber. A `TapRecognizer` reads them at each press.
 
 ## Updating a recognizer
 
@@ -364,10 +364,10 @@ pan.update({ options: { posThreshold: 30 } });
 
 - The options that you don't pass keep their values. `options: undefined` keeps all of them.
 - An option passed as `undefined` or `NaN` keeps its value too.
-- `failWith` or `afterEventReceived` passed as `undefined` keep their values. Pass `failWith: []` to remove `failWith`.
+- `container`, `failWith` or `afterEventReceived` passed as `undefined` keep their values. Pass `container: null` to detach the recognizer, and `failWith: []` to remove `failWith`.
 - A gesture keeps the options it had when its fingers pressed. New options apply from the next gesture.
 - A new `afterEventReceived` applies from the next pointer event, also during a gesture.
-- A new `container` moves the listeners to the new element, and ends the gesture in progress:
+- A new `container` moves the listeners to the new element, and `null` removes them. Both end the gesture in progress:
   - A pan, a pinch, a rotation or a hold emits its end event. Its `event` is the latest pointer event, and its `pointers` has the fingers that are still pressed.
   - A tap or a swipe in progress emits nothing.
 
@@ -431,8 +431,7 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
-- A `container` set to `undefined` or `null` doesn't detach a recognizer that has a subscriber. A new `failWith` applies only once it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).
-- A new `container` passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers ([#201](https://github.com/mbret/gesturx/issues/201)).
+- A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License
