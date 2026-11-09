@@ -30,3 +30,9 @@ semantic-release publishes from `main`. The commit type sets the release:
 - `feat:` publishes a minor version.
 - A `BREAKING CHANGE:` footer publishes a major version. The analyzer doesn't read a `!` after the type, as in `feat!:`, so use the footer.
 - `docs:`, `test:`, `build:`, `ci:`, `refactor:` and `chore:` publish nothing.
+
+## Breaking changes
+
+Choose the better code and API design over backward compatibility. A breaking change is welcome whenever it makes the library better. Users upgrade by following the release notes.
+
+- Write the migration steps in the `BREAKING CHANGE:` footer. semantic-release copies it, and every line after it, into the GitHub release notes as Markdown. Put code in backticks.

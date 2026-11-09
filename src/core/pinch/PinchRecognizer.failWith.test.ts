@@ -1,4 +1,4 @@
-import { NEVER, Subject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -30,14 +30,14 @@ describe("PinchRecognizer with failWith", () => {
 	};
 
 	it("does not start while it is active", async () => {
-		const start$ = new Subject<void>();
+		const running$ = new BehaviorSubject(false);
 		const recognizer = new PinchRecognizer({
 			container,
-			failWith: [{ start$, end$: NEVER }],
+			failWith: [{ running$ }],
 		});
 
 		const events = await eventsFor(recognizer.events$, async () => {
-			start$.next();
+			running$.next(true);
 			await pinch();
 		});
 
@@ -45,16 +45,15 @@ describe("PinchRecognizer with failWith", () => {
 	});
 
 	it("pinches again once it ended", async () => {
-		const start$ = new Subject<void>();
-		const end$ = new Subject<void>();
+		const running$ = new BehaviorSubject(false);
 		const recognizer = new PinchRecognizer({
 			container,
-			failWith: [{ start$, end$ }],
+			failWith: [{ running$ }],
 		});
 
 		const events = await eventsFor(recognizer.events$, async () => {
-			start$.next();
-			end$.next();
+			running$.next(true);
+			running$.next(false);
 			await pinch();
 		});
 
@@ -66,10 +65,10 @@ describe("PinchRecognizer with failWith", () => {
 	});
 
 	it("ends an ongoing pinch once it becomes active", async () => {
-		const start$ = new Subject<void>();
+		const running$ = new BehaviorSubject(false);
 		const recognizer = new PinchRecognizer({
 			container,
-			failWith: [{ start$, end$: NEVER }],
+			failWith: [{ running$ }],
 		});
 
 		const events = await eventsFor(recognizer.events$, async () => {
@@ -79,7 +78,7 @@ describe("PinchRecognizer with failWith", () => {
 			await waitFor(5);
 			sendPointer(container, "pointermove", { x: 250, y: 0 }, 2);
 			await waitFor(5);
-			start$.next();
+			running$.next(true);
 			sendPointer(container, "pointermove", { x: 300, y: 0 }, 2);
 			await waitFor(5);
 			sendPointer(container, "pointerup", { x: 300, y: 0 }, 2);
@@ -94,10 +93,10 @@ describe("PinchRecognizer with failWith", () => {
 	});
 
 	it("ends a cancelled pinch on its latest state, without repeating its deltas", async () => {
-		const start$ = new Subject<void>();
+		const running$ = new BehaviorSubject(false);
 		const recognizer = new PinchRecognizer({
 			container,
-			failWith: [{ start$, end$: NEVER }],
+			failWith: [{ running$ }],
 		});
 
 		const events = await eventsFor(recognizer.events$, async () => {
@@ -107,7 +106,7 @@ describe("PinchRecognizer with failWith", () => {
 			await waitFor(5);
 			sendPointer(container, "pointermove", { x: 250, y: 0 }, 2);
 			await waitFor(5);
-			start$.next();
+			running$.next(true);
 			await waitFor(5);
 			sendPointer(container, "pointerup", { x: 250, y: 0 }, 2);
 			sendPointer(container, "pointerup", { x: 100, y: 0 }, 1);
@@ -140,6 +139,8 @@ describe("PinchRecognizer with failWith", () => {
 		const rotateContainer = createContainer();
 		const rotate = new RotateRecognizer({ container: rotateContainer });
 		const recognizer = new PinchRecognizer({ container, failWith: [rotate] });
+		// a source runs only while it has a subscriber of its own
+		const rotating = rotate.events$.subscribe();
 
 		const events = await eventsFor(recognizer.events$, async () => {
 			// two fingers, one moving past the rotate's 15px threshold
@@ -154,6 +155,8 @@ describe("PinchRecognizer with failWith", () => {
 			await waitFor(5);
 			await pinch();
 		});
+
+		rotating.unsubscribe();
 
 		// only the pinch after the rotate ended
 		expect(events.map(({ type }) => type)).toEqual([

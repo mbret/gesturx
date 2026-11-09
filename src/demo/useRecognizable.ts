@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { filter, fromEvent } from "rxjs";
+import { distinctUntilChanged, fromEvent, map, startWith } from "rxjs";
 import {
 	type FailWith,
 	HoldRecognizer,
@@ -19,11 +19,11 @@ export type AppRecognizable = ReturnType<
  * Example of how to fail a gesture on specific event
  */
 const failWithTextSelection: FailWith = {
-	start$: fromEvent(document, "selectionchange").pipe(
-		filter(() => !!document.getSelection()?.toString()),
-	),
-	end$: fromEvent(document, "selectionchange").pipe(
-		filter(() => !document.getSelection()?.toString()),
+	running$: fromEvent(document, "selectionchange").pipe(
+		// so that it tells the selection when subscribed, as failWith expects
+		startWith(undefined),
+		map(() => !!document.getSelection()?.toString()),
+		distinctUntilChanged(),
 	),
 };
 

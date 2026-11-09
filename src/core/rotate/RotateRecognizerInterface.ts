@@ -32,10 +32,6 @@ export interface RotateRecognizerOptions {
 export interface RotateRecognizerInterface
 	extends Recognizer<RotateRecognizerOptions, RotateEvent> {
 	events$: Observable<RotateEvent>;
-	/** The rotateStart events. Another recognizer's `failWith` reads them. */
-	start$: Observable<RotateEvent>;
-	/** The rotateEnd events. Another recognizer's `failWith` reads them. */
-	end$: Observable<RotateEvent>;
 
 	update(options: RecognizerConfig<RotateRecognizerOptions>): void;
 }

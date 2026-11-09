@@ -33,9 +33,6 @@ export class PinchRecognizer
 {
 	public events$: Observable<PinchEvent>;
 
-	public start$: Observable<PinchEvent>;
-	public end$: Observable<PinchEvent>;
-
 	constructor(config?: RecognizerConfig<PinchRecognizerOptions>) {
 		super(config, {
 			...config?.options,
@@ -116,14 +113,7 @@ export class PinchRecognizer
 				);
 			}),
 			this.reportFingers((event) => event.type === "pinchEnd"),
-			share(),
 		);
-
-		this.start$ = this.events$.pipe(
-			filter((event) => event.type === "pinchStart"),
-		);
-
-		this.end$ = this.events$.pipe(filter((event) => event.type === "pinchEnd"));
 	}
 
 	public update(options: RecognizerConfig<PinchRecognizerOptions>) {

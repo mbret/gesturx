@@ -1,4 +1,4 @@
-import { type Observable, Subject } from "rxjs";
+import { BehaviorSubject, Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -231,20 +231,19 @@ describe("with failWith", () => {
 	};
 
 	it("still knows a failWith recognizer runs after an update", async () => {
-		const start$ = new Subject<void>();
-		const end$ = new Subject<void>();
+		const running$ = new BehaviorSubject(false);
 		const recognizer = new PinchRecognizer({
 			container,
-			failWith: [{ start$, end$ }],
+			failWith: [{ running$ }],
 		});
 
 		const events = await eventsFor(recognizer.events$, async () => {
-			start$.next();
+			running$.next(true);
 			recognizer.update({ options: {} });
 			await pinch();
 
 			// once it ended, it pinches again
-			end$.next();
+			running$.next(false);
 			await pinch();
 		});
 
@@ -261,25 +260,24 @@ describe("with failWith", () => {
 	])(
 		"still knows a failWith recognizer runs once resubscribed, if it started %s unsubscribing",
 		async (_, startsBefore) => {
-			const start$ = new Subject<void>();
-			const end$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new PinchRecognizer({
 				container,
-				failWith: [{ start$, end$ }],
+				failWith: [{ running$ }],
 			});
 
 			const subscription = recognizer.events$.subscribe();
 			await waitFor(1);
-			if (startsBefore) start$.next();
+			if (startsBefore) running$.next(true);
 			subscription.unsubscribe();
 			await waitFor(5);
-			if (!startsBefore) start$.next();
+			if (!startsBefore) running$.next(true);
 
 			const events = await eventsFor(recognizer.events$, async () => {
 				await pinch();
 
 				// once it ended, it pinches again
-				end$.next();
+				running$.next(false);
 				await pinch();
 			});
 
@@ -291,21 +289,88 @@ describe("with failWith", () => {
 		},
 	);
 
-	it("a tap recognizer never tapped leaves its failWith recognizers alone", async () => {
-		const otherContainer = createContainer();
-		const { listeners } = countListeners(otherContainer);
-		const other = new PanRecognizer({ container: otherContainer });
-		const recognizer = new TapRecognizer({ container, failWith: [other] });
+	it("releases two recognizers that fail with each other", async () => {
+		const panContainer = createContainer();
+		const holdContainer = createContainer();
+		const panListeners = countListeners(panContainer).listeners;
+		const holdListeners = countListeners(holdContainer).listeners;
+		const pan = new PanRecognizer({ container: panContainer });
+		const hold = new HoldRecognizer({
+			container: holdContainer,
+			failWith: [pan],
+		});
+
+		pan.update({ failWith: [hold] });
+
+		const subscriptions = [pan.events$.subscribe(), hold.events$.subscribe()];
+
+		await waitFor(1);
+
+		for (const subscription of subscriptions) {
+			subscription.unsubscribe();
+		}
+
+		expect(panListeners.count).toBe(0);
+		expect(holdListeners.count).toBe(0);
+	});
+});
+
+describe.each(recognizers)("%s with failWith", (_, Recognizer) => {
+	let container = createContainer();
+	let sourceContainer = createContainer();
+	let sourceListeners = countListeners(sourceContainer).listeners;
+
+	beforeEach(() => {
+		container = createContainer();
+		sourceContainer = createContainer();
+		sourceListeners = countListeners(sourceContainer).listeners;
+	});
+
+	// a tap recognizer reads its failWith sources while a finger is down
+	const press = async () => {
+		sendPointer(container, "pointerdown", { x: 0, y: 0 });
+		await waitFor(5);
+	};
+
+	const release = () => sendPointer(container, "pointerup", { x: 0, y: 0 });
+
+	it("doesn't run a recognizer source", async () => {
+		const source = new PanRecognizer({ container: sourceContainer });
+		const recognizer = new Recognizer({ container, failWith: [source] });
+		const subscription = recognizer.events$.subscribe();
+
+		await waitFor(1);
+		await press();
+
+		expect(sourceListeners.count).toBe(0);
+
+		release();
+		subscription.unsubscribe();
+	});
+
+	it("unsubscribes from its sources once unsubscribed", async () => {
+		let subscribers = 0;
+		const running$ = new Observable<boolean>((subscriber) => {
+			subscribers++;
+			subscriber.next(false);
+
+			return () => {
+				subscribers--;
+			};
+		});
+		const recognizer = new Recognizer({ container, failWith: [{ running$ }] });
 
 		const subscription = recognizer.events$.subscribe();
 		await waitFor(1);
+		await press();
 
-		// it only follows them from its first tap
-		expect(listeners.count).toBe(0);
+		expect(subscribers).toBe(1);
 
 		subscription.unsubscribe();
 
-		expect(listeners.count).toBe(0);
+		expect(subscribers).toBe(0);
+
+		release();
 	});
 });
 
