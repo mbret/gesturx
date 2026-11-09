@@ -15,6 +15,18 @@ const MIDDLE = 1;
 const SECONDARY = 2;
 const PEN_ERASER = 5;
 
+/**
+ * The bit of each button in `buttons`, which says which buttons are down.
+ *
+ * @see https://w3c.github.io/pointerevents/#the-buttons-property
+ */
+const BUTTONS: Record<number, number> = {
+	[PRIMARY]: 1,
+	[MIDDLE]: 4,
+	[SECONDARY]: 2,
+	[PEN_ERASER]: 32,
+};
+
 const waitFor = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));
 
@@ -43,6 +55,7 @@ describe("Given a press of a button other than the primary one", () => {
 			pointerId: identifier,
 			pointerType: button === PEN_ERASER ? "pen" : "mouse",
 			button: type === "pointermove" ? -1 : button,
+			buttons: type === "pointerup" ? 0 : BUTTONS[button],
 			bubbles: true,
 		});
 

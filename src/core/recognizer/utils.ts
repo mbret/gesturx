@@ -1,9 +1,35 @@
-import { fromEvent, map, merge, mergeMap, of, takeWhile } from "rxjs";
-import { fromPointerDown, matchPointer } from "../utils/events";
+import {
+	EMPTY,
+	filter,
+	fromEvent,
+	map,
+	merge,
+	mergeMap,
+	of,
+	takeWhile,
+} from "rxjs";
+import { isPointerOffEvent, isPrimaryButtonPress } from "../utils/events";
 
 /**
- * Each press in `container`, then the events of its pointer until it is
- * released, also outside the container.
+ * The events of the pointer `pointerId` until its release, wherever it goes.
+ * They come in the capture phase, so that an element that stops their
+ * propagation can't hide them.
+ */
+const followPointer = (document: Document, pointerId: number) =>
+	merge(
+		...["pointermove", "pointerup", "pointercancel", "contextmenu"].map(
+			(type) => fromEvent<PointerEvent>(document, type, { capture: true }),
+		),
+	).pipe(
+		filter((event) => event.pointerId === pointerId),
+		takeWhile((event) => !isPointerOffEvent(event), true),
+	);
+
+/**
+ * Each press of the primary button in `container`, then the events of its
+ * pointer until its release, also outside the container. `afterEventReceived`
+ * changes each of them, once the follow has read the `pointerId` and the type
+ * that the browser gave.
  */
 export const getPointerEvents = ({
 	container,
@@ -11,29 +37,21 @@ export const getPointerEvents = ({
 }: {
 	container: HTMLElement;
 	afterEventReceived?: (event: PointerEvent) => PointerEvent;
-}) => {
-	const { ownerDocument } = container;
-	/**
-	 * In the capture phase, so that an element that stops the propagation of
-	 * an event can't hide it.
-	 */
-	const fromDocumentEvent = (type: string) =>
-		fromEvent<PointerEvent>(ownerDocument, type, { capture: true });
+}) =>
+	fromEvent<PointerEvent>(container, "pointerdown").pipe(
+		mergeMap((event) => {
+			const pointerDown = afterEventReceived(event);
 
-	return fromPointerDown({ afterEventReceived, container }).pipe(
-		mergeMap((pointerDown) =>
-			merge(
+			if (!isPrimaryButtonPress(pointerDown)) {
+				return EMPTY;
+			}
+
+			return merge(
 				of(pointerDown),
-				merge(
-					fromDocumentEvent("pointermove"),
-					fromDocumentEvent("pointerup"),
-					fromDocumentEvent("pointercancel"),
-				).pipe(
-					matchPointer(pointerDown),
-					takeWhile(({ type }) => type === "pointermove", true),
+				// the document of the press, as the container can move to another one
+				followPointer(container.ownerDocument, event.pointerId).pipe(
 					map(afterEventReceived),
 				),
-			),
-		),
+			);
+		}),
 	);
-};

@@ -61,12 +61,7 @@ describe("Given a mouse drag that leaves the container", () => {
 	it("PanRecognizer pans until the release outside", async () => {
 		const recognizer = new PanRecognizer({ container });
 
-		const events = await eventsFor(recognizer.events$, async () => {
-			await dragOutAndBack();
-
-			// released, so the mouse no longer pans
-			sendMouse(outside, "pointermove", { x: 400, y: 0 });
-		});
+		const events = await eventsFor(recognizer.events$, dragOutAndBack);
 
 		expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
 	});
@@ -123,6 +118,22 @@ describe("Given a mouse drag that leaves the container", () => {
 		expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
 	});
 
+	it("follows it when afterEventReceived makes new events", async () => {
+		const recognizer = new PanRecognizer({
+			container,
+			// a copy that keeps neither the pointerId nor the pointerType
+			afterEventReceived: (event) =>
+				Object.assign(new PointerEvent(event.type), {
+					x: event.x,
+					y: event.y,
+				}),
+		});
+
+		const events = await eventsFor(recognizer.events$, dragOutAndBack);
+
+		expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
+	});
+
 	it("follows the mouse in the document of the container", async () => {
 		const frameDocument = document.implementation.createHTMLDocument();
 
@@ -136,4 +147,54 @@ describe("Given a mouse drag that leaves the container", () => {
 
 		expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
 	});
+});
+
+describe("Given a mouse drag that ends without a pointerup", () => {
+	it.each<[string, () => void, string]>([
+		[
+			"a pointercancel",
+			() => sendMouse(outside, "pointercancel", { x: 300, y: 0 }),
+			"pointercancel",
+		],
+		[
+			"a contextmenu",
+			() => sendMouse(outside, "contextmenu", { x: 300, y: 0 }),
+			"contextmenu",
+		],
+		[
+			"a move with no button pressed",
+			() => sendMouse(outside, "pointermove", { x: 300, y: 0 }, { buttons: 0 }),
+			"pointermove",
+		],
+	])(
+		"PanRecognizer ends at %s, and pans the next drag once",
+		async (_, release, type) => {
+			const recognizer = new PanRecognizer({ container });
+
+			const events = await eventsFor(recognizer.events$, async () => {
+				sendMouse(container, "pointerdown", { x: 50, y: 0 });
+				await waitFor(5);
+				sendMouse(container, "pointermove", { x: 180, y: 0 });
+				await waitFor(5);
+				release();
+				await waitFor(5);
+
+				sendMouse(container, "pointerdown", { x: 50, y: 0 });
+				await waitFor(5);
+				sendMouse(container, "pointermove", { x: 100, y: 0 });
+				await waitFor(5);
+				sendMouse(container, "pointermove", { x: 150, y: 0 });
+				await waitFor(5);
+				sendMouse(container, "pointerup", { x: 150, y: 0 });
+			});
+
+			expect(summaryOf(events)).toEqual([
+				["panStart", "pointermove", 180],
+				["panEnd", type, 300],
+				["panStart", "pointermove", 100],
+				["panMove", "pointermove", 150],
+				["panEnd", "pointerup", 150],
+			]);
+		},
+	);
 });

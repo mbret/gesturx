@@ -1,4 +1,5 @@
 import { map, type Observable, scan } from "rxjs";
+import { isPointerOffEvent } from "../utils/events";
 import {
 	calculateAngleDelta,
 	calculateAverageDistance,
@@ -55,9 +56,8 @@ export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
 			const currActivePointersNumber = curr.latestActivePointers?.length ?? 1;
 
 			const hasAddedOrRemovedAFinger =
-				["pointerdown", "pointercancel", "pointerup"].includes(
-					curr.event.type,
-				) && prevActivePointersNumber !== currActivePointersNumber;
+				(curr.event.type === "pointerdown" || isPointerOffEvent(curr.event)) &&
+				prevActivePointersNumber !== currActivePointersNumber;
 
 			const hasAtLeastOneFinger = currActivePointersNumber > 0;
 

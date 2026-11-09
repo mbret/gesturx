@@ -132,7 +132,7 @@ Every recognizer has:
 
 Only the primary button starts a gesture: a finger, a pen tip or a left click. A right click, a middle click or a pen eraser starts nothing.
 
-A recognizer follows a pointer pressed in its container until its release, also outside the container. It reads the events of that pointer in the capture phase of the document, so an element that stops their propagation doesn't hide them.
+A recognizer follows a pointer pressed in its container until its release, also outside the container. It reads the events of that pointer in the capture phase of the document, before the elements under the pointer, so an element that stops their propagation doesn't hide them. To hide a press from a recognizer, stop the propagation of its `pointerdown` in an element of the container.
 
 The distance thresholds below are measured on each axis: a finger passes a 15 px threshold when it moves 15 px on the x axis or on the y axis.
 
@@ -428,6 +428,10 @@ The browser sends `pointercancel` when it takes over a pointer, for example to s
 ### contextmenu
 
 A `contextmenu` event ends the gesture of its pointer, as a release does. A right click opens the context menu, and so can a long press on a touch screen.
+
+### Missed release
+
+If the page doesn't receive the `pointerup` of a mouse, the next move of that mouse with no button pressed ends its gesture, as a release does.
 
 ## Known limitations
 

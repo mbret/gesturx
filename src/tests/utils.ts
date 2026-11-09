@@ -42,7 +42,7 @@ const dispatchPointer = (
  */
 export const sendPointer = (
 	container: HTMLElement,
-	type: "pointerdown" | "pointermove" | "pointerup",
+	type: "pointerdown" | "pointermove" | "pointerup" | "contextmenu",
 	point: Point,
 	id = 1,
 ) =>
@@ -56,20 +56,36 @@ export const sendPointer = (
 
 /**
  * Dispatches a mouse pointer event on `target`, with the left button pressed
- * from `pointerdown` until `pointerup`. A `pointerleave` doesn't bubble, as in
- * a browser.
+ * from `pointerdown` until `pointerup` or `pointercancel`. Pass `buttons: 0`
+ * for a move after a release that the page didn't receive. A `pointerleave`
+ * doesn't bubble, as in a browser.
  */
 export const sendMouse = (
 	target: EventTarget,
-	type: "pointerdown" | "pointermove" | "pointerleave" | "pointerup",
+	type:
+		| "pointerdown"
+		| "pointermove"
+		| "pointerleave"
+		| "pointerup"
+		| "pointercancel"
+		| "contextmenu",
 	point: Point,
+	{ buttons = type === "pointerup" || type === "pointercancel" ? 0 : 1 } = {},
 ) =>
 	dispatchPointer(target, type, point, {
 		pointerId: 1,
 		pointerType: "mouse",
-		// a move or a leave presses no button
-		button: type === "pointerdown" || type === "pointerup" ? 0 : -1,
-		buttons: type === "pointerup" ? 0 : 1,
+		button: {
+			pointerdown: 0,
+			pointerup: 0,
+			// the right button opens the context menu
+			contextmenu: 2,
+			// a move, a leave or a cancel changes no button
+			pointermove: -1,
+			pointerleave: -1,
+			pointercancel: -1,
+		}[type],
+		buttons,
 		bubbles: type !== "pointerleave",
 	});
 

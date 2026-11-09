@@ -1,7 +1,5 @@
 import {
-	defer,
 	filter,
-	fromEvent,
 	map,
 	merge,
 	mergeMap,
@@ -19,34 +17,29 @@ export function matchPointer(pointer: PointerEvent) {
 		);
 }
 
-export const isPointerOffEvent = (pointerEvent: PointerEvent) =>
-	pointerEvent.type === "pointercancel" || pointerEvent.type === "pointerup";
+/**
+ * Whether `event` releases its pointer: the pointer lifts, the browser takes it
+ * over, or its context menu opens. A mouse that moves with no button pressed
+ * is released too: the page didn't receive its `pointerup`.
+ */
+export const isPointerOffEvent = (event: PointerEvent) =>
+	event.type === "pointerup" ||
+	event.type === "pointercancel" ||
+	event.type === "contextmenu" ||
+	(event.type === "pointermove" &&
+		event.pointerType === "mouse" &&
+		event.buttons === 0);
 
 /**
  * A press of the primary button: a left click, a finger or a pen's tip. A
  * right click is for the context menu, a middle click for the browser, and a
- * pen's barrel button or eraser for the app.
+ * pen's barrel button or eraser for the app. Every recognizer tracks a pointer
+ * from such a press, so a pointer pressed with another button starts nothing:
+ * no tap, pan or pinch, and no share of a multi tap.
  *
  * @see https://w3c.github.io/pointerevents/#the-button-property
  */
-const isPrimaryButtonPress = (event: PointerEvent) => event.button === 0;
-
-/**
- * The presses that start a gesture. Every recognizer tracks a pointer from its
- * press, so a pointer pressed with another button starts none: no tap, pan or
- * pinch, and no share of a multi tap.
- */
-export const fromPointerDown = ({
-	container,
-	afterEventReceived = (event) => event,
-}: {
-	container: HTMLElement;
-	afterEventReceived?: (event: PointerEvent) => PointerEvent;
-}) =>
-	fromEvent<PointerEvent>(container, "pointerdown").pipe(
-		map(afterEventReceived),
-		filter(isPrimaryButtonPress),
-	);
+export const isPrimaryButtonPress = (event: PointerEvent) => event.button === 0;
 
 /**
  * Track all pointerEvent for active fingers
@@ -69,36 +62,18 @@ export const trackPointers =
 			pointers: Record<number, PointerEvent | undefined>;
 		};
 
-		const pointerUp$ = pointerEvent$.pipe(
-			filter((event) => event.type === "pointerup"),
-		);
-		const pointerCancel$ = pointerEvent$.pipe(
-			filter((event) => event.type === "pointercancel"),
-		);
-		const pointerMove$ = pointerEvent$.pipe(
-			filter((event) => event.type === "pointermove"),
-		);
-		const contextMenu$ = fromEvent<PointerEvent>(window, "contextmenu");
-
-		const isPointerRemoved = (event: PointerEvent) =>
-			["pointercancel", "pointerup", "contextmenu"].includes(event.type);
-
 		return stream.pipe(
-			mergeMap((pointerDown) => {
-				const pointerDown$ = defer(() => of(pointerDown));
-
-				const tracking$ = merge(
-					pointerDown$,
-					merge(pointerMove$, pointerCancel$, pointerUp$, contextMenu$),
+			mergeMap((pointerDown) =>
+				merge(
+					of(pointerDown),
+					pointerEvent$.pipe(filter(({ type }) => type !== "pointerdown")),
 				).pipe(
 					matchPointer(pointerDown),
-					takeWhile((event) => !isPointerRemoved(event), true),
-				);
-
-				return tracking$;
-			}),
+					takeWhile((event) => !isPointerOffEvent(event), true),
+				),
+			),
 			scan<PointerEvent, PointersState, undefined>((acc, event) => {
-				if (isPointerRemoved(event)) {
+				if (isPointerOffEvent(event)) {
 					const { [event.pointerId]: _deleted, ...rest } = acc?.pointers ?? {};
 
 					void _deleted;
