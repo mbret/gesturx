@@ -105,6 +105,14 @@ export abstract class Recognizer<
 	protected pointerOff$: Observable<PointerEvent>;
 
 	public state$: Observable<State>;
+	/**
+	 * Whether the recognizer runs a gesture: `true` from its start event to its
+	 * end event, or until its last subscriber leaves. It emits the current
+	 * value when subscribed. It doesn't run the recognizer, so it stays `false`
+	 * while `events$` has no subscriber. A tap or a swipe never runs. The
+	 * `failWith` of other recognizers reads it.
+	 */
+	public running$: Observable<boolean>;
 	public config$ = this.configSubject.pipe(isValidConfig);
 
 	/**
@@ -122,13 +130,6 @@ export abstract class Recognizer<
 	 * Track active running failWith recognizers
 	 */
 	protected failWithActive$: Observable<boolean>;
-
-	/**
-	 * Whether the recognizer runs a gesture, from its start event to its end
-	 * event, as `state$` tells. A recognizer of a gesture that lasts gives it as
-	 * its `running$`, for the `failWith` of other recognizers.
-	 */
-	protected gestureRunning$: Observable<boolean>;
 
 	/**
 	 * Reports in state$ the fingers of the gesture the recognizer's events
@@ -197,7 +198,6 @@ export abstract class Recognizer<
 					: of(false),
 			),
 			distinctUntilChanged(),
-			// each source tells whether it runs when subscribed, so the recognizer can let go of them
 			shareLatest(),
 		);
 
@@ -330,7 +330,7 @@ export abstract class Recognizer<
 			),
 		);
 
-		this.gestureRunning$ = this.state$.pipe(
+		this.running$ = this.state$.pipe(
 			map(({ fingers }) => fingers > 0),
 			distinctUntilChanged(),
 		);

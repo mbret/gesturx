@@ -19,7 +19,6 @@ export type AppRecognizable = ReturnType<
  * Example of how to fail a gesture on specific event
  */
 const failWithTextSelection: FailWith = {
-	// from the selection when subscribed, then at each change
 	running$: fromEvent(document, "selectionchange").pipe(
 		startWith(undefined),
 		map(() => !!document.getSelection()?.toString()),

@@ -33,7 +33,6 @@ export class RotateRecognizer
 	implements RotateRecognizerInterface
 {
 	public events$: Observable<RotateEvent>;
-	public running$: Observable<boolean>;
 
 	constructor(config: RecognizerConfig<RotateRecognizerOptions> = {}) {
 		super(config, {
@@ -118,8 +117,6 @@ export class RotateRecognizer
 			this.reportFingers((event) => event.type === "rotateEnd"),
 			share(),
 		);
-
-		this.running$ = this.gestureRunning$;
 	}
 
 	public update(options: RecognizerConfig<RotateRecognizerOptions>) {

@@ -15,12 +15,6 @@ export interface HoldRecognizerOptions {
 export interface HoldRecognizerInterface
 	extends Recognizer<HoldRecognizerOptions, HoldEvent> {
 	events$: Observable<HoldEvent>;
-	/**
-	 * Whether a hold runs, from its holdStart event to its holdEnd event. It
-	 * emits the current value when subscribed. Another recognizer's `failWith`
-	 * reads it.
-	 */
-	running$: Observable<boolean>;
 
 	update(options: RecognizerConfig<HoldRecognizerOptions>): void;
 }

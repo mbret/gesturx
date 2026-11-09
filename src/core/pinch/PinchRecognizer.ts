@@ -33,8 +33,6 @@ export class PinchRecognizer
 {
 	public events$: Observable<PinchEvent>;
 
-	public running$: Observable<boolean>;
-
 	constructor(config?: RecognizerConfig<PinchRecognizerOptions>) {
 		super(config, {
 			...config?.options,
@@ -117,8 +115,6 @@ export class PinchRecognizer
 			this.reportFingers((event) => event.type === "pinchEnd"),
 			share(),
 		);
-
-		this.running$ = this.gestureRunning$;
 	}
 
 	public update(options: RecognizerConfig<PinchRecognizerOptions>) {

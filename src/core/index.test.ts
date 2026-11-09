@@ -38,13 +38,13 @@ describe("gesturx", () => {
 		expectTypeOf<gesturx.RecognizableState>().toHaveProperty("fingers");
 	});
 
-	it("takes the recognizers of gestures that last as failWith sources", () => {
+	it("takes any recognizer as a failWith source", () => {
 		// only tsc checks it, as part of npm run build
 		expectTypeOf<gesturx.PanRecognizer>().toExtend<gesturx.FailWith>();
 		expectTypeOf<gesturx.PinchRecognizer>().toExtend<gesturx.FailWith>();
 		expectTypeOf<gesturx.RotateRecognizer>().toExtend<gesturx.FailWith>();
 		expectTypeOf<gesturx.HoldRecognizer>().toExtend<gesturx.FailWith>();
-		expectTypeOf<gesturx.TapRecognizer>().not.toExtend<gesturx.FailWith>();
-		expectTypeOf<gesturx.SwipeRecognizer>().not.toExtend<gesturx.FailWith>();
+		expectTypeOf<gesturx.TapRecognizer>().toExtend<gesturx.FailWith>();
+		expectTypeOf<gesturx.SwipeRecognizer>().toExtend<gesturx.FailWith>();
 	});
 });

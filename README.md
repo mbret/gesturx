@@ -127,6 +127,7 @@ Every recognizer has:
 
 - `events$`: its events. A subscription starts the recognition.
 - `state$`: `{ fingers }`, the fingers of the gesture it recognizes, from its start event to its end event. It is 0 at other times, and it stays 0 for a tap or a swipe.
+- `running$`: `true` while it recognizes a gesture, as `state$` tells. See [failWith](#failwith).
 - `update(config)`: see [Updating a recognizer](#updating-a-recognizer).
 
 Only the primary button starts a gesture: a finger, a pen tip or a left click. A right click, a middle click or a pen eraser starts nothing.
@@ -313,9 +314,9 @@ The package exports the types of the events (`TapEvent`, `PanEvent`, `PinchEvent
 `failWith` blocks a recognizer while other recognizers run:
 
 - It doesn't start a gesture while one of them runs. That gesture is dropped, not delayed.
-- If one of them starts during its gesture, the gesture stops. A pan, a pinch, a rotation or a hold emits its end event. A tap or a swipe emits nothing.
+- If one of them starts during its gesture, the gesture stops. A pan, a pinch, a rotation or a hold emits its end event, before the start event of the recognizer that stopped it. A tap or a swipe emits nothing.
 
-`failWith` accepts a `PanRecognizer`, a `PinchRecognizer`, a `RotateRecognizer`, a `HoldRecognizer`, or any object with a `running$` observable. `running$` emits whether the source runs: its current value when subscribed, then each change. A `BehaviorSubject` does that:
+`failWith` accepts a recognizer, or any object with a `running$` observable. `running$` emits whether the source runs: its current value when subscribed, then each change. A `BehaviorSubject` does that:
 
 ```ts
 import { BehaviorSubject } from "rxjs";
@@ -339,7 +340,8 @@ dialogOpen$.next(false);
 ```
 
 - A source that emits nothing when subscribed counts as not running until it emits. So a plain `Subject` misses a source that started before.
-- The `running$` of a recognizer is `true` from its start event to its end event. A recognizer runs only while it has a subscriber, so subscribe to a recognizer that you put in a `failWith` list. A `Recognizable` subscribes to all its recognizers.
+- The `running$` of a recognizer is `true` from its start event to its end event, or until its last subscriber leaves. A tap or a swipe never runs, so it never blocks.
+- A recognizer runs only while it has a subscriber, so subscribe to a recognizer that you put in a `failWith` list. A `Recognizable` subscribes to all its recognizers while its `events$` has a subscriber.
 - A recognizer reads its `failWith` sources while it has a subscriber and a container, and lets go of them with its last subscriber. A `TapRecognizer` reads them at each press.
 
 ## Updating a recognizer
@@ -375,7 +377,7 @@ To make a gesture of your own, extend `Recognizer`. The second argument of `supe
 - `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s. `pan$` has all of them, with a `type` of `start`, `move` or `end`.
 - `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the pointer events of the container. `pointerDown$` has the presses of the primary button only.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
-- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. Without it, `state$` stays 0.
+- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. Without it, `state$` stays 0 and `running$` stays `false`.
 
 ```ts
 import { filter, map, type Observable, withLatestFrom } from "rxjs";

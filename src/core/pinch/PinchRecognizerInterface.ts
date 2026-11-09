@@ -31,12 +31,6 @@ export interface PinchRecognizerOptions {
 export interface PinchRecognizerInterface
 	extends Recognizer<PinchRecognizerOptions, PinchEvent> {
 	events$: Observable<PinchEvent>;
-	/**
-	 * Whether a pinch runs, from its pinchStart event to its pinchEnd event. It
-	 * emits the current value when subscribed. Another recognizer's `failWith`
-	 * reads it.
-	 */
-	running$: Observable<boolean>;
 
 	update(options: RecognizerConfig<PinchRecognizerOptions>): void;
 }
