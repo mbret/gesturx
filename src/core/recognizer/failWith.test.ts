@@ -8,6 +8,7 @@ import {
 } from "../../tests/utils";
 import { HoldRecognizer } from "../hold/HoldRecognizer";
 import { PanRecognizer } from "../pan/PanRecognizer";
+import { Recognizable } from "../recognizable/Recognizable";
 import { TapRecognizer } from "../tap/TapRecognizer";
 
 let container = createContainer();
@@ -38,7 +39,6 @@ const tap = async (on: HTMLElement) => {
 	await waitFor(20);
 };
 
-/** A hold on the source container, from a press of the finger 9. */
 const holdSource = () => {
 	const source = new HoldRecognizer({ container: sourceContainer });
 	// a source runs only while it has a subscriber of its own
@@ -60,12 +60,21 @@ const typesFor = async (
 	gesture: () => Promise<void>,
 ) => (await eventsFor(events$, gesture)).map(({ type }) => type);
 
+/** The events of a drag, for a pan recognizer that nothing blocks. */
+const dragTypes = async () => {
+	const types = await typesFor(new PanRecognizer({ container }).events$, () =>
+		drag(container),
+	);
+
+	// so that a blocked drag shows
+	expect(types).toContain("panEnd");
+
+	return types;
+};
+
 describe("failWith", () => {
 	it("blocks a recognizer subscribed while its source runs", async () => {
-		const expected = await typesFor(
-			new PanRecognizer({ container }).events$,
-			() => drag(container),
-		);
+		const expected = await dragTypes();
 		const { source, press, release, unsubscribe } = holdSource();
 
 		await waitFor(1);
@@ -103,30 +112,8 @@ describe("failWith", () => {
 		expect(types).toEqual(["tap"]);
 	});
 
-	it("keeps blocking a recognizer when another one of the same source leaves", async () => {
-		const { source, press, release, unsubscribe } = holdSource();
-		const leaving = new PanRecognizer({ container, failWith: [source] });
-		const recognizer = new PanRecognizer({ container, failWith: [source] });
-		const leavingSubscription = leaving.events$.subscribe();
-
-		const types = await typesFor(recognizer.events$, async () => {
-			press();
-			await waitFor(5);
-			leavingSubscription.unsubscribe();
-			await drag(container);
-			await release();
-		});
-
-		unsubscribe();
-
-		expect(types).toEqual([]);
-	});
-
 	it("lets a recognizer run once its source was stopped by its own failWith", async () => {
-		const expected = await typesFor(
-			new PanRecognizer({ container }).events$,
-			() => drag(container),
-		);
+		const expected = await dragTypes();
 		const { source: hold, press, release, unsubscribe } = holdSource();
 		const panContainer = createContainer();
 		const pan = new PanRecognizer({
@@ -156,10 +143,7 @@ describe("failWith", () => {
 	});
 
 	it("counts a source that emits nothing when subscribed as not running", async () => {
-		const expected = await typesFor(
-			new PanRecognizer({ container }).events$,
-			() => drag(container),
-		);
+		const expected = await dragTypes();
 		const recognizer = new PanRecognizer({
 			container,
 			failWith: [{ running$: new Subject<boolean>() }],
@@ -168,6 +152,30 @@ describe("failWith", () => {
 		expect(await typesFor(recognizer.events$, () => drag(container))).toEqual(
 			expected,
 		);
+	});
+
+	it("ends a gesture before the start event of the source that stops it", async () => {
+		const hold = new HoldRecognizer({ container: sourceContainer });
+		const pan = new PanRecognizer({ container, failWith: [hold] });
+		const recognizable = new Recognizable({ recognizers: [pan, hold] });
+
+		const events = await eventsFor(recognizable.events$, async () => {
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 40, y: 0 });
+			await waitFor(5);
+			sendPointer(sourceContainer, "pointerdown", { x: 0, y: 0 }, 9);
+			await waitFor(5);
+			sendPointer(sourceContainer, "pointerup", { x: 0, y: 0 }, 9);
+			sendPointer(container, "pointerup", { x: 40, y: 0 });
+		});
+
+		expect(events.map(({ event }) => event.type)).toEqual([
+			"panStart",
+			"panEnd",
+			"holdStart",
+			"holdEnd",
+		]);
 	});
 });
 

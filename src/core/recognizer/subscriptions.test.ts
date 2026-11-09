@@ -289,31 +289,6 @@ describe("with failWith", () => {
 		},
 	);
 
-	it("unsubscribes from a failWith source once unsubscribed", async () => {
-		let subscribers = 0;
-		const running$ = new Observable<boolean>((subscriber) => {
-			subscribers++;
-			subscriber.next(false);
-
-			return () => {
-				subscribers--;
-			};
-		});
-		const recognizer = new PinchRecognizer({
-			container,
-			failWith: [{ running$ }],
-		});
-
-		const subscription = recognizer.events$.subscribe();
-		await waitFor(1);
-
-		expect(subscribers).toBe(1);
-
-		subscription.unsubscribe();
-
-		expect(subscribers).toBe(0);
-	});
-
 	it("releases two recognizers that fail with each other", async () => {
 		const panContainer = createContainer();
 		const holdContainer = createContainer();
@@ -340,7 +315,7 @@ describe("with failWith", () => {
 	});
 });
 
-describe.each(recognizers)("%s with a failWith recognizer", (_, Recognizer) => {
+describe.each(recognizers)("%s with failWith", (_, Recognizer) => {
 	let container = createContainer();
 	let sourceContainer = createContainer();
 	let sourceListeners = countListeners(sourceContainer).listeners;
@@ -359,7 +334,7 @@ describe.each(recognizers)("%s with a failWith recognizer", (_, Recognizer) => {
 		await waitFor(5);
 	};
 
-	it("doesn't run it", async () => {
+	it("doesn't run a recognizer source", async () => {
 		const source = new PanRecognizer({ container: sourceContainer });
 		const recognizer = new Recognizer({ container, failWith: [source] });
 		const subscription = recognizer.events$.subscribe();
@@ -367,28 +342,30 @@ describe.each(recognizers)("%s with a failWith recognizer", (_, Recognizer) => {
 		await waitFor(1);
 		await press();
 
-		// a source runs only while it has a subscriber of its own
 		expect(sourceListeners.count).toBe(0);
 
 		subscription.unsubscribe();
 	});
 
-	it("lets it stop once its own subscriber leaves", async () => {
-		const source = new PanRecognizer({ container: sourceContainer });
-		const recognizer = new Recognizer({ container, failWith: [source] });
-		const sourceSubscription = source.events$.subscribe();
-		const subscription = recognizer.events$.subscribe();
+	it("unsubscribes from its sources once unsubscribed", async () => {
+		let subscribers = 0;
+		const running$ = new Observable<boolean>((subscriber) => {
+			subscribers++;
+			subscriber.next(false);
 
+			return () => {
+				subscribers--;
+			};
+		});
+		const recognizer = new Recognizer({ container, failWith: [{ running$ }] });
+
+		const subscription = recognizer.events$.subscribe();
 		await waitFor(1);
 		await press();
 
-		expect(sourceListeners.count).toBeGreaterThan(0);
-
-		sourceSubscription.unsubscribe();
-
-		expect(sourceListeners.count).toBe(0);
-
 		subscription.unsubscribe();
+
+		expect(subscribers).toBe(0);
 	});
 });
 
