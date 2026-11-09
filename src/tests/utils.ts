@@ -57,7 +57,8 @@ export const sendPointer = (
 /**
  * Dispatches a mouse pointer event on `target`, with the left button pressed
  * from `pointerdown` until `pointerup` or `pointercancel`. Pass `buttons: 0`
- * for a move after a release that the page didn't receive.
+ * for a move after a release that the page didn't receive, and
+ * `pointerType: "pen"` for a pen.
  */
 export const sendMouse = (
 	target: EventTarget,
@@ -69,11 +70,14 @@ export const sendMouse = (
 		| "pointercancel"
 		| "contextmenu",
 	point: Point,
-	{ buttons = type === "pointerup" || type === "pointercancel" ? 0 : 1 } = {},
+	{
+		buttons = type === "pointerup" || type === "pointercancel" ? 0 : 1,
+		pointerType = "mouse",
+	}: { buttons?: number; pointerType?: "mouse" | "pen" } = {},
 ) =>
 	dispatchPointer(target, type, point, {
 		pointerId: 1,
-		pointerType: "mouse",
+		pointerType,
 		button: {
 			pointerdown: 0,
 			pointerup: 0,

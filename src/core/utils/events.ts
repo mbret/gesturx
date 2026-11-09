@@ -16,8 +16,8 @@ export function matchPointer(pointer: PointerEvent) {
 }
 
 /**
- * Whether the browser's `event` releases its pointer. A mouse move with no
- * button pressed releases it too, because the page didn't receive the
+ * Whether the browser's `event` releases its pointer. A mouse or pen move with
+ * no button pressed releases it too, because the page didn't receive the
  * `pointerup`.
  */
 const releasesPointer = (event: PointerEvent) =>
@@ -25,7 +25,7 @@ const releasesPointer = (event: PointerEvent) =>
 	event.type === "pointercancel" ||
 	event.type === "contextmenu" ||
 	(event.type === "pointermove" &&
-		event.pointerType === "mouse" &&
+		(event.pointerType === "mouse" || event.pointerType === "pen") &&
 		event.buttons === 0);
 
 /**
@@ -68,8 +68,12 @@ export const followPointer = ({
 		fromEvent<PointerEvent>(document, "contextmenu"),
 	).pipe(
 		filter((event) => event.pointerId === pointerId),
-		// a press of a pointer whose release the page missed starts its own follow
-		takeWhile((event) => event.type !== "pointerdown"),
+		// a new press of the pointer cancels the press whose release the page missed
+		map((event) =>
+			event.type === "pointerdown"
+				? new PointerEvent("pointercancel", event)
+				: event,
+		),
 		takeWhile((event) => !releasesPointer(event), true),
 		map((event) => {
 			const received = afterEventReceived(event);
@@ -101,8 +105,6 @@ export const trackPointers = (pointerEvent$: Observable<PointerEvent>) =>
 				}
 
 				const { [event.pointerId]: _previous, ...others } = pointers;
-
-				void _previous;
 
 				return {
 					event,

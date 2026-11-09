@@ -132,7 +132,7 @@ Every recognizer has:
 
 Only the primary button starts a gesture: a finger, a pen tip or a left click. A right click, a middle click or a pen eraser starts nothing.
 
-A recognizer follows a pointer pressed in its container until its release, also outside the container. It listens to the `pointermove`, `pointerup` and `pointercancel` of that pointer on the document, in the capture phase, before any element does. An element that stops their propagation doesn't hide them. To hide a press from a recognizer, stop the propagation of its `pointerdown` in an element of the container.
+A recognizer follows a pointer pressed in its container until its release, also outside the container. It listens to the `pointerdown`, `pointermove`, `pointerup` and `pointercancel` of that pointer on the document, in the capture phase, before any element does. An element that stops their propagation doesn't hide them. To hide a press from a recognizer, stop the propagation of its `pointerdown` in an element of the container.
 
 The distance thresholds below are measured on each axis: a finger passes a 15 px threshold when it moves 15 px on the x axis or on the y axis.
 
@@ -379,7 +379,7 @@ To make a gesture of your own, extend `Recognizer`. The second argument of `supe
 
 - `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s. `pan$` has all of them, with a `type` of `start`, `move` or `end`.
 - `pointerEvent$`: each press of the primary button in the container, then the events of its pointer until its release, also outside the container.
-- `pointerOff$`: the releases in `pointerEvent$`. A release is a `pointerup`, a `pointercancel`, a `contextmenu`, or a mouse `pointermove` with no button pressed.
+- `pointerOff$`: the releases in `pointerEvent$`. A release is a `pointerup`, a `pointercancel`, a `contextmenu`, or a mouse or pen `pointermove` with no button pressed.
 - `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the events of `pointerEvent$` with that type. `pointerMove$` leaves out the releases.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
 - `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events. Without it, `state$` stays 0 and `running$` stays `false`.
@@ -433,9 +433,9 @@ A `contextmenu` event ends the gesture of its pointer, as a `pointerup` does, bu
 
 ### Missed release
 
-If the page doesn't receive the `pointerup` of a mouse, the next move of that mouse with no button pressed ends its gesture, and a tap fails. The end event references that `pointermove`. As for a `pointercancel`, `deltaX` and `deltaY` stay as they were in the previous event.
+If the page doesn't receive the `pointerup` of a mouse or a pen, the next move of that pointer with no button pressed ends its gesture, and a tap fails. The end event references that `pointermove`. As for a `pointercancel`, `deltaX` and `deltaY` stay as they were in the previous event. A new press of that pointer ends the gesture as a `pointercancel` does, then starts a new one.
 
-So each move of a pressed mouse must have its `buttons`, as in a browser. Set `buttons` in the mouse events that your tests dispatch.
+So each move of a pressed mouse or pen must have its `buttons`, as in a browser. Set `buttons` in the mouse and pen events that your tests dispatch.
 
 ## Known limitations
 

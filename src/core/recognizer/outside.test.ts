@@ -345,3 +345,94 @@ describe("Given a mouse press that ends without a pointerup", () => {
 		expect(events).toEqual([]);
 	});
 });
+
+describe("Given a drag whose pointerup the page missed", () => {
+	const dragWithoutRelease = async (pointerType?: "pen") => {
+		sendMouse(container, "pointerdown", { x: 50, y: 0 }, { pointerType });
+		await waitFor(5);
+		sendMouse(container, "pointermove", { x: 180, y: 0 }, { pointerType });
+		await waitFor(5);
+	};
+
+	// happy-dom gives no x to an event made from another, so no center or delta
+	const typesOf = (events: { type: string; event: PointerEvent }[]) =>
+		events.map(({ type, event }) => [type, event.type]);
+
+	it("PanRecognizer ends it at the next press, then pans the new drag", async () => {
+		const recognizer = new PanRecognizer({ container });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			await dragWithoutRelease();
+			sendMouse(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointermove", { x: 40, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointerup", { x: 40, y: 0 });
+		});
+
+		expect(typesOf(events)).toEqual([
+			["panStart", "pointermove"],
+			["panEnd", "pointercancel"],
+			["panStart", "pointermove"],
+			["panEnd", "pointerup"],
+		]);
+	});
+
+	it("PanRecognizer ends it at the next press outside the container", async () => {
+		const recognizer = new PanRecognizer({ container });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			await dragWithoutRelease();
+			sendMouse(outside, "pointerdown", { x: 400, y: 0 });
+			await waitFor(5);
+			sendMouse(outside, "pointerup", { x: 400, y: 0 });
+		});
+
+		expect(typesOf(events)).toEqual([
+			["panStart", "pointermove"],
+			["panEnd", "pointercancel"],
+		]);
+	});
+
+	it("TapRecognizer taps the next click", async () => {
+		const recognizer = new TapRecognizer({ container });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendMouse(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointerup", { x: 0, y: 0 });
+			await waitFor(150);
+		});
+
+		expect(events.map(({ type, taps }) => [type, taps])).toEqual([["tap", 1]]);
+	});
+
+	it("PanRecognizer ends a pen drag at its next move with no button pressed", async () => {
+		const recognizer = new PanRecognizer({ container });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			await dragWithoutRelease("pen");
+			sendMouse(
+				outside,
+				"pointermove",
+				{ x: 400, y: 0 },
+				{ buttons: 0, pointerType: "pen" },
+			);
+			await waitFor(5);
+			sendMouse(
+				outside,
+				"pointermove",
+				{ x: 600, y: 0 },
+				{ buttons: 0, pointerType: "pen" },
+			);
+		});
+
+		expect(summaryOf(events)).toEqual([
+			["panStart", "pointermove", 180],
+			["panEnd", "pointermove", 400],
+		]);
+		expect(events.map(({ deltaX }) => deltaX)).toEqual([0, 0]);
+	});
+});
