@@ -9,6 +9,7 @@ import {
 import { HoldRecognizer } from "../hold/HoldRecognizer";
 import { PanRecognizer } from "../pan/PanRecognizer";
 import { Recognizable } from "../recognizable/Recognizable";
+import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
 
 let container = createContainer();
@@ -180,6 +181,65 @@ describe("failWith", () => {
 });
 
 describe("running$", () => {
+	it.each<
+		[
+			string,
+			() => { events$: Observable<unknown>; running$: Observable<boolean> },
+			() => Promise<void>,
+		]
+	>([
+		[
+			"TapRecognizer",
+			() => new TapRecognizer({ container }),
+			() => tap(container),
+		],
+		[
+			"SwipeRecognizer",
+			() => new SwipeRecognizer({ container }),
+			async () => {
+				sendPointer(container, "pointerdown", { x: 0, y: 0 });
+				await waitFor(5);
+				sendPointer(container, "pointermove", { x: 100, y: 0 });
+				await waitFor(5);
+				sendPointer(container, "pointerup", { x: 200, y: 0 });
+				await waitFor(20);
+			},
+		],
+	])("of a %s stays false", async (_, create, gesture) => {
+		const recognizer = create();
+		const running: boolean[] = [];
+		const watching = recognizer.running$.subscribe((value) =>
+			running.push(value),
+		);
+		const events = await eventsFor(recognizer.events$, gesture);
+
+		watching.unsubscribe();
+
+		// it recognized the gesture, so that a running one shows
+		expect(events).toHaveLength(1);
+		expect(running).toEqual([false]);
+	});
+
+	it("stays true when one of two subscribers leaves during a gesture", async () => {
+		const pan = new PanRecognizer({ container });
+		const staying = pan.events$.subscribe();
+		const leaving = pan.events$.subscribe();
+
+		await waitFor(1);
+		sendPointer(container, "pointerdown", { x: 0, y: 0 });
+		await waitFor(5);
+		sendPointer(container, "pointermove", { x: 40, y: 0 });
+		await waitFor(5);
+		leaving.unsubscribe();
+
+		const running = await firstValueFrom(pan.running$);
+
+		sendPointer(container, "pointerup", { x: 40, y: 0 });
+		staying.unsubscribe();
+
+		expect(running).toBe(true);
+	});
+
 	it("tells whether a recognizer runs, from its start event to its end event", async () => {
 		const pan = new PanRecognizer({ container });
 		const subscription = pan.events$.subscribe();

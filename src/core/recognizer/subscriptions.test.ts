@@ -326,13 +326,13 @@ describe.each(recognizers)("%s with failWith", (_, Recognizer) => {
 		sourceListeners = countListeners(sourceContainer).listeners;
 	});
 
-	// a tap recognizer reads its failWith sources when pressed
+	// a tap recognizer reads its failWith sources while a finger is down
 	const press = async () => {
 		sendPointer(container, "pointerdown", { x: 0, y: 0 });
 		await waitFor(5);
-		sendPointer(container, "pointerup", { x: 0, y: 0 });
-		await waitFor(5);
 	};
+
+	const release = () => sendPointer(container, "pointerup", { x: 0, y: 0 });
 
 	it("doesn't run a recognizer source", async () => {
 		const source = new PanRecognizer({ container: sourceContainer });
@@ -344,6 +344,7 @@ describe.each(recognizers)("%s with failWith", (_, Recognizer) => {
 
 		expect(sourceListeners.count).toBe(0);
 
+		release();
 		subscription.unsubscribe();
 	});
 
@@ -363,9 +364,13 @@ describe.each(recognizers)("%s with failWith", (_, Recognizer) => {
 		await waitFor(1);
 		await press();
 
+		expect(subscribers).toBe(1);
+
 		subscription.unsubscribe();
 
 		expect(subscribers).toBe(0);
+
+		release();
 	});
 });
 
