@@ -15,6 +15,33 @@ import type {
 
 export type { RecognizableState };
 
+/**
+ * Sets `touch-action: none` on the container, and `user-select: none` with
+ * `disableTextSelection`. Returns a function that sets them back.
+ */
+const applyStyles = (container: HTMLElement, disableTextSelection: boolean) => {
+	const { touchAction, userSelect } = container.style;
+
+	/**
+	 * We have to disable touch-action otherwise every events will be followed
+	 * by a cancel event since the browser will try to handle touch.
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
+	 */
+	container.style.touchAction = "none";
+
+	/**
+	 *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
+	 */
+	if (disableTextSelection) {
+		container.style.userSelect = "none";
+	}
+
+	return () => {
+		container.style.touchAction = touchAction;
+		container.style.userSelect = userSelect;
+	};
+};
+
 // biome-ignore lint/suspicious/noExplicitAny: TODO
 type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	recognizers: T;
@@ -25,6 +52,11 @@ type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	 */
 	disableTextSelection?: boolean;
 } & RecognizerConfig<unknown>;
+
+// biome-ignore lint/suspicious/noExplicitAny: TODO
+type RecognizableUpdate<T extends Recognizer<any, any>[]> = Partial<
+	Omit<RecognizableOptions<T>, "recognizers">
+>;
 
 // biome-ignore lint/suspicious/noExplicitAny: TODO
 export class Recognizable<T extends Recognizer<any, any>[]>
@@ -39,11 +71,18 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 
 	state$: Observable<RecognizableState>;
 
-	constructor(protected options: RecognizableOptions<T>) {
-		this.recognizers = options.recognizers;
+	/** The latest container it got, `null` included. */
+	private container: HTMLElement | null = null;
+	private disableTextSelection = false;
+	private restoreStyles = () => {};
+	/** The updates made while an update runs, as from an end handler. */
+	private queuedUpdates?: RecognizableUpdate<T>[];
+
+	constructor({ recognizers, ...config }: RecognizableOptions<T>) {
+		this.recognizers = recognizers;
 
 		this.events$ = merge(
-			...options.recognizers.map((recognizer) =>
+			...recognizers.map((recognizer) =>
 				recognizer.events$.pipe(map((event) => ({ event, recognizer }))),
 			),
 		).pipe(share());
@@ -61,31 +100,61 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 			),
 		);
 
-		this.update(options);
+		this.update(config);
 	}
 
-	public update({
-		disableTextSelection,
-		...rest
-	}: Partial<Omit<RecognizableOptions<T>, "recognizers">>) {
-		if (rest.container) {
-			/**
-			 * We have to disable touch-action otherwise every events will be followed
-			 * by a cancel event since the browser will try to handle touch.
-			 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-			 */
-			rest.container.style.touchAction = "none";
+	public update(config: RecognizableUpdate<T>) {
+		// an update from an end handler comes after the update that runs, for every recognizer
+		if (this.queuedUpdates) {
+			this.queuedUpdates.push(config);
 
-			/**
-			 *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
-			 */
-			if (disableTextSelection) {
-				rest.container.style.userSelect = "none";
-			}
+			return;
 		}
 
-		for (const recognizer of this.options.recognizers) {
-			recognizer.update(rest);
+		this.queuedUpdates = [];
+
+		try {
+			for (
+				let next: RecognizableUpdate<T> | undefined = config;
+				next;
+				next = this.queuedUpdates.shift()
+			) {
+				this.apply(next);
+			}
+		} finally {
+			this.queuedUpdates = undefined;
+		}
+	}
+
+	private apply({
+		disableTextSelection,
+		container,
+		...rest
+	}: RecognizableUpdate<T>) {
+		const changesStyles =
+			(container !== undefined && container !== this.container) ||
+			(disableTextSelection !== undefined &&
+				disableTextSelection !== this.disableTextSelection);
+
+		if (container !== undefined) {
+			this.container = container;
+		}
+
+		if (disableTextSelection !== undefined) {
+			this.disableTextSelection = disableTextSelection;
+		}
+
+		if (changesStyles) {
+			this.restoreStyles();
+			this.restoreStyles = this.container
+				? applyStyles(this.container, this.disableTextSelection)
+				: () => {};
+		}
+
+		for (const recognizer of this.recognizers) {
+			recognizer.update(
+				container === undefined ? rest : { ...rest, container },
+			);
 		}
 	}
 }

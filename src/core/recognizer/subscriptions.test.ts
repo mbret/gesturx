@@ -42,7 +42,7 @@ type AnyRecognizer = new (config: {
 	failWith?: FailWith[];
 }) => {
 	events$: Observable<unknown>;
-	update(config: { container?: HTMLElement; options?: object }): void;
+	update(config: { container?: HTMLElement | null; options?: object }): void;
 };
 
 const recognizers: [string, AnyRecognizer][] = [
@@ -181,6 +181,44 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		}
 	});
 
+	it("removes them once detached", async () => {
+		const window$ = countListeners(window);
+
+		try {
+			const recognizer = new Recognizer({ container });
+			const subscription = recognizer.events$.subscribe();
+
+			await waitFor(1);
+			await pressTwoFingers();
+
+			// the ones following the pressed fingers
+			expect(window$.listeners.count).toBeGreaterThan(0);
+
+			recognizer.update({ container: null });
+
+			expect(listeners.count).toBe(0);
+			expect(window$.listeners.count).toBe(0);
+
+			subscription.unsubscribe();
+		} finally {
+			window$.restore();
+		}
+	});
+
+	it("listens for a new subscriber after update({ container: undefined })", async () => {
+		const recognizer = new Recognizer({ container });
+
+		recognizer.update({ container: undefined });
+
+		const subscription = recognizer.events$.subscribe();
+
+		await waitFor(1);
+
+		expect(listeners.count).toBeGreaterThan(0);
+
+		subscription.unsubscribe();
+	});
+
 	it("moves them when its container is updated during a gesture", async () => {
 		const window$ = countListeners(window);
 		const other = createContainer();
@@ -288,6 +326,26 @@ describe("with failWith", () => {
 			]);
 		},
 	);
+
+	it("reads its failWith sources without a container", async () => {
+		let subscribers = 0;
+		const running$ = new Observable<boolean>((subscriber) => {
+			subscribers++;
+			subscriber.next(false);
+
+			return () => {
+				subscribers--;
+			};
+		});
+		const recognizer = new PinchRecognizer({ failWith: [{ running$ }] });
+
+		const subscription = recognizer.events$.subscribe();
+		await waitFor(1);
+
+		expect(subscribers).toBe(1);
+
+		subscription.unsubscribe();
+	});
 
 	it("releases two recognizers that fail with each other", async () => {
 		const panContainer = createContainer();

@@ -40,7 +40,7 @@ export class SwipeRecognizer
 							this.configSubject.getValue().options ?? {};
 
 						return this.panEnd$.pipe(
-							// numInputs is 1, so only a new container ends the pan with a finger still pressed
+							// numInputs is 1, so only a container update, null included, ends the pan with a finger still pressed
 							filter((event) => !event.pointers.length),
 							isRecognizedAsSwipe(escapeVelocity),
 							map((event) => {

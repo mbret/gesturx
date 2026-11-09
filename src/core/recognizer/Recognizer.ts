@@ -2,6 +2,7 @@ import {
 	BehaviorSubject,
 	combineLatest,
 	distinctUntilChanged,
+	EMPTY,
 	exhaustMap,
 	filter,
 	finalize,
@@ -24,7 +25,7 @@ import {
 import { matchPointer, trackPointers } from "../utils/events";
 import { shareLatest } from "../utils/operators";
 import { isWithinPosThreshold, omitUnset } from "../utils/utils";
-import { filterPointerOff, isValidConfig } from "./operators";
+import { filterPointerOff } from "./operators";
 import type { RecognizerEvent } from "./RecognizerEvent";
 import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
 import { getPointerEvents } from "./utils";
@@ -57,7 +58,11 @@ export interface FailWith {
 }
 
 export type RecognizerConfig<Options> = {
-	container?: HTMLElement;
+	/**
+	 * The element to listen on. `null` detaches the recognizer, and
+	 * `undefined` keeps the current element.
+	 */
+	container?: HTMLElement | null;
 	afterEventReceived?: (event: PointerEvent) => PointerEvent;
 	options?: Options;
 	failWith?: FailWith[];
@@ -83,14 +88,17 @@ export abstract class Recognizer<
 > {
 	/** The latest config. Read it, and change it with `update()` only. */
 	protected configSubject = new BehaviorSubject<
-		RecognizerConfig<Options> & {
+		Omit<RecognizerConfig<Options>, "container"> & {
+			/** `null` while the recognizer is detached. */
+			container: HTMLElement | null;
 			panConfig?: PanConfig;
 		}
-	>({});
+	>({ container: null });
 	private stateSubject = new BehaviorSubject<State>({
 		fingers: 0,
 	});
-	private followedContainer?: HTMLElement;
+	/** The container of the latest update that passed one, `null` included. */
+	private requestedContainer: HTMLElement | null = null;
 	private containerChanging = new Subject<void>();
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
@@ -114,13 +122,13 @@ export abstract class Recognizer<
 	 * recognizers reads it.
 	 */
 	public running$: Observable<boolean>;
-	public config$ = this.configSubject.pipe(isValidConfig);
 
 	/**
-	 * The container, each time it changes. `pan$` ends its gesture before this
-	 * emits. Switch on it to reset the state of a gesture.
+	 * The container, each time it changes, and `null` while the recognizer is
+	 * detached. `pan$` ends its gesture before this emits. Switch on it to reset
+	 * the state of a gesture.
 	 */
-	protected container$ = this.config$.pipe(
+	protected container$ = this.configSubject.pipe(
 		map(({ container }) => container),
 		distinctUntilChanged(),
 	);
@@ -154,17 +162,18 @@ export abstract class Recognizer<
 
 	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
 		this.pointerEvent$ = this.container$.pipe(
-			switchMap(
-				(container) =>
-					getPointerEvents({
-						container,
-						// read at each event, so that an update applies right away
-						afterEventReceived: (event) => {
-							const { afterEventReceived } = this.configSubject.getValue();
+			switchMap((container) =>
+				container
+					? getPointerEvents({
+							container,
+							// read at each event, so that an update applies right away
+							afterEventReceived: (event) => {
+								const { afterEventReceived } = this.configSubject.getValue();
 
-							return afterEventReceived ? afterEventReceived(event) : event;
-						},
-					}).pointerEvents$,
+								return afterEventReceived ? afterEventReceived(event) : event;
+							},
+						}).pointerEvents$
+					: EMPTY,
 			),
 			share(),
 		);
@@ -187,7 +196,7 @@ export abstract class Recognizer<
 
 		this.pointerOff$ = this.pointerEvent$.pipe(filterPointerOff);
 
-		const failWith$ = this.config$.pipe(
+		const failWith$ = this.configSubject.pipe(
 			map(({ failWith }) => failWith),
 			distinctUntilChanged(),
 		);
@@ -347,27 +356,24 @@ export abstract class Recognizer<
 		panConfig?: PanConfig,
 	) {
 		const { container, ...rest } = config;
-		const changesContainer =
-			!!container &&
-			!!this.followedContainer &&
-			container !== this.followedContainer;
+		const currentContainer = this.configSubject.getValue().container;
 
-		if (container) {
-			this.followedContainer = container;
-		}
-
-		if (!changesContainer) {
-			this.mergeConfig(config, panConfig);
-
-			return;
+		if (container !== undefined) {
+			this.requestedContainer = container;
 		}
 
 		// the other fields first, so that an update from an end handler comes after
 		this.mergeConfig(rest, panConfig);
+
+		if (container === undefined || container === currentContainer) {
+			return;
+		}
+
 		// before container$ switches, so that pan$ ends its gesture while it's followed
 		this.containerChanging.next();
+
 		// an end handler can set another container, which then stays
-		this.mergeConfig({ container: this.followedContainer });
+		this.mergeConfig({ container: this.requestedContainer });
 	}
 
 	private mergeConfig(
