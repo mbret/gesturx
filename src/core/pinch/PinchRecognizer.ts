@@ -113,7 +113,6 @@ export class PinchRecognizer
 				);
 			}),
 			this.reportFingers((event) => event.type === "pinchEnd"),
-			share(),
 		);
 	}
 

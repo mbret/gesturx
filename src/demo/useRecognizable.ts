@@ -20,6 +20,7 @@ export type AppRecognizable = ReturnType<
  */
 const failWithTextSelection: FailWith = {
 	running$: fromEvent(document, "selectionchange").pipe(
+		// so that it tells the selection when subscribed, as failWith expects
 		startWith(undefined),
 		map(() => !!document.getSelection()?.toString()),
 		distinctUntilChanged(),

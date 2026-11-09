@@ -88,7 +88,6 @@ export class PanRecognizer
 				return merge(events$, trailingEndEventIfFailed$);
 			}),
 			this.reportFingers((event) => event.type === "panEnd"),
-			share(),
 		);
 	}
 

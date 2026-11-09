@@ -340,7 +340,8 @@ dialogOpen$.next(false);
 ```
 
 - A source that emits nothing when subscribed counts as not running until it emits. So a plain `Subject` misses a source that started before.
-- The `running$` of a recognizer is `true` from its start event to its end event, or until its last subscriber leaves. A tap or a swipe never runs, so it never blocks.
+- The `running$` of a recognizer is `true` from its start event to its end event, or until the last subscriber of its `events$` leaves.
+- The `running$` of a tap or a swipe stays `false`, so it never blocks. For a single tap that waits for a double tap, use one `TapRecognizer` with `maxTaps: 2` and read `taps`.
 - A recognizer runs only while it has a subscriber, so subscribe to a recognizer that you put in a `failWith` list. A `Recognizable` subscribes to all its recognizers while its `events$` has a subscriber.
 - A recognizer reads its `failWith` sources while it has a subscriber and a container, and lets go of them with its last subscriber. A `TapRecognizer` reads them at each press.
 
@@ -377,7 +378,7 @@ To make a gesture of your own, extend `Recognizer`. The second argument of `supe
 - `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s. `pan$` has all of them, with a `type` of `start`, `move` or `end`.
 - `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the pointer events of the container. `pointerDown$` has the presses of the primary button only.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
-- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. Without it, `state$` stays 0 and `running$` stays `false`.
+- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events. Without it, `state$` stays 0 and `running$` stays `false`.
 
 ```ts
 import { filter, map, type Observable, withLatestFrom } from "rxjs";

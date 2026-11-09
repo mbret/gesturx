@@ -5,7 +5,6 @@ import {
 	merge,
 	type Observable,
 	of,
-	share,
 	switchMap,
 	takeUntil,
 	withLatestFrom,
@@ -72,7 +71,6 @@ export class HoldRecognizer
 				return merge(of(holdStartEvent), end$, trailingEndEventIfFailed$);
 			}),
 			this.reportFingers((event) => event.type === "holdEnd"),
-			share(),
 		);
 	}
 

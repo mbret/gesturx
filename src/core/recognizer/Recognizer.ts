@@ -106,11 +106,12 @@ export abstract class Recognizer<
 
 	public state$: Observable<State>;
 	/**
-	 * Whether the recognizer runs a gesture: `true` from its start event to its
-	 * end event, or until its last subscriber leaves. It emits the current
-	 * value when subscribed. It doesn't run the recognizer, so it stays `false`
-	 * while `events$` has no subscriber. A tap or a swipe never runs. The
-	 * `failWith` of other recognizers reads it.
+	 * Whether a gesture is in progress, as `state$` tells: `true` from the start
+	 * event to the end event, or until the last subscriber of `events$` leaves.
+	 * It emits the current value when subscribed, and subscribing to it doesn't
+	 * subscribe to `events$`. It stays `false` for a recognizer whose `events$`
+	 * doesn't use `reportFingers`, as a tap or a swipe. The `failWith` of other
+	 * recognizers reads it.
 	 */
 	public running$: Observable<boolean>;
 	public config$ = this.configSubject.pipe(isValidConfig);
@@ -132,9 +133,10 @@ export abstract class Recognizer<
 	protected failWithActive$: Observable<boolean>;
 
 	/**
-	 * Reports in state$ the fingers of the gesture the recognizer's events
-	 * recognize, until `isEnd` tells its end event, or until nothing listens
-	 * to them anymore.
+	 * Reports in `state$` and `running$` the fingers of the gesture the
+	 * recognizer's events recognize, until `isEnd` tells its end event, or until
+	 * nothing listens to them anymore. It shares the events, so that every
+	 * subscriber reads the same gesture.
 	 */
 	protected reportFingers =
 		(isEnd: (event: Event) => boolean) => (events$: Observable<Event>) =>
@@ -147,6 +149,7 @@ export abstract class Recognizer<
 				finalize(() => {
 					this.stateSubject.next({ fingers: 0 });
 				}),
+				share(),
 			);
 
 	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
@@ -198,6 +201,7 @@ export abstract class Recognizer<
 					: of(false),
 			),
 			distinctUntilChanged(),
+			// a source tells whether it runs when subscribed again, so letting go of it is safe
 			shareLatest(),
 		);
 
