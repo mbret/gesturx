@@ -22,7 +22,11 @@ import {
 	timer,
 	withLatestFrom,
 } from "rxjs";
-import { matchPointer, trackPointers } from "../utils/events";
+import {
+	isPointerOffEvent,
+	matchPointer,
+	trackPointers,
+} from "../utils/events";
 import { shareLatest } from "../utils/operators";
 import { isWithinPosThreshold, omitUnset } from "../utils/utils";
 import { filterPointerOff } from "./operators";
@@ -187,7 +191,9 @@ export abstract class Recognizer<
 		);
 
 		this.pointerMove$ = this.pointerEvent$.pipe(
-			filter((event) => event.type === "pointermove"),
+			filter(
+				(event) => event.type === "pointermove" && !isPointerOffEvent(event),
+			),
 		);
 
 		this.pointerCancel$ = this.pointerEvent$.pipe(
@@ -216,11 +222,7 @@ export abstract class Recognizer<
 
 		this.pan$ = this.container$.pipe(
 			switchMap(() => {
-				const trackPointers$ = this.pointerDown$.pipe(
-					trackPointers({
-						pointerEvent$: this.pointerEvent$,
-						trackMove: true,
-					}),
+				const trackPointers$ = trackPointers(this.pointerEvent$).pipe(
 					shareLatest(),
 				);
 

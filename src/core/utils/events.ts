@@ -1,14 +1,12 @@
 import {
 	filter,
+	fromEvent,
 	map,
 	merge,
-	mergeMap,
 	type Observable,
-	of,
 	scan,
 	takeWhile,
 } from "rxjs";
-import { isDefined } from "./utils";
 
 export function matchPointer(pointer: PointerEvent) {
 	return (stream: Observable<PointerEvent>) =>
@@ -18,11 +16,11 @@ export function matchPointer(pointer: PointerEvent) {
 }
 
 /**
- * Whether `event` releases its pointer: the pointer lifts, the browser takes it
- * over, or its context menu opens. A mouse that moves with no button pressed
- * is released too: the page didn't receive its `pointerup`.
+ * Whether the browser's `event` releases its pointer. A mouse move with no
+ * button pressed releases it too, because the page didn't receive the
+ * `pointerup`.
  */
-export const isPointerOffEvent = (event: PointerEvent) =>
+const releasesPointer = (event: PointerEvent) =>
 	event.type === "pointerup" ||
 	event.type === "pointercancel" ||
 	event.type === "contextmenu" ||
@@ -31,70 +29,96 @@ export const isPointerOffEvent = (event: PointerEvent) =>
 		event.buttons === 0);
 
 /**
+ * The releases that `followPointer` found, as `afterEventReceived` changed
+ * them. A changed event can lose the fields that tell a release.
+ */
+const releases = new WeakSet<PointerEvent>();
+
+/** Whether `event`, from `followPointer`, releases its pointer. */
+export const isPointerOffEvent = (event: PointerEvent) => releases.has(event);
+
+/**
  * A press of the primary button: a left click, a finger or a pen's tip. A
  * right click is for the context menu, a middle click for the browser, and a
- * pen's barrel button or eraser for the app. Every recognizer tracks a pointer
- * from such a press, so a pointer pressed with another button starts nothing:
- * no tap, pan or pinch, and no share of a multi tap.
+ * pen's barrel button or eraser for the app.
  *
  * @see https://w3c.github.io/pointerevents/#the-button-property
  */
 export const isPrimaryButtonPress = (event: PointerEvent) => event.button === 0;
 
 /**
- * Track all pointerEvent for active fingers
+ * The events of the pointer `pointerId` on `document`, as `afterEventReceived`
+ * changes them, until its release.
  */
-export const trackPointers =
-	({
-		pointerEvent$,
-	}: {
-		pointerEvent$: Observable<PointerEvent>;
-		/**
-		 * Setting this value to false will not update the list
-		 * on pointer move. Use it if you only need to track number of active
-		 * fingers.
-		 */
-		trackMove: boolean;
-	}) =>
-	(stream: Observable<PointerEvent>) => {
-		type PointersState = {
-			event: PointerEvent;
-			pointers: Record<number, PointerEvent | undefined>;
-		};
+export const followPointer = ({
+	document,
+	pointerId,
+	afterEventReceived,
+}: {
+	document: Document;
+	pointerId: number;
+	afterEventReceived: (event: PointerEvent) => PointerEvent;
+}) =>
+	merge(
+		// in the capture phase, so that an element that stops their propagation can't hide them
+		...["pointerdown", "pointermove", "pointerup", "pointercancel"].map(
+			(type) => fromEvent<PointerEvent>(document, type, { capture: true }),
+		),
+		// in the bubble phase, so that an element that stops its propagation keeps the gesture
+		fromEvent<PointerEvent>(document, "contextmenu"),
+	).pipe(
+		filter((event) => event.pointerId === pointerId),
+		// a press of a pointer whose release the page missed starts its own follow
+		takeWhile((event) => event.type !== "pointerdown"),
+		takeWhile((event) => !releasesPointer(event), true),
+		map((event) => {
+			const received = afterEventReceived(event);
 
-		return stream.pipe(
-			mergeMap((pointerDown) =>
-				merge(
-					of(pointerDown),
-					pointerEvent$.pipe(filter(({ type }) => type !== "pointerdown")),
-				).pipe(
-					matchPointer(pointerDown),
-					takeWhile((event) => !isPointerOffEvent(event), true),
-				),
-			),
-			scan<PointerEvent, PointersState, undefined>((acc, event) => {
-				if (isPointerOffEvent(event)) {
-					const { [event.pointerId]: _deleted, ...rest } = acc?.pointers ?? {};
+			if (releasesPointer(event)) {
+				releases.add(received);
+			}
 
-					void _deleted;
+			return received;
+		}),
+	);
 
-					return {
-						event,
-						pointers: rest,
-					};
+type TrackedPointers = {
+	event?: PointerEvent;
+	pointers: Record<number, PointerEvent>;
+};
+
+/**
+ * The pressed pointers after each event of `pointerEvent$`, which has each
+ * press, then the events of its pointer until its release. It skips the
+ * events of a pointer pressed before it subscribed.
+ */
+export const trackPointers = (pointerEvent$: Observable<PointerEvent>) =>
+	pointerEvent$.pipe(
+		scan<PointerEvent, TrackedPointers>(
+			({ pointers }, event) => {
+				if (event.type !== "pointerdown" && !(event.pointerId in pointers)) {
+					return { pointers };
 				}
+
+				const { [event.pointerId]: _previous, ...others } = pointers;
+
+				void _previous;
 
 				return {
 					event,
-					pointers: {
-						...(acc?.pointers ?? {}),
-						[event.pointerId]: event,
-					},
+					pointers: isPointerOffEvent(event)
+						? others
+						: { ...others, [event.pointerId]: event },
 				};
-			}, undefined),
-			map(({ event, pointers }) => ({
-				event,
-				pointers: Object.values(pointers).filter(isDefined),
-			})),
-		);
-	};
+			},
+			{ pointers: {} },
+		),
+		filter(
+			(tracked): tracked is Required<TrackedPointers> =>
+				tracked.event !== undefined,
+		),
+		map(({ event, pointers }) => ({
+			event,
+			pointers: Object.values(pointers),
+		})),
+	);

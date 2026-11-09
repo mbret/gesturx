@@ -36,6 +36,15 @@ const calculateNewDelta = (
 	};
 };
 
+/**
+ * Whether the coordinates of `event` can be far from the fingers: the browser
+ * took the pointer over, or the page missed its release. The deltas ignore
+ * such an event.
+ */
+const isOutOfSync = (event: PointerEvent) =>
+	event.type === "pointercancel" ||
+	(event.type === "pointermove" && isPointerOffEvent(event));
+
 export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
 	stream: Observable<T>,
 ): Observable<RecognizerEvent> => {
@@ -56,18 +65,13 @@ export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
 			const currActivePointersNumber = curr.latestActivePointers?.length ?? 1;
 
 			const hasAddedOrRemovedAFinger =
-				(curr.event.type === "pointerdown" || isPointerOffEvent(curr.event)) &&
 				prevActivePointersNumber !== currActivePointersNumber;
 
 			const hasAtLeastOneFinger = currActivePointersNumber > 0;
 
 			const { deltaX, deltaY } =
 				(hasAddedOrRemovedAFinger && hasAtLeastOneFinger) ||
-				/**
-				 * A pointercancel cean come after a drag event and heven being completely
-				 * desync, leading to erroned values. We should just ignore it.
-				 */
-				curr.event.type === "pointercancel"
+				isOutOfSync(curr.event)
 					? calculateNewDelta(newCenter, newCenter, prevDeltaX, prevDeltaY)
 					: calculateNewDelta(newCenter, prevCenter, prevDeltaX, prevDeltaY);
 
@@ -75,11 +79,7 @@ export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
 				prevActivePointersNumber === currActivePointersNumber &&
 				prevActivePointersNumber >= 2 &&
 				currActivePointersNumber >= 2 &&
-				/**
-				 * A pointercancel cean come after a drag event and heven being completely
-				 * desync, leading to erroned values. We should just ignore it.
-				 */
-				curr.event.type !== "pointercancel"
+				!isOutOfSync(curr.event)
 					? calculateAngleDelta(
 							acc?.latestActivePointers ?? [],
 							curr.latestActivePointers ?? [],

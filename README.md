@@ -121,7 +121,7 @@ Every recognizer takes the same config in its constructor and in `update()`:
 | `container` | The element to listen on. `null` detaches the recognizer. |
 | `options` | The options of the recognizer, listed in its section below. |
 | `failWith` | Recognizers that block this one while they run. See [failWith](#failwith). |
-| `afterEventReceived` | A function that changes each pointer event before the recognizer reads it. |
+| `afterEventReceived` | A function that changes each pointer event before the recognizer reads it. The recognizer tells a release from the event that the browser gave. |
 
 Every recognizer has:
 
@@ -132,7 +132,7 @@ Every recognizer has:
 
 Only the primary button starts a gesture: a finger, a pen tip or a left click. A right click, a middle click or a pen eraser starts nothing.
 
-A recognizer follows a pointer pressed in its container until its release, also outside the container. It reads the events of that pointer in the capture phase of the document, before the elements under the pointer, so an element that stops their propagation doesn't hide them. To hide a press from a recognizer, stop the propagation of its `pointerdown` in an element of the container.
+A recognizer follows a pointer pressed in its container until its release, also outside the container. It listens to the `pointermove`, `pointerup` and `pointercancel` of that pointer on the document, in the capture phase, before any element does. An element that stops their propagation doesn't hide them. To hide a press from a recognizer, stop the propagation of its `pointerdown` in an element of the container.
 
 The distance thresholds below are measured on each axis: a finger passes a 15 px threshold when it moves 15 px on the x axis or on the y axis.
 
@@ -378,7 +378,9 @@ pan.update({ options: { posThreshold: 30 } });
 To make a gesture of your own, extend `Recognizer`. The second argument of `super()` sets `numInputs`, `posThreshold` and `delay` for the gesture that the base class follows. The base class gives you protected members:
 
 - `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s. `pan$` has all of them, with a `type` of `start`, `move` or `end`.
-- `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: each press of the primary button in the container, then the events of its pointer until its release, also outside the container.
+- `pointerEvent$`: each press of the primary button in the container, then the events of its pointer until its release, also outside the container.
+- `pointerOff$`: the releases in `pointerEvent$`. A release is a `pointerup`, a `pointercancel`, a `contextmenu`, or a mouse `pointermove` with no button pressed.
+- `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the events of `pointerEvent$` with that type. `pointerMove$` leaves out the releases.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
 - `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events. Without it, `state$` stays 0 and `running$` stays `false`.
 
@@ -427,11 +429,13 @@ The browser sends `pointercancel` when it takes over a pointer, for example to s
 
 ### contextmenu
 
-A `contextmenu` event ends the gesture of its pointer, as a release does. A right click opens the context menu, and so can a long press on a touch screen.
+A `contextmenu` event ends the gesture of its pointer, as a `pointerup` does, but a tap fails. A right click opens the context menu, and so can a long press on a touch screen. An element that stops the propagation of `contextmenu` keeps the gesture running.
 
 ### Missed release
 
-If the page doesn't receive the `pointerup` of a mouse, the next move of that mouse with no button pressed ends its gesture, as a release does.
+If the page doesn't receive the `pointerup` of a mouse, the next move of that mouse with no button pressed ends its gesture, and a tap fails. The end event references that `pointermove`. As for a `pointercancel`, `deltaX` and `deltaY` stay as they were in the previous event.
+
+So each move of a pressed mouse must have its `buttons`, as in a browser. Set `buttons` in the mouse events that your tests dispatch.
 
 ## Known limitations
 

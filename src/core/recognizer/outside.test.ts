@@ -1,3 +1,4 @@
+import { EMPTY } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -10,6 +11,7 @@ import { HoldRecognizer } from "../hold/HoldRecognizer";
 import { PanRecognizer } from "../pan/PanRecognizer";
 import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
+import { Recognizer } from "./Recognizer";
 
 let container = createContainer();
 let outside = createContainer();
@@ -19,15 +21,10 @@ beforeEach(() => {
 	outside = createContainer();
 });
 
-/** Each event as its type, the pointer event type and the center's x. */
 const summaryOf = (
 	events: { type: string; event: PointerEvent; center: Point }[],
 ) => events.map(({ type, event, center }) => [type, event.type, center.x]);
 
-/**
- * A mouse that presses at x 50 in the container, drags out of it to x 300,
- * comes back in at x 120, then goes out again and releases at x 250.
- */
 const dragOutAndBack = async () => {
 	sendMouse(container, "pointerdown", { x: 50, y: 0 });
 	await waitFor(5);
@@ -47,7 +44,6 @@ const dragOutAndBack = async () => {
 	await waitFor(5);
 };
 
-/** The pan of `dragOutAndBack`, as `summaryOf` gives it. */
 const panOfDragOutAndBack = [
 	["panStart", "pointermove", 180],
 	["panMove", "pointermove", 220],
@@ -55,6 +51,26 @@ const panOfDragOutAndBack = [
 	["panMove", "pointermove", 120],
 	["panMove", "pointermove", 250],
 	["panEnd", "pointerup", 250],
+];
+
+/** Each `afterEventReceived` that makes new events, which lose fields. */
+const copies: [string, (event: PointerEvent) => PointerEvent][] = [
+	[
+		"copies without pointerId, pointerType and buttons",
+		(event) =>
+			Object.assign(new PointerEvent(event.type), { x: event.x, y: event.y }),
+	],
+	[
+		"copies without buttons",
+		(event) =>
+			Object.assign(
+				new PointerEvent(event.type, {
+					pointerId: event.pointerId,
+					pointerType: event.pointerType,
+				}),
+				{ x: event.x, y: event.y },
+			),
+	],
 ];
 
 describe("Given a mouse drag that leaves the container", () => {
@@ -118,20 +134,56 @@ describe("Given a mouse drag that leaves the container", () => {
 		expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
 	});
 
-	it("follows it when afterEventReceived makes new events", async () => {
-		const recognizer = new PanRecognizer({
-			container,
-			// a copy that keeps neither the pointerId nor the pointerType
-			afterEventReceived: (event) =>
-				Object.assign(new PointerEvent(event.type), {
-					x: event.x,
-					y: event.y,
-				}),
+	it.each(copies)(
+		"follows it when afterEventReceived makes %s",
+		async (_, afterEventReceived) => {
+			const recognizer = new PanRecognizer({ container, afterEventReceived });
+
+			const events = await eventsFor(recognizer.events$, dragOutAndBack);
+
+			expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
+		},
+	);
+
+	it("keeps it over an element that stops the propagation of a contextmenu", async () => {
+		const recognizer = new PanRecognizer({ container });
+
+		outside.addEventListener("contextmenu", (event) => event.stopPropagation());
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendMouse(container, "pointerdown", { x: 50, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointermove", { x: 180, y: 0 });
+			await waitFor(5);
+			sendMouse(outside, "contextmenu", { x: 180, y: 0 });
+			sendMouse(outside, "pointermove", { x: 300, y: 0 });
+			await waitFor(5);
+			sendMouse(outside, "pointerup", { x: 300, y: 0 });
 		});
 
-		const events = await eventsFor(recognizer.events$, dragOutAndBack);
+		expect(summaryOf(events)).toEqual([
+			["panStart", "pointermove", 180],
+			["panMove", "pointermove", 300],
+			["panEnd", "pointerup", 300],
+		]);
+	});
 
-		expect(summaryOf(events)).toEqual(panOfDragOutAndBack);
+	it("ignores a press whose pointerdown an element of the container stops", async () => {
+		const recognizer = new PanRecognizer({ container });
+		const child = document.createElement("div");
+
+		container.append(child);
+		child.addEventListener("pointerdown", (event) => event.stopPropagation());
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendMouse(child, "pointerdown", { x: 50, y: 0 });
+			await waitFor(5);
+			sendMouse(child, "pointermove", { x: 180, y: 0 });
+			await waitFor(5);
+			sendMouse(child, "pointerup", { x: 180, y: 0 });
+		});
+
+		expect(events).toEqual([]);
 	});
 
 	it("follows the mouse in the document of the container", async () => {
@@ -149,27 +201,41 @@ describe("Given a mouse drag that leaves the container", () => {
 	});
 });
 
-describe("Given a mouse drag that ends without a pointerup", () => {
-	it.each<[string, () => void, string]>([
-		[
-			"a pointercancel",
-			() => sendMouse(outside, "pointercancel", { x: 300, y: 0 }),
-			"pointercancel",
-		],
-		[
-			"a contextmenu",
-			() => sendMouse(outside, "contextmenu", { x: 300, y: 0 }),
-			"contextmenu",
-		],
-		[
-			"a move with no button pressed",
-			() => sendMouse(outside, "pointermove", { x: 300, y: 0 }, { buttons: 0 }),
-			"pointermove",
-		],
-	])(
+/** The releases that are not a `pointerup`, and where they leave `deltaX`. */
+const otherReleases: [string, () => void, string, number][] = [
+	[
+		"a pointercancel",
+		() => sendMouse(outside, "pointercancel", { x: 300, y: 0 }),
+		"pointercancel",
+		// the coordinates of a pointercancel can be far from the pointer
+		0,
+	],
+	[
+		"a contextmenu",
+		() => sendMouse(outside, "contextmenu", { x: 300, y: 0 }),
+		"contextmenu",
+		120,
+	],
+	[
+		"a move with no button pressed",
+		() => sendMouse(outside, "pointermove", { x: 300, y: 0 }, { buttons: 0 }),
+		"pointermove",
+		// the button was released earlier, somewhere else
+		0,
+	],
+];
+
+describe.each<[string, ((event: PointerEvent) => PointerEvent) | undefined]>([
+	["Given a mouse drag", undefined],
+	...copies.map(([name, copy]): [string, typeof copy] => [
+		`Given a mouse drag, and afterEventReceived that makes ${name}`,
+		copy,
+	]),
+])("%s", (_, afterEventReceived) => {
+	it.each(otherReleases)(
 		"PanRecognizer ends at %s, and pans the next drag once",
-		async (_, release, type) => {
-			const recognizer = new PanRecognizer({ container });
+		async (_, release, type, deltaX) => {
+			const recognizer = new PanRecognizer({ container, afterEventReceived });
 
 			const events = await eventsFor(recognizer.events$, async () => {
 				sendMouse(container, "pointerdown", { x: 50, y: 0 });
@@ -195,6 +261,87 @@ describe("Given a mouse drag that ends without a pointerup", () => {
 				["panMove", "pointermove", 150],
 				["panEnd", "pointerup", 150],
 			]);
+			expect(events.map((event) => event.deltaX)).toEqual([
+				0,
+				deltaX,
+				0,
+				50,
+				50,
+			]);
 		},
 	);
+});
+
+describe("Given a mouse press that ends without a pointerup", () => {
+	it.each<[string, () => void]>([
+		[
+			"a pointercancel",
+			() => sendMouse(container, "pointercancel", { x: 0, y: 0 }),
+		],
+		[
+			"a Ctrl+click on macOS: a contextmenu, then the pointerup",
+			() => {
+				sendMouse(container, "contextmenu", { x: 0, y: 0 });
+				sendMouse(container, "pointerup", { x: 0, y: 0 });
+			},
+		],
+		[
+			"a move with no button pressed",
+			() => sendMouse(container, "pointermove", { x: 0, y: 0 }, { buttons: 0 }),
+		],
+	])(
+		"TapRecognizer drops it at %s, and taps the next click",
+		async (_, release) => {
+			const recognizer = new TapRecognizer({ container });
+
+			const events = await eventsFor(recognizer.events$, async () => {
+				sendMouse(container, "pointerdown", { x: 0, y: 0 });
+				await waitFor(5);
+				release();
+				await waitFor(200);
+
+				sendMouse(container, "pointerdown", { x: 0, y: 0 });
+				await waitFor(5);
+				sendMouse(container, "pointerup", { x: 0, y: 0 });
+				await waitFor(150);
+			});
+
+			expect(events.map(({ type, taps }) => [type, taps])).toEqual([
+				["tap", 1],
+			]);
+		},
+	);
+
+	it("leaves a move with no button pressed out of pointerMove$", async () => {
+		class MoveRecognizer extends Recognizer {
+			public events$ = EMPTY;
+			public moves$ = this.pointerMove$;
+		}
+
+		const recognizer = new MoveRecognizer({ container });
+
+		const moves = await eventsFor(recognizer.moves$, async () => {
+			sendMouse(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointermove", { x: 5, y: 0 });
+			await waitFor(5);
+			sendMouse(outside, "pointermove", { x: 400, y: 0 }, { buttons: 0 });
+		});
+
+		expect(moves.map(({ x }) => x)).toEqual([5]);
+	});
+
+	it("SwipeRecognizer doesn't swipe at a move with no button pressed", async () => {
+		const recognizer = new SwipeRecognizer({ container });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendMouse(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendMouse(container, "pointermove", { x: 5, y: 0 });
+			await waitFor(5);
+			sendMouse(outside, "pointermove", { x: 400, y: 0 }, { buttons: 0 });
+		});
+
+		expect(events).toEqual([]);
+	});
 });

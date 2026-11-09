@@ -57,8 +57,7 @@ export const sendPointer = (
 /**
  * Dispatches a mouse pointer event on `target`, with the left button pressed
  * from `pointerdown` until `pointerup` or `pointercancel`. Pass `buttons: 0`
- * for a move after a release that the page didn't receive. A `pointerleave`
- * doesn't bubble, as in a browser.
+ * for a move after a release that the page didn't receive.
  */
 export const sendMouse = (
 	target: EventTarget,

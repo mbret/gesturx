@@ -140,7 +140,6 @@ describe("PanRecognizer", () => {
 		expect(events).toMatchObject([
 			{ type: "panStart", center: { x: 50 }, deltaX: 0 },
 			{ type: "panMove", center: { x: 125 }, deltaX: 0 },
-			// as when the finger lifts
 			{ type: "panMove", center: { x: 200 }, deltaX: 0 },
 			{ type: "panEnd", deltaX: 0 },
 		]);

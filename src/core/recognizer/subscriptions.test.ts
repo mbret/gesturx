@@ -13,7 +13,7 @@ import { PinchRecognizer } from "../pinch/PinchRecognizer";
 import { RotateRecognizer } from "../rotate/RotateRecognizer";
 import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
-import type { FailWith } from "./Recognizer";
+import { type FailWith, Recognizer } from "./Recognizer";
 
 /** Counts the listeners added to `target` and not removed since. */
 const countListeners = (target: EventTarget) => {
@@ -39,10 +39,10 @@ const countListeners = (target: EventTarget) => {
 };
 
 /**
- * The listeners that follow a pressed pointer, for `pointermove`, `pointerup`,
- * `pointercancel` and `contextmenu`.
+ * The listeners that follow a pressed pointer, for `pointerdown`,
+ * `pointermove`, `pointerup`, `pointercancel` and `contextmenu`.
  */
-const FOLLOW_LISTENERS = 4;
+const FOLLOW_LISTENERS = 5;
 
 type AnyRecognizer = new (config: {
 	container: HTMLElement;
@@ -202,6 +202,29 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			sendPointer(container, "pointerdown", { x: 0, y: 0 });
 
 			// as before any update, not once more per update
+			expect(document$.listeners.count).toBe(FOLLOW_LISTENERS);
+
+			sendPointer(container, "pointerup", { x: 0, y: 0 });
+			subscription.unsubscribe();
+		} finally {
+			document$.restore();
+		}
+	});
+
+	it("follows a pointer once when it's pressed again before its release", async () => {
+		const document$ = countListeners(document);
+
+		try {
+			const recognizer = new Recognizer({ container });
+			const subscription = recognizer.events$.subscribe();
+
+			await waitFor(1);
+
+			// the page missed the release in between
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+
 			expect(document$.listeners.count).toBe(FOLLOW_LISTENERS);
 
 			sendPointer(container, "pointerup", { x: 0, y: 0 });
@@ -506,6 +529,34 @@ describe("when subscribed again right after an unsubscribe", () => {
 		});
 
 		// it only knows the second finger, and needs two
+		expect(events).toEqual([]);
+	});
+
+	it("pan$ doesn't follow a finger pressed while only pointerEvent$ was subscribed", async () => {
+		class PointerPanRecognizer extends Recognizer {
+			public events$ = this.pan$;
+			public pointers$ = this.pointerEvent$;
+		}
+
+		const recognizer = new PointerPanRecognizer({ container });
+		const pointers = recognizer.pointers$.subscribe();
+
+		await waitFor(1);
+		sendPointer(container, "pointerdown", { x: 100, y: 100 }, 1);
+		await waitFor(5);
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			for (const x of [130, 160, 200]) {
+				await waitFor(8);
+				sendPointer(container, "pointermove", { x, y: 100 }, 1);
+			}
+
+			await waitFor(8);
+			sendPointer(container, "pointerup", { x: 200, y: 100 }, 1);
+		});
+
+		pointers.unsubscribe();
+
 		expect(events).toEqual([]);
 	});
 

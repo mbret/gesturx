@@ -39,11 +39,7 @@ export class TapRecognizer
 
 		this.events$ = this.container$.pipe(
 			switchMap(() => {
-				const activePointers$ = this.pointerDown$.pipe(
-					trackPointers({
-						pointerEvent$: this.pointerEvent$,
-						trackMove: true,
-					}),
+				const activePointers$ = trackPointers(this.pointerEvent$).pipe(
 					shareLatest(),
 				);
 
@@ -115,7 +111,8 @@ export class TapRecognizer
 
 						const takeUntil$ = merge(
 							this.failWithActive$.pipe(filter((active) => active)),
-							this.pointerCancel$,
+							// a release that isn't a lift
+							this.pointerOff$.pipe(filter(({ type }) => type !== "pointerup")),
 							hasMoreThanOneActivePointer$,
 							clickedTooFarFromOriginalTap$,
 							hasFingersPressedForTooLong$,
