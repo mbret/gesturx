@@ -158,7 +158,8 @@ describe("failWith", () => {
 	it("ends a gesture before the start event of the source that stops it", async () => {
 		const hold = new HoldRecognizer({ container: sourceContainer });
 		const pan = new PanRecognizer({ container, failWith: [hold] });
-		const recognizable = new Recognizable({ recognizers: [pan, hold] });
+		// the source first: it used to tell its own subscribers before the pan
+		const recognizable = new Recognizable({ recognizers: [hold, pan] });
 
 		const events = await eventsFor(recognizable.events$, async () => {
 			sendPointer(container, "pointerdown", { x: 0, y: 0 });
