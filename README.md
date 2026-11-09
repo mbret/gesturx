@@ -55,7 +55,7 @@ recognizable.events$.subscribe(({ event }) => {
 recognizable.update({ container: document.getElementById("app")! });
 ```
 
-Recognition starts when `events$` has a subscriber and a container is set. It stops when you unsubscribe.
+Recognition starts when `events$` has a subscriber and a container is set. It stops when you unsubscribe, or when you set `container: null`.
 
 ## Recognizable
 
@@ -85,7 +85,7 @@ subscription.unsubscribe();
 - `events$` emits `{ event, recognizer }` for the events of all its recognizers.
 - `state$` emits `{ fingers }`: the most fingers that one of its recognizers recognizes at that moment.
 - `update({ container })` sets the element on all its recognizers, and `update({ container: null })` detaches them. Set the options of each recognizer on the recognizer itself.
-- When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events.
+- When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events. When the container changes or is `null`, it sets the previous values back.
 - `disableTextSelection: true` also sets `user-select: none` on the container.
 - Give each recognizer to one `Recognizable` only, because each `Recognizable` writes its config to its recognizers.
 - Overlapping elements with their own recognizers can recognize the same gesture.
@@ -431,7 +431,7 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
-- A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers ([#201](https://github.com/mbret/gesturx/issues/201)).
+- A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers. From an end handler, setting the previous container back restarts the gesture without a new press ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License

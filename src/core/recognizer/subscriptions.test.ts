@@ -191,6 +191,9 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			await waitFor(1);
 			await pressTwoFingers();
 
+			// the ones following the pressed fingers
+			expect(window$.listeners.count).toBeGreaterThan(0);
+
 			recognizer.update({ container: null });
 
 			expect(listeners.count).toBe(0);
@@ -202,7 +205,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		}
 	});
 
-	it("listens for a new subscriber after an update without a container", async () => {
+	it("listens for a new subscriber after update({ container: undefined })", async () => {
 		const recognizer = new Recognizer({ container });
 
 		recognizer.update({ container: undefined });
@@ -323,6 +326,26 @@ describe("with failWith", () => {
 			]);
 		},
 	);
+
+	it("reads its failWith sources without a container", async () => {
+		let subscribers = 0;
+		const running$ = new Observable<boolean>((subscriber) => {
+			subscribers++;
+			subscriber.next(false);
+
+			return () => {
+				subscribers--;
+			};
+		});
+		const recognizer = new PinchRecognizer({ failWith: [{ running$ }] });
+
+		const subscription = recognizer.events$.subscribe();
+		await waitFor(1);
+
+		expect(subscribers).toBe(1);
+
+		subscription.unsubscribe();
+	});
 
 	it("releases two recognizers that fail with each other", async () => {
 		const panContainer = createContainer();

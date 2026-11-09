@@ -381,21 +381,154 @@ describe("PanRecognizer", () => {
 
 		expect(types).toEqual(["panStart", "panMove", "panEnd", ...expected]);
 	});
+
+	it("stays detached when an end handler detaches it", async () => {
+		const recognizer = new PanRecognizer({ container });
+		const ended = recognizer.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizer.update({ container: null });
+			}
+		});
+
+		const types = await typesFor(recognizer, async () => {
+			await drag(container, () => recognizer.update({ container: other }));
+			await drag(other);
+			await drag(container);
+		});
+
+		ended.unsubscribe();
+
+		expect(types).toEqual(["panStart", "panMove", "panEnd"]);
+	});
+
+	it("attaches to a container set by an end handler of a detach", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const recognizer = new PanRecognizer({ container });
+		const ended = recognizer.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizer.update({ container: other });
+			}
+		});
+
+		const types = await typesFor(recognizer, async () => {
+			await drag(container, () => recognizer.update({ container: null }));
+			await drag(other);
+		});
+
+		ended.unsubscribe();
+
+		expect(types).toEqual(["panStart", "panMove", "panEnd", ...expected]);
+	});
 });
 
 describe("Recognizable", () => {
 	it("detaches all its recognizers", async () => {
+		const typesOf = (
+			recognizable: Recognizable<(PanRecognizer | HoldRecognizer)[]>,
+			gesture: () => Promise<void>,
+		) =>
+			eventsFor(recognizable.events$, gesture).then((events) =>
+				events.map(({ event }) => event.type),
+			);
+		const expected = await typesOf(
+			new Recognizable({
+				recognizers: [new PanRecognizer(), new HoldRecognizer()],
+				container,
+			}),
+			() => drag(container),
+		);
 		const recognizable = new Recognizable({
 			recognizers: [new PanRecognizer(), new HoldRecognizer()],
 			container,
 		});
 
-		const events = await eventsFor(recognizable.events$, async () => {
-			recognizable.update({ container: null });
-			await drag(container);
+		expect(expected).toContain("panEnd");
+		expect(
+			await typesOf(recognizable, async () => {
+				await drag(container);
+				recognizable.update({ container: null });
+				await drag(container);
+			}),
+		).toEqual(expected);
+	});
+
+	it("leaves a recognizer moved on its own where it is", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const pan = new PanRecognizer();
+		const recognizable = new Recognizable({ recognizers: [pan], container });
+
+		pan.update({ container: other });
+		recognizable.update({ afterEventReceived: (event) => event });
+
+		expect(await typesFor(pan, () => drag(other))).toEqual(expected);
+	});
+
+	it("gives the fields an end handler sets to all its recognizers", async () => {
+		const third = createContainer();
+		const pan = new PanRecognizer();
+		const hold = new HoldRecognizer();
+		const recognizable = new Recognizable({
+			recognizers: [pan, hold],
+			container,
+		});
+		const received: string[] = [];
+		const receivedBy =
+			(name: string) =>
+			(event: PointerEvent): PointerEvent => {
+				if (event.target === third) received.push(name);
+
+				return event;
+			};
+		const ended = pan.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizable.update({
+					container: third,
+					afterEventReceived: receivedBy("handler"),
+				});
+			}
 		});
 
-		expect(events).toEqual([]);
+		await eventsFor(recognizable.events$, async () => {
+			await drag(container, () =>
+				recognizable.update({
+					container: other,
+					afterEventReceived: receivedBy("outer"),
+				}),
+			);
+			sendPointer(third, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(third, "pointerup", { x: 0, y: 0 });
+		});
+
+		ended.unsubscribe();
+
+		// both recognizers read the press with the function of the end handler
+		expect(new Set(received)).toEqual(new Set(["handler"]));
+	});
+
+	it("sets the styles of the container back when it changes", () => {
+		const recognizable = new Recognizable({
+			recognizers: [new PanRecognizer()],
+			container,
+			disableTextSelection: true,
+		});
+
+		expect(container.style.touchAction).toBe("none");
+		expect(container.style.userSelect).toBe("none");
+
+		recognizable.update({ container: other });
+
+		expect(container.style.touchAction).toBe("");
+		expect(container.style.userSelect).toBe("");
+		expect(other.style.touchAction).toBe("none");
+
+		recognizable.update({ container: null });
+
+		expect(other.style.touchAction).toBe("");
 	});
 
 	it("keeps a container set from an end handler for all its recognizers", async () => {
@@ -467,6 +600,18 @@ describe("SwipeRecognizer", () => {
 		).toEqual(["swipe"]);
 	});
 
+	it("drops a running swipe when it's detached", async () => {
+		const recognizer = new SwipeRecognizer({ container });
+
+		expect(
+			await typesFor(recognizer, async () => {
+				await swipe(container, () => recognizer.update({ container: null }));
+				recognizer.update({ container });
+				await swipe(container);
+			}),
+		).toEqual(["swipe"]);
+	});
+
 	it("still swipes when a contextmenu ends the move", async () => {
 		const recognizer = new SwipeRecognizer({ container });
 
@@ -517,9 +662,22 @@ describe("TapRecognizer", () => {
 		).toEqual(["tap"]);
 	});
 
+	it("drops a running tap when it's detached", async () => {
+		const recognizer = new TapRecognizer({ container });
+
+		expect(
+			await typesFor(recognizer, async () => {
+				await tap(container, () => recognizer.update({ container: null }));
+				recognizer.update({ container });
+				await tap(container);
+			}),
+		).toEqual(["tap"]);
+	});
+
 	it.each<[string, (pan: PanRecognizer) => void]>([
 		["options", (pan) => pan.update({ options: { posThreshold: 20 } })],
 		["a container", (pan) => pan.update({ container: other })],
+		["a null container", (pan) => pan.update({ container: null })],
 	])(
 		"still taps after a pan in its failWith gets %s during a drag",
 		async (_, update) => {

@@ -15,6 +15,36 @@ import type {
 
 export type { RecognizableState };
 
+/**
+ * Sets `touch-action: none` on the container, and `user-select: none` with
+ * `disableTextSelection`. Returns a function that sets them back.
+ */
+const applyStyles = (
+	container: HTMLElement,
+	disableTextSelection: boolean | undefined,
+) => {
+	const { touchAction, userSelect } = container.style;
+
+	/**
+	 * We have to disable touch-action otherwise every events will be followed
+	 * by a cancel event since the browser will try to handle touch.
+	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
+	 */
+	container.style.touchAction = "none";
+
+	/**
+	 *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
+	 */
+	if (disableTextSelection) {
+		container.style.userSelect = "none";
+	}
+
+	return () => {
+		container.style.touchAction = touchAction;
+		container.style.userSelect = userSelect;
+	};
+};
+
 // biome-ignore lint/suspicious/noExplicitAny: TODO
 type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	recognizers: T;
@@ -40,9 +70,10 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 	state$: Observable<RecognizableState>;
 
 	/** The container of the latest update that passed one, `null` included. */
-	private container?: HTMLElement | null;
+	private requestedContainer: HTMLElement | null = null;
+	private restoreStyles = () => {};
 
-	constructor(protected options: RecognizableOptions<T>) {
+	constructor(options: RecognizableOptions<T>) {
 		this.recognizers = options.recognizers;
 
 		this.events$ = merge(
@@ -69,35 +100,27 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 
 	public update({
 		disableTextSelection,
+		container,
 		...rest
 	}: Partial<Omit<RecognizableOptions<T>, "recognizers">>) {
-		if (rest.container) {
-			/**
-			 * We have to disable touch-action otherwise every events will be followed
-			 * by a cancel event since the browser will try to handle touch.
-			 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-			 */
-			rest.container.style.touchAction = "none";
-
-			/**
-			 *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
-			 */
-			if (disableTextSelection) {
-				rest.container.style.userSelect = "none";
-			}
+		// the other fields first, so that an update from an end handler comes after
+		for (const recognizer of this.recognizers) {
+			recognizer.update(rest);
 		}
 
-		if (rest.container !== undefined) {
-			this.container = rest.container;
+		if (container === undefined) {
+			return;
 		}
 
-		for (const recognizer of this.options.recognizers) {
-			recognizer.update(
-				rest.container === undefined
-					? rest
-					: // an end handler can update the recognizable during this loop
-						{ ...rest, container: this.container },
-			);
+		this.restoreStyles();
+		this.restoreStyles = container
+			? applyStyles(container, disableTextSelection)
+			: () => {};
+		this.requestedContainer = container;
+
+		for (const recognizer of this.recognizers) {
+			// an end handler can set another container during this loop, which then stays
+			recognizer.update({ container: this.requestedContainer });
 		}
 	}
 }
