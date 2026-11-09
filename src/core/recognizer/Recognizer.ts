@@ -172,7 +172,7 @@ export abstract class Recognizer<
 
 								return afterEventReceived ? afterEventReceived(event) : event;
 							},
-						}).pointerEvents$
+						})
 					: EMPTY,
 			),
 			share(),

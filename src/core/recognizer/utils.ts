@@ -1,6 +1,10 @@
-import { fromEvent, map, merge } from "rxjs";
-import { fromPointerDown } from "../utils/events";
+import { fromEvent, map, merge, mergeMap, of, takeWhile } from "rxjs";
+import { fromPointerDown, matchPointer } from "../utils/events";
 
+/**
+ * Each press in `container`, then the events of its pointer until it is
+ * released, also outside the container.
+ */
 export const getPointerEvents = ({
 	container,
 	afterEventReceived = (event) => event,
@@ -8,42 +12,28 @@ export const getPointerEvents = ({
 	container: HTMLElement;
 	afterEventReceived?: (event: PointerEvent) => PointerEvent;
 }) => {
-	const pointerDown$ = fromPointerDown({ afterEventReceived, container });
-	const pointerUp$ = fromEvent<PointerEvent>(container, "pointerup").pipe(
-		map(afterEventReceived),
-	);
-	const pointerMove$ = fromEvent<PointerEvent>(container, "pointermove").pipe(
-		map(afterEventReceived),
-	);
+	const { ownerDocument } = container;
 	/**
-	 * Mostly used to handle cursor leaving window on mouse pointers.
+	 * In the capture phase, so that an element that stops the propagation of
+	 * an event can't hide it.
 	 */
-	const pointerLeave$ = fromEvent<PointerEvent>(container, "pointerleave").pipe(
-		map(afterEventReceived),
-	);
-	/**
-	 * Handle things such as contextual menu popup or
-	 * native swipe navigation conflict.
-	 */
-	const pointerCancel$ = fromEvent<PointerEvent>(
-		container,
-		"pointercancel",
-	).pipe(map(afterEventReceived));
+	const fromDocumentEvent = (type: string) =>
+		fromEvent<PointerEvent>(ownerDocument, type, { capture: true });
 
-	const pointerEvents$ = merge(
-		pointerDown$,
-		pointerCancel$,
-		pointerLeave$,
-		pointerUp$,
-		pointerMove$,
+	return fromPointerDown({ afterEventReceived, container }).pipe(
+		mergeMap((pointerDown) =>
+			merge(
+				of(pointerDown),
+				merge(
+					fromDocumentEvent("pointermove"),
+					fromDocumentEvent("pointerup"),
+					fromDocumentEvent("pointercancel"),
+				).pipe(
+					matchPointer(pointerDown),
+					takeWhile(({ type }) => type === "pointermove", true),
+					map(afterEventReceived),
+				),
+			),
+		),
 	);
-
-	return {
-		pointerEvents$,
-		pointerDown$,
-		pointerCancel$,
-		pointerLeave$,
-		pointerUp$,
-		pointerMove$,
-	};
 };

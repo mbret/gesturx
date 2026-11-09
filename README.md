@@ -132,6 +132,8 @@ Every recognizer has:
 
 Only the primary button starts a gesture: a finger, a pen tip or a left click. A right click, a middle click or a pen eraser starts nothing.
 
+A recognizer follows a pointer pressed in its container until its release, also outside the container. It reads the events of that pointer in the capture phase of the document, so an element that stops their propagation doesn't hide them.
+
 The distance thresholds below are measured on each axis: a finger passes a 15 px threshold when it moves 15 px on the x axis or on the y axis.
 
 ### Tap
@@ -376,7 +378,7 @@ pan.update({ options: { posThreshold: 30 } });
 To make a gesture of your own, extend `Recognizer`. The second argument of `super()` sets `numInputs`, `posThreshold` and `delay` for the gesture that the base class follows. The base class gives you protected members:
 
 - `panStart$`, `panMove$` and `panEnd$`: that gesture, as `RecognizerEvent`s. `pan$` has all of them, with a `type` of `start`, `move` or `end`.
-- `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the pointer events of the container. `pointerDown$` has the presses of the primary button only.
+- `pointerEvent$`, `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: each press of the primary button in the container, then the events of its pointer until its release, also outside the container.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
 - `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events. Without it, `state$` stays 0 and `running$` stays `false`.
 
@@ -433,7 +435,6 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
 - A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers. From an end handler, setting the previous container back restarts the gesture without a new press ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A `Recognizable` sets back the `touch-action` and `user-select` it found on its container. So two of them on one element undo each other's styles when one of them leaves.
-- A mouse drag ends when the cursor leaves the container ([#156](https://github.com/mbret/gesturx/issues/156)).
 
 ## License
 

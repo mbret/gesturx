@@ -87,6 +87,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 	});
 
 	it("removes them after gestures", async () => {
+		const document$ = countListeners(document);
 		const recognizer = new Recognizer({ container });
 		const subscription = recognizer.events$.subscribe();
 
@@ -114,6 +115,10 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 		sendPointer(container, "pointerup", { x: 100, y: 0 }, 1);
 		await waitFor(20);
 
+		// nothing follows the released fingers
+		expect(document$.listeners.count).toBe(0);
+		document$.restore();
+
 		subscription.unsubscribe();
 
 		expect(listeners.count).toBe(0);
@@ -121,6 +126,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 
 	it("removes them when unsubscribed during a gesture", async () => {
 		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 
 		try {
 			const recognizer = new Recognizer({ container });
@@ -131,13 +137,16 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 
 			// the ones following the pressed fingers
 			expect(window$.listeners.count).toBeGreaterThan(0);
+			expect(document$.listeners.count).toBeGreaterThan(0);
 
 			subscription.unsubscribe();
 
 			expect(listeners.count).toBe(0);
 			expect(window$.listeners.count).toBe(0);
+			expect(document$.listeners.count).toBe(0);
 		} finally {
 			window$.restore();
+			document$.restore();
 		}
 	});
 
@@ -183,6 +192,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 
 	it("removes them once detached", async () => {
 		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 
 		try {
 			const recognizer = new Recognizer({ container });
@@ -193,15 +203,18 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 
 			// the ones following the pressed fingers
 			expect(window$.listeners.count).toBeGreaterThan(0);
+			expect(document$.listeners.count).toBeGreaterThan(0);
 
 			recognizer.update({ container: null });
 
 			expect(listeners.count).toBe(0);
 			expect(window$.listeners.count).toBe(0);
+			expect(document$.listeners.count).toBe(0);
 
 			subscription.unsubscribe();
 		} finally {
 			window$.restore();
+			document$.restore();
 		}
 	});
 
@@ -221,6 +234,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 
 	it("moves them when its container is updated during a gesture", async () => {
 		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 		const other = createContainer();
 		const otherListeners = countListeners(other).listeners;
 
@@ -236,16 +250,19 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			// nothing follows the fingers pressed on the previous container
 			expect(listeners.count).toBe(0);
 			expect(window$.listeners.count).toBe(0);
+			expect(document$.listeners.count).toBe(0);
 			expect(otherListeners.count).toBeGreaterThan(0);
 
 			sendPointer(other, "pointerdown", { x: 0, y: 0 });
 
 			expect(window$.listeners.count).toBe(1);
+			expect(document$.listeners.count).toBeGreaterThan(0);
 
 			sendPointer(other, "pointerup", { x: 0, y: 0 });
 			subscription.unsubscribe();
 		} finally {
 			window$.restore();
+			document$.restore();
 		}
 	});
 });

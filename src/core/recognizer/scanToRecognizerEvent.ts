@@ -55,7 +55,7 @@ export const scanToRecognizerEvent = <T extends RecognizerEventInput>(
 			const currActivePointersNumber = curr.latestActivePointers?.length ?? 1;
 
 			const hasAddedOrRemovedAFinger =
-				["pointerdown", "pointercancel", "pointerleave", "pointerup"].includes(
+				["pointerdown", "pointercancel", "pointerup"].includes(
 					curr.event.type,
 				) && prevActivePointersNumber !== currActivePointersNumber;
 

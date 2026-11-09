@@ -20,9 +20,7 @@ export function matchPointer(pointer: PointerEvent) {
 }
 
 export const isPointerOffEvent = (pointerEvent: PointerEvent) =>
-	pointerEvent.type === "pointerleave" ||
-	pointerEvent.type === "pointercancel" ||
-	pointerEvent.type === "pointerup";
+	pointerEvent.type === "pointercancel" || pointerEvent.type === "pointerup";
 
 /**
  * A press of the primary button: a left click, a finger or a pen's tip. A
@@ -74,9 +72,6 @@ export const trackPointers =
 		const pointerUp$ = pointerEvent$.pipe(
 			filter((event) => event.type === "pointerup"),
 		);
-		const pointerLeave$ = pointerEvent$.pipe(
-			filter((event) => event.type === "pointerleave"),
-		);
 		const pointerCancel$ = pointerEvent$.pipe(
 			filter((event) => event.type === "pointercancel"),
 		);
@@ -86,9 +81,7 @@ export const trackPointers =
 		const contextMenu$ = fromEvent<PointerEvent>(window, "contextmenu");
 
 		const isPointerRemoved = (event: PointerEvent) =>
-			["pointercancel", "pointerleave", "pointerup", "contextmenu"].includes(
-				event.type,
-			);
+			["pointercancel", "pointerup", "contextmenu"].includes(event.type);
 
 		return stream.pipe(
 			mergeMap((pointerDown) => {
@@ -96,13 +89,7 @@ export const trackPointers =
 
 				const tracking$ = merge(
 					pointerDown$,
-					merge(
-						pointerMove$,
-						pointerCancel$,
-						pointerLeave$,
-						pointerUp$,
-						contextMenu$,
-					),
+					merge(pointerMove$, pointerCancel$, pointerUp$, contextMenu$),
 				).pipe(
 					matchPointer(pointerDown),
 					takeWhile((event) => !isPointerRemoved(event), true),
