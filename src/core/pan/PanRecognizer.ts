@@ -26,8 +26,7 @@ export class PanRecognizer
 	implements PanRecognizerInterface
 {
 	public events$: Observable<PanEvent>;
-	public start$: Observable<PanEvent>;
-	public end$: Observable<PanEvent>;
+	public running$: Observable<boolean>;
 
 	constructor(config?: RecognizerConfig<PanRecognizerOptions>) {
 		super(config, {
@@ -93,11 +92,7 @@ export class PanRecognizer
 			share(),
 		);
 
-		this.start$ = this.events$.pipe(
-			filter((event) => event.type === "panStart"),
-		);
-
-		this.end$ = this.events$.pipe(filter((event) => event.type === "panEnd"));
+		this.running$ = this.gestureRunning$;
 	}
 
 	public update(config: RecognizerConfig<PanRecognizerOptions>) {

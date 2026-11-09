@@ -1,4 +1,4 @@
-import { type Observable, Subject } from "rxjs";
+import { BehaviorSubject, type Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -285,9 +285,9 @@ describe("update()", () => {
 	describe("with failWith", () => {
 		/** A recognizer to fail with, running. */
 		const running = () => {
-			const other = { start$: new Subject<void>(), end$: new Subject<void>() };
+			const other = { running$: new BehaviorSubject(false) };
 
-			return { other, start: () => other.start$.next() };
+			return { other, start: () => other.running$.next(true) };
 		};
 
 		it("keeps it when passed undefined", async () => {

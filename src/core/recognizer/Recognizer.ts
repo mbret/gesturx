@@ -13,7 +13,6 @@ import {
 	of,
 	Subject,
 	share,
-	shareReplay,
 	skip,
 	startWith,
 	switchMap,
@@ -49,8 +48,12 @@ const panSettingsOf = (panConfig: PanConfig = {}) => ({
 });
 
 export interface FailWith {
-	start$: Observable<unknown>;
-	end$: Observable<unknown>;
+	/**
+	 * Whether the source runs. It emits the current value when subscribed,
+	 * then each change, as a `BehaviorSubject` does. A source that emits
+	 * nothing when subscribed counts as not running until it emits.
+	 */
+	running$: Observable<boolean>;
 }
 
 export type RecognizerConfig<Options> = {
@@ -121,6 +124,13 @@ export abstract class Recognizer<
 	protected failWithActive$: Observable<boolean>;
 
 	/**
+	 * Whether the recognizer runs a gesture, from its start event to its end
+	 * event, as `state$` tells. A recognizer of a gesture that lasts gives it as
+	 * its `running$`, for the `failWith` of other recognizers.
+	 */
+	protected gestureRunning$: Observable<boolean>;
+
+	/**
 	 * Reports in state$ the fingers of the gesture the recognizer's events
 	 * recognize, until `isEnd` tells its end event, or until nothing listens
 	 * to them anymore.
@@ -179,30 +189,16 @@ export abstract class Recognizer<
 		);
 
 		this.failWithActive$ = failWith$.pipe(
-			switchMap((failWith) => {
-				const areRunnings$ = failWith?.map((recognizer) => {
-					const start$ = recognizer.start$.pipe(map(() => true));
-
-					const end$ = recognizer.end$.pipe(map(() => false));
-
-					const isRunning$ = merge(start$, end$).pipe(startWith(false));
-
-					return isRunning$;
-				});
-
-				if (!areRunnings$?.length) {
-					return combineLatest([of(false)]);
-				}
-
-				return combineLatest(areRunnings$);
-			}),
-			map((runnings) => runnings.some((running) => running)),
-			/**
-			 * Keeps following the failWith recognizers once subscribed: they can't
-			 * be asked whether they run, so a recognizer subscribing again later
-			 * would miss the gesture of one that started in between.
-			 */
-			shareReplay(1),
+			switchMap((failWith) =>
+				failWith?.length
+					? combineLatest(
+							failWith.map(({ running$ }) => running$.pipe(startWith(false))),
+						).pipe(map((runnings) => runnings.some(Boolean)))
+					: of(false),
+			),
+			distinctUntilChanged(),
+			// each source tells whether it runs when subscribed, so the recognizer can let go of them
+			shareLatest(),
 		);
 
 		this.pan$ = this.container$.pipe(
@@ -332,6 +328,11 @@ export abstract class Recognizer<
 			distinctUntilChanged(
 				(previous, current) => previous.fingers === current.fingers,
 			),
+		);
+
+		this.gestureRunning$ = this.state$.pipe(
+			map(({ fingers }) => fingers > 0),
+			distinctUntilChanged(),
 		);
 
 		this.updateInternal(config ?? {}, panConfig);

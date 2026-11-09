@@ -315,18 +315,17 @@ The package exports the types of the events (`TapEvent`, `PanEvent`, `PinchEvent
 - It doesn't start a gesture while one of them runs. That gesture is dropped, not delayed.
 - If one of them starts during its gesture, the gesture stops. A pan, a pinch, a rotation or a hold emits its end event. A tap or a swipe emits nothing.
 
-`failWith` accepts a `PanRecognizer`, a `PinchRecognizer`, a `RotateRecognizer`, a `HoldRecognizer`, or any object with `start$` and `end$` observables. A source runs from a value of `start$` to a value of `end$`:
+`failWith` accepts a `PanRecognizer`, a `PinchRecognizer`, a `RotateRecognizer`, a `HoldRecognizer`, or any object with a `running$` observable. `running$` emits whether the source runs: its current value when subscribed, then each change. A `BehaviorSubject` does that:
 
 ```ts
-import { Subject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { PanRecognizer } from "gesturx";
 
-const dialogOpened$ = new Subject<void>();
-const dialogClosed$ = new Subject<void>();
+const dialogOpen$ = new BehaviorSubject(false);
 
 const pan = new PanRecognizer({
 	container: document.getElementById("app")!,
-	failWith: [{ start$: dialogOpened$, end$: dialogClosed$ }],
+	failWith: [{ running$: dialogOpen$ }],
 });
 
 pan.events$.subscribe(({ type }) => {
@@ -334,12 +333,14 @@ pan.events$.subscribe(({ type }) => {
 });
 
 // no pan from here
-dialogOpened$.next();
+dialogOpen$.next(true);
 // pans again from here
-dialogClosed$.next();
+dialogOpen$.next(false);
 ```
 
-A recognizer subscribes to its `failWith` sources by the time it has a subscriber and a container. A recognizer in a `failWith` list therefore recognizes gestures, even without a subscriber of its own. A `TapRecognizer` is the exception: it subscribes to its sources at its first press.
+- A source that emits nothing when subscribed counts as not running until it emits. So a plain `Subject` misses a source that started before.
+- The `running$` of a recognizer is `true` from its start event to its end event. A recognizer runs only while it has a subscriber, so subscribe to a recognizer that you put in a `failWith` list. A `Recognizable` subscribes to all its recognizers.
+- A recognizer reads its `failWith` sources while it has a subscriber and a container, and lets go of them with its last subscriber. A `TapRecognizer` reads them at each press.
 
 ## Updating a recognizer
 
@@ -425,8 +426,6 @@ A `contextmenu` event ends the gesture of its pointer, as a release does. A righ
 
 ## Known limitations
 
-- A recognizer keeps its `failWith` sources subscribed after you unsubscribe from it ([#151](https://github.com/mbret/gesturx/issues/151)).
-- A `TapRecognizer` follows its `failWith` sources from its first press. A source that started before that press doesn't block it.
 - With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
 - A `container` set to `undefined` or `null` doesn't detach a recognizer that has a subscriber. A new `failWith` applies only once it gets a container again. Unsubscribe instead ([#154](https://github.com/mbret/gesturx/issues/154)).

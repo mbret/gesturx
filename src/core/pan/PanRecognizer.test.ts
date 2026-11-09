@@ -1,4 +1,4 @@
-import { NEVER, Subject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -211,17 +211,16 @@ describe("PanRecognizer", () => {
 
 	describe("with failWith", () => {
 		it("does not start while it is active", async () => {
-			const start$ = new Subject<void>();
-			const end$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new PanRecognizer({
 				container,
-				failWith: [{ start$, end$ }],
+				failWith: [{ running$ }],
 			});
 
 			const events = await eventsFor(recognizer.events$, async () => {
-				start$.next();
+				running$.next(true);
 				await drag(along(0, 50));
-				end$.next();
+				running$.next(false);
 				await drag(along(0, 50));
 			});
 
@@ -230,10 +229,10 @@ describe("PanRecognizer", () => {
 		});
 
 		it("ends an ongoing pan once it becomes active", async () => {
-			const start$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new PanRecognizer({
 				container,
-				failWith: [{ start$, end$: NEVER }],
+				failWith: [{ running$ }],
 			});
 
 			const events = await eventsFor(recognizer.events$, async () => {
@@ -243,7 +242,7 @@ describe("PanRecognizer", () => {
 				await waitFor(5);
 				sendPointer(container, "pointermove", { x: 60, y: 0 });
 				await waitFor(5);
-				start$.next();
+				running$.next(true);
 				sendPointer(container, "pointermove", { x: 80, y: 0 });
 				await waitFor(5);
 				sendPointer(container, "pointerup", { x: 80, y: 0 });
@@ -261,6 +260,8 @@ describe("PanRecognizer", () => {
 			const holdContainer = createContainer();
 			const hold = new HoldRecognizer({ container: holdContainer });
 			const recognizer = new PanRecognizer({ container, failWith: [hold] });
+			// a source runs only while it has a subscriber of its own
+			const holding = hold.events$.subscribe();
 
 			const events = await eventsFor(recognizer.events$, async () => {
 				sendPointer(holdContainer, "pointerdown", { x: 0, y: 0 }, 9);
@@ -270,6 +271,8 @@ describe("PanRecognizer", () => {
 				await waitFor(5);
 				await drag(along(0, 50));
 			});
+
+			holding.unsubscribe();
 
 			// only the drag after the hold ended
 			expect(events.map(({ type }) => type)).toEqual(["panStart", "panEnd"]);

@@ -33,8 +33,7 @@ export class RotateRecognizer
 	implements RotateRecognizerInterface
 {
 	public events$: Observable<RotateEvent>;
-	public start$: Observable<RotateEvent>;
-	public end$: Observable<RotateEvent>;
+	public running$: Observable<boolean>;
 
 	constructor(config: RecognizerConfig<RotateRecognizerOptions> = {}) {
 		super(config, {
@@ -120,12 +119,7 @@ export class RotateRecognizer
 			share(),
 		);
 
-		this.start$ = this.events$.pipe(
-			filter((event) => event.type === "rotateStart"),
-		);
-		this.end$ = this.events$.pipe(
-			filter((event) => event.type === "rotateEnd"),
-		);
+		this.running$ = this.gestureRunning$;
 	}
 
 	public update(options: RecognizerConfig<RotateRecognizerOptions>) {

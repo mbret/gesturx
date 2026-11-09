@@ -25,8 +25,7 @@ export class HoldRecognizer
 	implements HoldRecognizerInterface
 {
 	public events$: Observable<HoldEvent>;
-	public start$: Observable<HoldEvent>;
-	public end$: Observable<HoldEvent>;
+	public running$: Observable<boolean>;
 
 	constructor(options: RecognizerConfig<HoldRecognizerOptions> = {}) {
 		super(options, {
@@ -77,10 +76,7 @@ export class HoldRecognizer
 			share(),
 		);
 
-		this.start$ = this.events$.pipe(
-			filter((event) => event.type === "holdStart"),
-		);
-		this.end$ = this.events$.pipe(filter((event) => event.type === "holdEnd"));
+		this.running$ = this.gestureRunning$;
 	}
 
 	public update(options: RecognizerConfig<HoldRecognizerOptions>) {

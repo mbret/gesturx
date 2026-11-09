@@ -1,4 +1,12 @@
-import { buffer, first, lastValueFrom, NEVER, Subject, tap, timer } from "rxjs";
+import {
+	BehaviorSubject,
+	buffer,
+	first,
+	lastValueFrom,
+	Subject,
+	tap,
+	timer,
+} from "rxjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SwipeRecognizer } from "./SwipeRecognizer";
 
@@ -172,16 +180,11 @@ describe("SwipeRecognizer", () => {
 
 	it("should not start detecting a swipe when failWith is active", async () => {
 		const finishSubject = new Subject<void>();
-		const startFailSubject = new Subject<void>();
+		const failWithRunning$ = new BehaviorSubject(false);
 
 		const recognizer = new SwipeRecognizer({
 			container,
-			failWith: [
-				{
-					start$: startFailSubject,
-					end$: NEVER,
-				},
-			],
+			failWith: [{ running$: failWithRunning$ }],
 		});
 
 		const values = await lastValueFrom(
@@ -191,7 +194,7 @@ describe("SwipeRecognizer", () => {
 						// should work
 						await createVelocityOfOnePanMoving();
 
-						startFailSubject.next();
+						failWithRunning$.next(true);
 
 						// should not
 						await createVelocityOfOnePanMoving();
@@ -211,15 +214,10 @@ describe("SwipeRecognizer", () => {
 
 	it("should cancel an in-progress swipe when failWith becomes active", async () => {
 		const finishSubject = new Subject<void>();
-		const failWithStart$ = new Subject<void>();
+		const failWithRunning$ = new BehaviorSubject(false);
 		const recognizer = new SwipeRecognizer({
 			container,
-			failWith: [
-				{
-					start$: failWithStart$,
-					end$: NEVER,
-				},
-			],
+			failWith: [{ running$: failWithRunning$ }],
 			options: {
 				escapeVelocity: 0.1,
 			},
@@ -250,7 +248,7 @@ describe("SwipeRecognizer", () => {
 						});
 
 						// Trigger failWith mid-swipe
-						failWithStart$.next();
+						failWithRunning$.next(true);
 
 						await waitFor(10);
 

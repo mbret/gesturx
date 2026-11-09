@@ -18,6 +18,12 @@ export interface PanRecognizerOptions {
 export interface PanRecognizerInterface
 	extends Recognizer<PanRecognizerOptions, PanEvent> {
 	events$: Observable<PanEvent>;
+	/**
+	 * Whether a pan runs, from its panStart event to its panEnd event. It
+	 * emits the current value when subscribed. Another recognizer's `failWith`
+	 * reads it.
+	 */
+	running$: Observable<boolean>;
 
 	update(options: RecognizerConfig<PanRecognizerOptions>): void;
 }

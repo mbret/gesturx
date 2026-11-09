@@ -1,4 +1,4 @@
-import { NEVER, Subject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -101,17 +101,16 @@ describe("HoldRecognizer", () => {
 
 	describe("with failWith", () => {
 		it("does not start while it is active", async () => {
-			const start$ = new Subject<void>();
-			const end$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new HoldRecognizer({
 				container,
-				failWith: [{ start$, end$ }],
+				failWith: [{ running$ }],
 			});
 
 			const events = await eventsFor(recognizer.events$, async () => {
-				start$.next();
+				running$.next(true);
 				await hold(20);
-				end$.next();
+				running$.next(false);
 				await hold(20);
 			});
 
@@ -120,10 +119,10 @@ describe("HoldRecognizer", () => {
 		});
 
 		it("ends an ongoing hold once it becomes active", async () => {
-			const start$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new HoldRecognizer({
 				container,
-				failWith: [{ start$, end$: NEVER }],
+				failWith: [{ running$ }],
 			});
 			const types: string[] = [];
 			const subscription = recognizer.events$.subscribe(({ type }) =>
@@ -133,7 +132,7 @@ describe("HoldRecognizer", () => {
 			await waitFor(1);
 			sendPointer(container, "pointerdown", { x: 100, y: 0 });
 			await waitFor(10);
-			start$.next();
+			running$.next(true);
 
 			expect(types).toEqual(["holdStart", "holdEnd"]);
 

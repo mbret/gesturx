@@ -1,4 +1,4 @@
-import { NEVER, Subject } from "rxjs";
+import { BehaviorSubject } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
@@ -130,18 +130,17 @@ describe("RotateRecognizer", () => {
 
 	describe("with failWith", () => {
 		it("does not start while it is active", async () => {
-			const start$ = new Subject<void>();
-			const end$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new RotateRecognizer({
 				container,
 				options: { posThreshold: 0 },
-				failWith: [{ start$, end$ }],
+				failWith: [{ running$ }],
 			});
 
 			const events = await eventsFor(recognizer.events$, async () => {
-				start$.next();
+				running$.next(true);
 				await turn([0, 30, 60]);
-				end$.next();
+				running$.next(false);
 				await turn([0, 30, 60]);
 			});
 
@@ -157,11 +156,11 @@ describe("RotateRecognizer", () => {
 		});
 
 		it("ends an ongoing rotation once it becomes active", async () => {
-			const start$ = new Subject<void>();
+			const running$ = new BehaviorSubject(false);
 			const recognizer = new RotateRecognizer({
 				container,
 				options: { posThreshold: 0 },
-				failWith: [{ start$, end$: NEVER }],
+				failWith: [{ running$ }],
 			});
 
 			const events = await eventsFor(recognizer.events$, async () => {
@@ -173,7 +172,7 @@ describe("RotateRecognizer", () => {
 				await waitFor(5);
 				sendPointer(container, "pointermove", onCircle(210), 2);
 				await waitFor(5);
-				start$.next();
+				running$.next(true);
 				sendPointer(container, "pointermove", onCircle(60), 1);
 				await waitFor(5);
 				sendPointer(container, "pointerup", onCircle(60), 1);
