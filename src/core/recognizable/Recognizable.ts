@@ -54,6 +54,11 @@ type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 } & RecognizerConfig<unknown>;
 
 // biome-ignore lint/suspicious/noExplicitAny: TODO
+type RecognizableUpdate<T extends Recognizer<any, any>[]> = Partial<
+	Omit<RecognizableOptions<T>, "recognizers">
+>;
+
+// biome-ignore lint/suspicious/noExplicitAny: TODO
 export class Recognizable<T extends Recognizer<any, any>[]>
 	implements RecognizableInterface<T>
 {
@@ -66,10 +71,12 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 
 	state$: Observable<RecognizableState>;
 
-	/** The container of the latest update that passed one, `null` included. */
-	private requestedContainer: HTMLElement | null = null;
+	/** The latest container it got, `null` included. */
+	private container: HTMLElement | null = null;
 	private disableTextSelection = false;
 	private restoreStyles = () => {};
+	/** The updates made while an update runs, as from an end handler. */
+	private queuedUpdates?: RecognizableUpdate<T>[];
 
 	constructor({ recognizers, ...config }: RecognizableOptions<T>) {
 		this.recognizers = recognizers;
@@ -96,19 +103,41 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 		this.update(config);
 	}
 
-	public update({
+	public update(config: RecognizableUpdate<T>) {
+		// an update from an end handler comes after the update that runs, for every recognizer
+		if (this.queuedUpdates) {
+			this.queuedUpdates.push(config);
+
+			return;
+		}
+
+		this.queuedUpdates = [];
+
+		try {
+			for (
+				let next: RecognizableUpdate<T> | undefined = config;
+				next;
+				next = this.queuedUpdates.shift()
+			) {
+				this.apply(next);
+			}
+		} finally {
+			this.queuedUpdates = undefined;
+		}
+	}
+
+	private apply({
 		disableTextSelection,
 		container,
 		...rest
-	}: Partial<Omit<RecognizableOptions<T>, "recognizers">>) {
+	}: RecognizableUpdate<T>) {
 		const changesStyles =
-			(container !== undefined && container !== this.requestedContainer) ||
+			(container !== undefined && container !== this.container) ||
 			(disableTextSelection !== undefined &&
 				disableTextSelection !== this.disableTextSelection);
 
-		// before the other fields, whose update can end a gesture and run its end handlers
 		if (container !== undefined) {
-			this.requestedContainer = container;
+			this.container = container;
 		}
 
 		if (disableTextSelection !== undefined) {
@@ -117,23 +146,15 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 
 		if (changesStyles) {
 			this.restoreStyles();
-			this.restoreStyles = this.requestedContainer
-				? applyStyles(this.requestedContainer, this.disableTextSelection)
+			this.restoreStyles = this.container
+				? applyStyles(this.container, this.disableTextSelection)
 				: () => {};
 		}
 
-		// before the container, so that an update from an end handler comes after
 		for (const recognizer of this.recognizers) {
-			recognizer.update(rest);
-		}
-
-		if (container === undefined) {
-			return;
-		}
-
-		for (const recognizer of this.recognizers) {
-			// an end handler can set another container during this loop, which then stays
-			recognizer.update({ container: this.requestedContainer });
+			recognizer.update(
+				container === undefined ? rest : { ...rest, container },
+			);
 		}
 	}
 }

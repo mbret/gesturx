@@ -571,6 +571,39 @@ describe("Recognizable", () => {
 		expect(third.style.touchAction).toBe("none");
 	});
 
+	it("gives the fields of an end handler that the other fields run to all its recognizers", async () => {
+		const pan = new PanRecognizer();
+		const hold = new HoldRecognizer();
+		const recognizable = new Recognizable({
+			recognizers: [pan, hold],
+			container,
+		});
+		const ended = pan.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizable.update({ failWith: [] });
+			}
+		});
+
+		const events = await eventsFor(recognizable.events$, async () => {
+			// a failWith source that runs stops the pan, whose end handler removes it
+			await drag(container, () =>
+				recognizable.update({
+					failWith: [{ running$: new BehaviorSubject(true) }],
+				}),
+			);
+			await press(container);
+		});
+
+		ended.unsubscribe();
+
+		// the hold of the drag, stopped by the source, then the one of the press
+		expect(
+			events
+				.filter(({ recognizer }) => recognizer === hold)
+				.map(({ event }) => event.type),
+		).toEqual(["holdStart", "holdEnd", "holdStart", "holdEnd"]);
+	});
+
 	it("keeps a container set from an end handler that the other fields run", async () => {
 		const expected = await typesFor(new PanRecognizer({ container }), () =>
 			drag(container),
