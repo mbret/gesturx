@@ -398,6 +398,35 @@ describe("Recognizable", () => {
 		expect(events).toEqual([]);
 	});
 
+	it("keeps a container set from an end handler for all its recognizers", async () => {
+		const third = createContainer();
+		const pan = new PanRecognizer();
+		const hold = new HoldRecognizer();
+		const recognizable = new Recognizable({
+			recognizers: [pan, hold],
+			container,
+		});
+		const ended = pan.events$.subscribe((event) => {
+			if (event.type === "panEnd") {
+				recognizable.update({ container: third });
+			}
+		});
+
+		const events = await eventsFor(recognizable.events$, async () => {
+			await drag(container, () => recognizable.update({ container: other }));
+			await press(third);
+		});
+
+		ended.unsubscribe();
+
+		// the hold of the drag, ended by the update, then the one on the third
+		expect(
+			events
+				.filter(({ recognizer }) => recognizer === hold)
+				.map(({ event }) => event.type),
+		).toEqual(["holdStart", "holdEnd", "holdStart", "holdEnd"]);
+	});
+
 	it("keeps a running pan when updated with the same container", async () => {
 		const expected = await typesFor(new PanRecognizer({ container }), () =>
 			drag(container),

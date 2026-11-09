@@ -39,6 +39,9 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 
 	state$: Observable<RecognizableState>;
 
+	/** The container of the latest update that passed one, `null` included. */
+	private container?: HTMLElement | null;
+
 	constructor(protected options: RecognizableOptions<T>) {
 		this.recognizers = options.recognizers;
 
@@ -84,8 +87,17 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 			}
 		}
 
+		if (rest.container !== undefined) {
+			this.container = rest.container;
+		}
+
 		for (const recognizer of this.options.recognizers) {
-			recognizer.update(rest);
+			recognizer.update(
+				rest.container === undefined
+					? rest
+					: // an end handler can update the recognizable during this loop
+						{ ...rest, container: this.container },
+			);
 		}
 	}
 }
