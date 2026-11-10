@@ -9,13 +9,13 @@ import {
 	merge,
 	type Observable,
 	of,
-	share,
 	switchMap,
 	takeUntil,
 	withLatestFrom,
 } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import { scanToRecognizerEvent } from "../recognizer/scanToRecognizerEvent";
+import { shareDelivered } from "../recognizer/updates";
 import { trackPointers } from "../utils/events";
 import { shareLatest } from "../utils/operators";
 import { filterNotEmpty } from "../utils/utils";
@@ -146,7 +146,7 @@ export class TapRecognizer
 
 				return tap$;
 			}),
-			share(),
+			shareDelivered(),
 		);
 	}
 

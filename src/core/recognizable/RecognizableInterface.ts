@@ -44,6 +44,8 @@ export interface RecognizableInterface<T extends Recognizer<any, any>[]> {
 	 * The options are in fact passed down to all of the recognizers.
 	 * Use it to initialize the container when you want to start
 	 * listening to gesture events, and pass `container: null` to stop.
+	 * While a recognizer delivers an event, it waits as `Recognizer.update()`
+	 * says, for all the recognizers at once.
 	 */
 	update(options: RecognizerConfig<unknown>): void;
 }

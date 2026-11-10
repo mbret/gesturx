@@ -372,7 +372,7 @@ pan.update({ options: { posThreshold: 30 } });
 - A new `container` moves the listeners to the new element, and `null` removes them. Both end the gesture in progress:
   - A pan, a pinch, a rotation or a hold emits its end event. Its `event` is the latest pointer event, and its `pointers` has the fingers that are still pressed.
   - A tap or a swipe in progress emits nothing.
-- An `update()` from a start, move or end handler applies in a microtask, once every subscriber got that event. The `update()` calls made until then wait too, and apply after it in order. So a new `container` from a start handler ends the gesture after its start event.
+- While a recognizer delivers an event, or reports its fingers in `state$` and `running$`, every `update()` waits, of any recognizer or `Recognizable`. It applies in a microtask, after every subscriber gets the event, and the later `update()` calls apply after it, in order. So a new `container` from a start handler ends the gesture after its start event. Outside the handlers, `update()` applies at once.
 
 ## Custom gestures
 
@@ -383,7 +383,9 @@ To make a gesture of your own, extend `Recognizer`. The second argument of `supe
 - `pointerOff$`: the releases in `pointerEvent$`. A release is a `pointerup`, a `pointercancel`, a `contextmenu`, or a mouse or pen `pointermove` with no button pressed.
 - `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the events of `pointerEvent$` with that type. `pointerMove$` leaves out the releases.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
-- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events, and holds back an `update()` from their handlers, as [Updating a recognizer](#updating-a-recognizer) says. Without it, `state$` stays 0 and `running$` stays `false`.
+- `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events. Without it, `state$` stays 0 and `running$` stays `false`.
+
+The events of `pan$`, and the events that `reportFingers` shares, hold back an `update()` from their handlers, as [Updating a recognizer](#updating-a-recognizer) says. An `update()` from a handler of other events, as from `pointerEvent$` alone, applies at once.
 
 ```ts
 import { filter, map, type Observable, withLatestFrom } from "rxjs";
