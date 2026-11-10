@@ -36,7 +36,7 @@ import { PanRecognizer, Recognizable, TapRecognizer } from "gesturx";
 const pan = new PanRecognizer();
 // no tap is recognized while a pan runs
 const tap = new TapRecognizer({
-	options: { maxTaps: 3, multiTapThreshold: 300 },
+	options: { maxTaps: 3 },
 	failWith: [pan],
 });
 
@@ -143,7 +143,7 @@ The distance thresholds below are measured on each axis: a finger passes a 15 px
 | Option | Default | Meaning |
 | --- | --- | --- |
 | `maxTaps` | `1` | The most taps in one gesture. A gesture with more taps is ignored. |
-| `multiTapThreshold` | `100 * (maxTaps - 1)` ms | The time to wait after a release for one more press. |
+| `multiTapThreshold` | `300` ms with `maxTaps` of 2 or more, `0` otherwise | The time to wait after a release for one more press. |
 | `maximumPressTime` | `150` ms | A press held longer cancels the gesture. |
 | `tolerance` | `10` px | A press that moves farther than this from the first press cancels the gesture. |
 
@@ -154,7 +154,7 @@ import { TapRecognizer } from "gesturx";
 
 const tap = new TapRecognizer({
 	container: document.getElementById("app")!,
-	options: { maxTaps: 2, multiTapThreshold: 300 },
+	options: { maxTaps: 2 },
 });
 
 tap.events$.subscribe(({ taps }) => {
@@ -439,7 +439,6 @@ So each move of a pressed mouse or pen must have its `buttons`, as in a browser.
 
 ## Known limitations
 
-- With `maxTaps: 2`, the default `multiTapThreshold` of 100 ms is short for a double tap at normal speed. Set it to about 300 ([#150](https://github.com/mbret/gesturx/issues/150)).
 - A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
 - A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers. From an end handler, setting the previous container back restarts the gesture without a new press ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A `Recognizable` sets back the `touch-action` and `user-select` it found on its container. So two of them on one element undo each other's styles when one of them leaves.

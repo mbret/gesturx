@@ -70,12 +70,8 @@ export class TapRecognizer
 					exhaustMap((initialPointerEvent) => {
 						const { options } = this.configSubject.getValue();
 						const maxTaps = options?.maxTaps ?? 1;
-						/**
-						 * We default to reasonable multiplier of 100 to give time
-						 * for each tap
-						 */
 						const multiTapThreshold =
-							options?.multiTapThreshold ?? 100 * (maxTaps - 1);
+							options?.multiTapThreshold ?? (maxTaps > 1 ? 300 : 0);
 
 						const { maximumPressTime = 150, tolerance = 10 } = options ?? {};
 

@@ -9,13 +9,10 @@ export interface TapEvent extends RecognizerEvent {
 
 export interface TapRecognizerOptions {
 	/**
-	 * Introduce a delay before recognizing a tap. This can be used to register more taps.
+	 * The time in ms to wait after a release for one more press. A longer time
+	 * makes a multi tap easier, and delays every tap by as much.
 	 *
-	 *
-	 * A longer time will delay the click event but make it easier to multi taps.
-	 * Try to find a good balance between latency and accessibility.
-	 *
-	 * @default 100 * (maxTaps - 1)
+	 * @default 300 with `maxTaps` of 2 or more, 0 otherwise
 	 */
 	multiTapThreshold?: number;
 

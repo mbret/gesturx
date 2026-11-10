@@ -113,7 +113,8 @@ const doubleTap = async () => {
 	await tap();
 	await waitFor(10);
 	await tap();
-	await waitFor(150);
+	// the default multiTapThreshold of maxTaps 2 is 300 ms
+	await waitFor(350);
 };
 
 /** A finger moving 200px in about 10ms. */
