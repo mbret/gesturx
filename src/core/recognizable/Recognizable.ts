@@ -76,7 +76,6 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 	private container: HTMLElement | null = null;
 	private disableTextSelection = false;
 	private restoreStyles = () => {};
-	/** The updates made while an update runs, as from an end handler. */
 
 	constructor({ recognizers, ...config }: RecognizableOptions<T>) {
 		this.recognizers = recognizers;

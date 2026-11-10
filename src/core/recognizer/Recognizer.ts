@@ -395,7 +395,8 @@ export abstract class Recognizer<
 	/**
 	 * Changes the config. While a recognizer delivers an event, an `update()`
 	 * waits, and applies in a microtask after every subscriber gets the event.
-	 * The later `update()` calls apply after it, in order.
+	 * The later `update()` calls apply after it, in order. An `update()` from
+	 * the handler of an event that an `update()` causes applies right after it.
 	 */
 	public update(
 		config: Partial<RecognizerConfig<Options>>,

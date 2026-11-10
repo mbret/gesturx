@@ -1,5 +1,5 @@
-import { BehaviorSubject, type Observable } from "rxjs";
-import { beforeEach, describe, expect, it } from "vitest";
+import { BehaviorSubject, merge, type Observable } from "rxjs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	createContainer,
 	eventsFor,
@@ -13,7 +13,11 @@ import { Recognizable } from "../recognizable/Recognizable";
 import { RotateRecognizer } from "../rotate/RotateRecognizer";
 import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
-import { Recognizer } from "./Recognizer";
+import {
+	Recognizer,
+	type RecognizerConfig,
+	type RecognizerPanEvent,
+} from "./Recognizer";
 
 let container = createContainer();
 let other = createContainer();
@@ -511,6 +515,9 @@ describe("PanRecognizer", () => {
 	});
 
 	it("doesn't restart its gesture when an end handler sets the previous container back", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
 		const recognizer = new PanRecognizer({ container });
 		const ended = recognizer.events$.subscribe(({ type }) => {
 			if (type === "panEnd") recognizer.update({ container });
@@ -523,6 +530,8 @@ describe("PanRecognizer", () => {
 		ended.unsubscribe();
 
 		expect(types).toEqual(["panStart", "panMove", "panEnd"]);
+		// the container of the end handler stays
+		expect(await typesFor(recognizer, () => drag(container))).toEqual(expected);
 	});
 
 	it("applies an update from a handler before a later one", async () => {
@@ -604,6 +613,32 @@ describe("A recognizer without reportFingers", () => {
 	});
 });
 
+describe("A recognizer with reportFingers", () => {
+	it("sends an error of isEnd to its subscribers", async () => {
+		class Throwing extends Recognizer<never, RecognizerPanEvent> {
+			public events$ = this.pan$.pipe(
+				this.reportFingers(({ type }) => {
+					if (type === "move") throw new Error("boom");
+
+					return type === "end";
+				}),
+			);
+		}
+		const recognizer = new Throwing({ container });
+		const log: string[] = [];
+		const subscription = recognizer.events$.subscribe({
+			next: ({ type }) => log.push(type),
+			error: (error: Error) => log.push(`error: ${error.message}`),
+		});
+
+		await drag(container);
+
+		subscription.unsubscribe();
+
+		expect(log).toEqual(["start", "error: boom"]);
+	});
+});
+
 describe("An update from a handler of another recognizer", () => {
 	it("ends a hold whose start stops a pan that moves the hold", async () => {
 		const hold = new HoldRecognizer({ container, options: { numInputs: 2 } });
@@ -637,6 +672,153 @@ describe("An update from a handler of another recognizer", () => {
 		expect(holdTypes).toEqual(["holdStart", "holdEnd"]);
 		// the hold no longer runs, so it doesn't block the pan
 		expect(await typesFor(pan, () => drag(container))).toContain("panEnd");
+	});
+});
+
+describe.each([
+	["outside the handlers", false],
+	["from a handler", true],
+])("Given update() calls made %s", (_, fromHandler) => {
+	it("applies the update of an end handler right after the update that ended the gesture", async () => {
+		const third = createContainer();
+		const trigger = createContainer();
+		const expected = await typesFor(
+			new PanRecognizer({ container: third }),
+			() => drag(third),
+		);
+		const recognizer = new PanRecognizer({ container });
+		// another recognizer, whose move handler makes the update() calls
+		const helper = new PanRecognizer({ container: trigger });
+		const updates = () => {
+			recognizer.update({ container: other });
+			recognizer.update({ container: third });
+		};
+		let updateOnMove = false;
+		const moved = helper.events$.subscribe(({ type }) => {
+			if (type === "panMove" && updateOnMove) {
+				updateOnMove = false;
+				updates();
+			}
+		});
+		const ended = recognizer.events$.subscribe(({ type }) => {
+			if (type === "panEnd") recognizer.update({ container });
+		});
+
+		await typesFor(recognizer, async () => {
+			sendPointer(trigger, "pointerdown", { x: 0, y: 0 }, 7);
+			await waitFor(5);
+			sendPointer(trigger, "pointermove", { x: 30, y: 0 }, 7);
+			await drag(container, () => {
+				if (fromHandler) {
+					updateOnMove = true;
+					sendPointer(trigger, "pointermove", { x: 60, y: 0 }, 7);
+				} else {
+					updates();
+				}
+			});
+			sendPointer(trigger, "pointerup", { x: 60, y: 0 }, 7);
+		});
+
+		moved.unsubscribe();
+		ended.unsubscribe();
+
+		// the last update() wins, after the one of the end handler
+		expect(await typesFor(recognizer, () => drag(container))).toEqual([]);
+		expect(await typesFor(recognizer, () => drag(third))).toEqual(expected);
+	});
+});
+
+describe("Updates held from a handler", () => {
+	it("apply the update that each one causes right after it", async () => {
+		const third = createContainer();
+		const trigger = createContainer();
+		const expected = await typesFor(
+			new PanRecognizer({ container: third }),
+			() => drag(third),
+		);
+		const first = new PanRecognizer({ container });
+		const second = new PanRecognizer({ container });
+		// another recognizer, whose move handler makes the update() calls
+		const helper = new PanRecognizer({ container: trigger });
+		let updateOnMove = false;
+		const moved = helper.events$.subscribe(({ type }) => {
+			if (type === "panMove" && updateOnMove) {
+				updateOnMove = false;
+				first.update({ container: other });
+				second.update({ container: other });
+				second.update({ container: third });
+			}
+		});
+		// each end handler sets its recognizer back on the container
+		const firstEnded = first.events$.subscribe(({ type }) => {
+			if (type === "panEnd") first.update({ container });
+		});
+		const secondEnded = second.events$.subscribe(({ type }) => {
+			if (type === "panEnd") second.update({ container });
+		});
+
+		await eventsFor(merge(first.events$, second.events$), async () => {
+			sendPointer(trigger, "pointerdown", { x: 0, y: 0 }, 7);
+			await waitFor(5);
+			sendPointer(trigger, "pointermove", { x: 30, y: 0 }, 7);
+			await drag(container, () => {
+				updateOnMove = true;
+				sendPointer(trigger, "pointermove", { x: 60, y: 0 }, 7);
+			});
+			sendPointer(trigger, "pointerup", { x: 60, y: 0 }, 7);
+		});
+
+		moved.unsubscribe();
+		firstEnded.unsubscribe();
+		secondEnded.unsubscribe();
+
+		// the second recognizer's end handler applied before its last update()
+		expect(await typesFor(second, () => drag(third))).toEqual(expected);
+	});
+});
+
+describe("A held update() that throws", () => {
+	afterEach(() => {
+		vi.unstubAllGlobals();
+	});
+
+	it("doesn't stop the other held updates, and is reported", async () => {
+		/** A custom recognizer that rejects an option. */
+		class Strict extends Recognizer<{ size?: number }> {
+			public events$ = this.pan$;
+
+			public update(config: RecognizerConfig<{ size?: number }>) {
+				if (config.options?.size === 0)
+					throw new Error("size must be positive");
+
+				super.update(config);
+			}
+		}
+		const reportError = vi.fn();
+
+		vi.stubGlobal("reportError", reportError);
+
+		const widget = new Recognizable({
+			recognizers: [new Strict()],
+			container: createContainer(),
+		});
+		const recognizer = new PanRecognizer({ container });
+		const started = recognizer.events$.subscribe(({ type }) => {
+			if (type === "panStart") {
+				widget.update({ options: { size: 0 } });
+				recognizer.update({ container: other });
+			}
+		});
+
+		const types = await typesFor(recognizer, () => drag(container));
+
+		started.unsubscribe();
+
+		// the update after the one that throws moved the recognizer
+		expect(types).toEqual(["panStart", "panEnd"]);
+		expect(reportError).toHaveBeenCalledWith(
+			new Error("size must be positive"),
+		);
 	});
 });
 
@@ -874,35 +1056,6 @@ describe("Recognizable", () => {
 		).toEqual(["holdStart", "holdEnd", "holdStart", "holdEnd"]);
 	});
 
-	it("keeps a container set from an end handler that the other fields run", async () => {
-		const expected = await typesFor(new PanRecognizer({ container }), () =>
-			drag(container),
-		);
-		const third = createContainer();
-		const pan = new PanRecognizer();
-		const recognizable = new Recognizable({ recognizers: [pan], container });
-		const ended = pan.events$.subscribe((event) => {
-			if (event.type === "panEnd") {
-				recognizable.update({ container: third, failWith: [] });
-			}
-		});
-
-		const types = await typesFor(pan, async () => {
-			// a failWith source that runs stops the pan before the new container
-			await drag(container, () =>
-				recognizable.update({
-					container: other,
-					failWith: [{ running$: new BehaviorSubject(true) }],
-				}),
-			);
-			await drag(third);
-		});
-
-		ended.unsubscribe();
-
-		expect(types).toEqual(["panStart", "panMove", "panEnd", ...expected]);
-	});
-
 	it("keeps a running pan when updated with the same container", async () => {
 		const expected = await typesFor(new PanRecognizer({ container }), () =>
 			drag(container),
@@ -969,6 +1122,25 @@ describe("SwipeRecognizer", () => {
 				await waitFor(20);
 			}),
 		).toEqual(["swipe"]);
+	});
+});
+
+describe("SwipeRecognizer from a handler", () => {
+	it("gives the swipe to every subscriber when the first one moves it", async () => {
+		const recognizer = new SwipeRecognizer({ container });
+		const got: string[] = [];
+		const first = recognizer.events$.subscribe(() => {
+			got.push("first");
+			recognizer.update({ container: other });
+		});
+		const second = recognizer.events$.subscribe(() => got.push("second"));
+
+		await swipe(container);
+
+		first.unsubscribe();
+		second.unsubscribe();
+
+		expect(got).toEqual(["first", "second"]);
 	});
 });
 

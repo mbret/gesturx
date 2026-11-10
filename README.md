@@ -372,7 +372,7 @@ pan.update({ options: { posThreshold: 30 } });
 - A new `container` moves the listeners to the new element, and `null` removes them. Both end the gesture in progress:
   - A pan, a pinch, a rotation or a hold emits its end event. Its `event` is the latest pointer event, and its `pointers` has the fingers that are still pressed.
   - A tap or a swipe in progress emits nothing.
-- While a recognizer delivers an event, or reports its fingers in `state$` and `running$`, every `update()` waits, of any recognizer or `Recognizable`. It applies in a microtask, after every subscriber gets the event, and the later `update()` calls apply after it, in order. So a new `container` from a start handler ends the gesture after its start event. Outside the handlers, `update()` applies at once.
+- While a recognizer delivers an event, or reports its fingers in `state$` and `running$`, every `update()` waits, of any recognizer or `Recognizable`. It applies in a microtask, after every subscriber gets the event, and the later `update()` calls apply after it, in order. So a new `container` from a start handler ends the gesture after its start event. An `update()` from the handler of an event that an `update()` causes, as an end event, applies right after that `update()`. Outside the handlers, `update()` applies at once, unless an `update()` from a handler still waits: it then applies after it.
 
 ## Custom gestures
 

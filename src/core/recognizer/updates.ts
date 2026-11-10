@@ -6,6 +6,22 @@ let deliveries = 0;
 let applying = 0;
 /** The updates that wait for the microtask, in order. */
 let heldUpdates: (() => void)[] | undefined;
+/**
+ * Where an update that the applying update causes goes in `heldUpdates`:
+ * right after it, and after the ones it caused before.
+ */
+let insertAt = 0;
+
+/** Reports `error` as uncaught, without stopping the code that caught it. */
+const report = (error: unknown) => {
+	if (typeof reportError === "function") {
+		reportError(error);
+	} else {
+		setTimeout(() => {
+			throw error;
+		});
+	}
+};
 
 const apply = (update: () => void) => {
 	applying++;
@@ -18,26 +34,33 @@ const apply = (update: () => void) => {
 };
 
 const applyHeldUpdates = () => {
-	try {
-		// an update from a handler of one of these waits at the end of the list
-		for (
-			let update = heldUpdates?.shift();
-			update;
-			update = heldUpdates?.shift()
-		) {
+	for (
+		let update = heldUpdates?.shift();
+		update;
+		update = heldUpdates?.shift()
+	) {
+		insertAt = 0;
+
+		// the next updates apply, whatever this one throws
+		try {
 			apply(update);
+		} catch (error) {
+			report(error);
 		}
-	} finally {
-		heldUpdates = undefined;
 	}
+
+	heldUpdates = undefined;
 };
 
 /**
  * Applies `update` now, or in a microtask if an event is being delivered. A
  * recognizer delivers the start of a gesture before it listens for its end, so
  * an update applied during the delivery would miss the end. The updates made
- * until the microtask wait too, so that they apply in order. An update that an
- * update makes, as a `Recognizable` for its recognizers, applies with it.
+ * until the microtask wait too, so that they apply in order.
+ *
+ * An update that an update makes, as a `Recognizable` for its recognizers,
+ * applies with it. An update that an update causes, as from the handler of
+ * the end event it causes, applies right after it.
  */
 export const scheduleUpdate = (update: () => void) => {
 	if (!deliveries && (applying || !heldUpdates)) {
@@ -48,10 +71,15 @@ export const scheduleUpdate = (update: () => void) => {
 
 	if (!heldUpdates) {
 		heldUpdates = [];
+		insertAt = 0;
 		queueMicrotask(applyHeldUpdates);
 	}
 
-	heldUpdates.push(update);
+	if (applying) {
+		heldUpdates.splice(insertAt++, 0, update);
+	} else {
+		heldUpdates.push(update);
+	}
 };
 
 /**
@@ -67,7 +95,14 @@ export const shareDelivered =
 					deliveries++;
 
 					try {
-						beforeEach(event);
+						try {
+							beforeEach(event);
+						} catch (error) {
+							subscriber.error(error);
+
+							return;
+						}
+
 						subscriber.next(event);
 					} finally {
 						deliveries--;
