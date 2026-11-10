@@ -13,6 +13,7 @@ import { Recognizable } from "../recognizable/Recognizable";
 import { RotateRecognizer } from "../rotate/RotateRecognizer";
 import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
+import { Recognizer } from "./Recognizer";
 
 let container = createContainer();
 let other = createContainer();
@@ -218,6 +219,28 @@ describe.each(gestures)("%s", (_, Recognizer, gesture, options, end) => {
 		expect(fingers).toBe(0);
 	});
 
+	it("ends its gesture when a start handler sets a new container", async () => {
+		const start = end.replace("End", "Start");
+		const recognizer = new Recognizer({ container });
+		const state = fingersOf(recognizer.state$);
+		const started = recognizer.events$.subscribe(({ type }) => {
+			if (type === start) recognizer.update({ container: other });
+		});
+		let fingers: number | undefined;
+
+		const types = await typesFor(recognizer, async () => {
+			await gesture(container);
+			// before typesFor unsubscribes from events$, which sets them to 0
+			fingers = state.fingers[state.fingers.length - 1];
+		});
+
+		started.unsubscribe();
+		state.unsubscribe();
+
+		expect(types).toEqual([start, end]);
+		expect(fingers).toBe(0);
+	});
+
 	it("ends a running gesture when it's detached", async () => {
 		const recognizer = new Recognizer({ container });
 		const state = fingersOf(recognizer.state$);
@@ -420,6 +443,92 @@ describe("PanRecognizer", () => {
 		ended.unsubscribe();
 
 		expect(types).toEqual(["panStart", "panMove", "panEnd", ...expected]);
+	});
+});
+
+describe.each(gestures.filter(([, , , , end]) => end !== "holdEnd"))(
+	"%s",
+	(_, Recognizer, gesture, __, end) => {
+		it("ends its gesture after the move whose handler sets a new container", async () => {
+			const start = end.replace("End", "Start");
+			const move = end.replace("End", "Move");
+			const recognizer = new Recognizer({ container });
+			const moved = recognizer.events$.subscribe(({ type }) => {
+				if (type === move) recognizer.update({ container: other });
+			});
+
+			const types = await typesFor(recognizer, () => gesture(container));
+
+			moved.unsubscribe();
+
+			expect(types).toEqual([start, move, end]);
+		});
+	},
+);
+
+describe("PanRecognizer updated from a handler", () => {
+	it("doesn't restart its gesture when an end handler sets the previous container back", async () => {
+		const recognizer = new PanRecognizer({ container });
+		const ended = recognizer.events$.subscribe(({ type }) => {
+			if (type === "panEnd") recognizer.update({ container });
+		});
+
+		const types = await typesFor(recognizer, () =>
+			drag(container, () => recognizer.update({ container: other })),
+		);
+
+		ended.unsubscribe();
+
+		expect(types).toEqual(["panStart", "panMove", "panEnd"]);
+	});
+
+	it("applies an update from a handler before a later one", async () => {
+		const expected = await typesFor(new PanRecognizer({ container }), () =>
+			drag(container),
+		);
+		const third = createContainer();
+		const recognizer = new PanRecognizer({ container });
+		const moved = recognizer.events$.subscribe(({ type }) => {
+			if (type === "panMove") recognizer.update({ container: other });
+		});
+
+		await typesFor(recognizer, async () => {
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 20, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 40, y: 0 });
+			// after the update of the move handler
+			recognizer.update({ container: third });
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 40, y: 0 });
+		});
+
+		moved.unsubscribe();
+
+		expect(await typesFor(recognizer, () => drag(other))).toEqual([]);
+		expect(await typesFor(recognizer, () => drag(third))).toEqual(expected);
+	});
+
+	it("applies an update from an end handler of a recognizer without reportFingers after the update that ended it", async () => {
+		class PanOnly extends Recognizer {
+			public events$ = this.pan$;
+		}
+		const third = createContainer();
+		const recognizer = new PanOnly({ container });
+		const ended = recognizer.events$.subscribe(({ type }) => {
+			if (type === "end") recognizer.update({ container: third });
+		});
+
+		const types = await eventsFor(recognizer.events$, async () => {
+			await drag(container, () => recognizer.update({ container: other }));
+			await drag(third);
+		}).then((events) => events.map(({ type }) => type));
+
+		ended.unsubscribe();
+
+		expect(types.slice(-1)).toEqual(["end"]);
+		expect(types.filter((type) => type === "start")).toHaveLength(2);
 	});
 });
 

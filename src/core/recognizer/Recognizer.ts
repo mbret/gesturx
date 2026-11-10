@@ -10,7 +10,7 @@ import {
 	map,
 	merge,
 	mergeMap,
-	type Observable,
+	Observable,
 	of,
 	Subject,
 	share,
@@ -101,8 +101,13 @@ export abstract class Recognizer<
 	private stateSubject = new BehaviorSubject<State>({
 		fingers: 0,
 	});
-	/** The container of the latest update that passed one, `null` included. */
-	private requestedContainer: HTMLElement | null = null;
+	/**
+	 * How many deliveries of events and updates run. An `update()` made during
+	 * one waits for it.
+	 */
+	private busy = 0;
+	/** The updates that wait, in order, until a microtask applies them. */
+	private heldUpdates?: [Partial<RecognizerConfig<Options>>, PanConfig?][];
 	private containerChanging = new Subject<void>();
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
@@ -148,21 +153,30 @@ export abstract class Recognizer<
 	 * Reports in `state$` and `running$` the fingers of the gesture the
 	 * recognizer's events recognize, until `isEnd` tells its end event, or until
 	 * nothing listens to them anymore. It shares the events, so that every
-	 * subscriber reads the same gesture.
+	 * subscriber reads the same gesture. An `update()` from a handler waits until
+	 * every subscriber got the event, as `update()` says.
 	 */
 	protected reportFingers =
 		(isEnd: (event: Event) => boolean) => (events$: Observable<Event>) =>
-			events$.pipe(
-				tap((event) => {
-					this.stateSubject.next({
-						fingers: isEnd(event) ? 0 : event.pointers.length,
-					});
-				}),
-				finalize(() => {
-					this.stateSubject.next({ fingers: 0 });
-				}),
-				share(),
-			);
+			new Observable<Event>((subscriber) =>
+				events$
+					.pipe(
+						tap((event) => {
+							this.stateSubject.next({
+								fingers: isEnd(event) ? 0 : event.pointers.length,
+							});
+						}),
+						finalize(() => {
+							this.stateSubject.next({ fingers: 0 });
+						}),
+					)
+					.subscribe({
+						// to every subscriber, before an update from a handler
+						next: (event) => this.holdUpdates(() => subscriber.next(event)),
+						error: (error) => subscriber.error(error),
+						complete: () => subscriber.complete(),
+					}),
+			).pipe(share());
 
 	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
 		this.pointerEvent$ = this.container$.pipe(
@@ -353,29 +367,34 @@ export abstract class Recognizer<
 		this.updateInternal(config ?? {}, panConfig);
 	}
 
+	/** Runs `run`, while an `update()` waits. */
+	private holdUpdates(run: () => void) {
+		this.busy++;
+
+		try {
+			run();
+		} finally {
+			this.busy--;
+		}
+	}
+
 	private updateInternal(
 		config: Partial<RecognizerConfig<Options>>,
 		panConfig?: PanConfig,
 	) {
-		const { container, ...rest } = config;
-		const currentContainer = this.configSubject.getValue().container;
+		this.holdUpdates(() => {
+			const { container } = config;
 
-		if (container !== undefined) {
-			this.requestedContainer = container;
-		}
+			if (
+				container !== undefined &&
+				container !== this.configSubject.getValue().container
+			) {
+				// before container$ switches, so that pan$ ends its gesture while it's followed
+				this.containerChanging.next();
+			}
 
-		// the other fields first, so that an update from an end handler comes after
-		this.mergeConfig(rest, panConfig);
-
-		if (container === undefined || container === currentContainer) {
-			return;
-		}
-
-		// before container$ switches, so that pan$ ends its gesture while it's followed
-		this.containerChanging.next();
-
-		// an end handler can set another container, which then stays
-		this.mergeConfig({ container: this.requestedContainer });
+			this.mergeConfig(config, panConfig);
+		});
 	}
 
 	private mergeConfig(
@@ -388,6 +407,10 @@ export abstract class Recognizer<
 			...existingConfig,
 			...config,
 			// unset, as when forwarding an optional value, they stay as they are
+			container:
+				config.container === undefined
+					? existingConfig.container
+					: config.container,
 			failWith: config.failWith ?? existingConfig.failWith,
 			afterEventReceived:
 				config.afterEventReceived ?? existingConfig.afterEventReceived,
@@ -405,10 +428,43 @@ export abstract class Recognizer<
 		});
 	}
 
+	/**
+	 * Changes the config. An `update()` from a start, move or end handler, or
+	 * from a handler that another `update()` runs, applies in a microtask, once
+	 * every subscriber got the event. The `update()` calls made until then wait
+	 * too, and apply after it in order.
+	 */
 	public update(
 		config: Partial<RecognizerConfig<Options>>,
 		panConfig?: PanConfig,
 	) {
-		this.updateInternal(config, panConfig);
+		if (this.heldUpdates) {
+			this.heldUpdates.push([config, panConfig]);
+
+			return;
+		}
+
+		if (!this.busy) {
+			this.updateInternal(config, panConfig);
+
+			return;
+		}
+
+		const heldUpdates: [Partial<RecognizerConfig<Options>>, PanConfig?][] = [
+			[config, panConfig],
+		];
+
+		this.heldUpdates = heldUpdates;
+
+		queueMicrotask(() => {
+			try {
+				// the updates that these make wait at the end of the list
+				for (let held = heldUpdates.shift(); held; held = heldUpdates.shift()) {
+					this.updateInternal(...held);
+				}
+			} finally {
+				this.heldUpdates = undefined;
+			}
+		});
 	}
 }
