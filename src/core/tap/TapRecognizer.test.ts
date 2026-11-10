@@ -1,5 +1,5 @@
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs";
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createContainer, eventsFor, sendPointer } from "../../tests/utils";
 import { TapRecognizer } from "./TapRecognizer";
 
@@ -645,4 +645,69 @@ describe("TapRecognizer with a multi-tap", () => {
 			},
 		]);
 	});
+});
+
+describe("TapRecognizer with the default multiTapThreshold", () => {
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	/** The taps of each tap while `gesture` runs, on fake timers. */
+	const tapsFor = (
+		maxTaps: number,
+		gesture: (container: HTMLElement, taps: number[]) => void,
+	) => {
+		vi.useFakeTimers();
+
+		const container = createContainer();
+		const recognizer = new TapRecognizer({ container, options: { maxTaps } });
+		const taps: number[] = [];
+		const subscription = recognizer.events$.subscribe((event) =>
+			taps.push(event.taps),
+		);
+
+		gesture(container, taps);
+		subscription.unsubscribe();
+
+		return taps;
+	};
+
+	const press = (container: HTMLElement, duration: number) => {
+		sendPointer(container, "pointerdown", { x: 0, y: 0 });
+		vi.advanceTimersByTime(duration);
+		sendPointer(container, "pointerup", { x: 0, y: 0 });
+	};
+
+	it("counts a double tap at a normal speed", () => {
+		const taps = tapsFor(2, (container) => {
+			press(container, 80);
+			vi.advanceTimersByTime(180);
+			press(container, 80);
+			vi.advanceTimersByTime(1000);
+		});
+
+		expect(taps).toEqual([2]);
+	});
+
+	it.each([
+		[1, 0],
+		[2, 300],
+		[3, 300],
+	])(
+		"with maxTaps %i, waits %i ms after the release of a single tap",
+		(maxTaps, wait) => {
+			const taps = tapsFor(maxTaps, (container, tapsSoFar) => {
+				press(container, 20);
+
+				if (wait > 0) {
+					vi.advanceTimersByTime(wait - 1);
+					expect(tapsSoFar).toEqual([]);
+				}
+
+				vi.advanceTimersByTime(1);
+			});
+
+			expect(taps).toEqual([1]);
+		},
+	);
 });
