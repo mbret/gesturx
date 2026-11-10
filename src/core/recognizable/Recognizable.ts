@@ -8,6 +8,7 @@ import {
 	share,
 } from "rxjs";
 import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer";
+import { scheduleUpdate } from "../recognizer/updates";
 import type {
 	RecognizableInterface,
 	RecognizableState,
@@ -75,8 +76,6 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 	private container: HTMLElement | null = null;
 	private disableTextSelection = false;
 	private restoreStyles = () => {};
-	/** The updates made while an update runs, as from an end handler. */
-	private queuedUpdates?: RecognizableUpdate<T>[];
 
 	constructor({ recognizers, ...config }: RecognizableOptions<T>) {
 		this.recognizers = recognizers;
@@ -104,26 +103,7 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 	}
 
 	public update(config: RecognizableUpdate<T>) {
-		// an update from an end handler comes after the update that runs, for every recognizer
-		if (this.queuedUpdates) {
-			this.queuedUpdates.push(config);
-
-			return;
-		}
-
-		this.queuedUpdates = [];
-
-		try {
-			for (
-				let next: RecognizableUpdate<T> | undefined = config;
-				next;
-				next = this.queuedUpdates.shift()
-			) {
-				this.apply(next);
-			}
-		} finally {
-			this.queuedUpdates = undefined;
-		}
+		scheduleUpdate(() => this.apply(config));
 	}
 
 	private apply({

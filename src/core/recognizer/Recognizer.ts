@@ -18,7 +18,6 @@ import {
 	startWith,
 	switchMap,
 	takeUntil,
-	tap,
 	timer,
 	withLatestFrom,
 } from "rxjs";
@@ -32,6 +31,7 @@ import { isWithinPosThreshold, omitUnset } from "../utils/utils";
 import { filterPointerOff } from "./operators";
 import type { RecognizerEvent } from "./RecognizerEvent";
 import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
+import { scheduleUpdate, shareDelivered } from "./updates";
 import { getPointerEvents } from "./utils";
 
 export type { RecognizerEvent };
@@ -101,8 +101,6 @@ export abstract class Recognizer<
 	private stateSubject = new BehaviorSubject<State>({
 		fingers: 0,
 	});
-	/** The container of the latest update that passed one, `null` included. */
-	private requestedContainer: HTMLElement | null = null;
 	private containerChanging = new Subject<void>();
 	protected pan$: Observable<RecognizerPanEvent>;
 	protected panStart$: Observable<RecognizerEvent>;
@@ -148,20 +146,20 @@ export abstract class Recognizer<
 	 * Reports in `state$` and `running$` the fingers of the gesture the
 	 * recognizer's events recognize, until `isEnd` tells its end event, or until
 	 * nothing listens to them anymore. It shares the events, so that every
-	 * subscriber reads the same gesture.
+	 * subscriber reads the same gesture. An `update()` from a handler waits until
+	 * every subscriber gets the event, as `update()` says.
 	 */
 	protected reportFingers =
 		(isEnd: (event: Event) => boolean) => (events$: Observable<Event>) =>
 			events$.pipe(
-				tap((event) => {
+				finalize(() => {
+					this.stateSubject.next({ fingers: 0 });
+				}),
+				shareDelivered((event) => {
 					this.stateSubject.next({
 						fingers: isEnd(event) ? 0 : event.pointers.length,
 					});
 				}),
-				finalize(() => {
-					this.stateSubject.next({ fingers: 0 });
-				}),
-				share(),
 			);
 
 	constructor(config?: RecognizerConfig<Options>, panConfig?: PanConfig) {
@@ -321,7 +319,7 @@ export abstract class Recognizer<
 					}),
 				);
 			}),
-			share(),
+			shareDelivered(),
 		);
 
 		this.panStart$ = this.pan$.pipe(
@@ -357,25 +355,17 @@ export abstract class Recognizer<
 		config: Partial<RecognizerConfig<Options>>,
 		panConfig?: PanConfig,
 	) {
-		const { container, ...rest } = config;
-		const currentContainer = this.configSubject.getValue().container;
+		const { container } = config;
 
-		if (container !== undefined) {
-			this.requestedContainer = container;
+		if (
+			container !== undefined &&
+			container !== this.configSubject.getValue().container
+		) {
+			// before container$ switches, so that pan$ ends its gesture while it's followed
+			this.containerChanging.next();
 		}
 
-		// the other fields first, so that an update from an end handler comes after
-		this.mergeConfig(rest, panConfig);
-
-		if (container === undefined || container === currentContainer) {
-			return;
-		}
-
-		// before container$ switches, so that pan$ ends its gesture while it's followed
-		this.containerChanging.next();
-
-		// an end handler can set another container, which then stays
-		this.mergeConfig({ container: this.requestedContainer });
+		this.mergeConfig(config, panConfig);
 	}
 
 	private mergeConfig(
@@ -386,11 +376,8 @@ export abstract class Recognizer<
 
 		this.configSubject.next({
 			...existingConfig,
-			...config,
 			// unset, as when forwarding an optional value, they stay as they are
-			failWith: config.failWith ?? existingConfig.failWith,
-			afterEventReceived:
-				config.afterEventReceived ?? existingConfig.afterEventReceived,
+			...omitUnset(config),
 			options: config.options
 				? // every option is optional, so leaving out the unset ones keeps them valid
 					({
@@ -405,10 +392,16 @@ export abstract class Recognizer<
 		});
 	}
 
+	/**
+	 * Changes the config. While a recognizer delivers an event, an `update()`
+	 * waits, and applies in a microtask after every subscriber gets the event.
+	 * The later `update()` calls apply after it, in order. An `update()` from
+	 * the handler of an event that an `update()` causes applies right after it.
+	 */
 	public update(
 		config: Partial<RecognizerConfig<Options>>,
 		panConfig?: PanConfig,
 	) {
-		this.updateInternal(config, panConfig);
+		scheduleUpdate(() => this.updateInternal(config, panConfig));
 	}
 }

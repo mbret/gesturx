@@ -372,6 +372,7 @@ pan.update({ options: { posThreshold: 30 } });
 - A new `container` moves the listeners to the new element, and `null` removes them. Both end the gesture in progress:
   - A pan, a pinch, a rotation or a hold emits its end event. Its `event` is the latest pointer event, and its `pointers` has the fingers that are still pressed.
   - A tap or a swipe in progress emits nothing.
+- While a recognizer delivers an event, or reports its fingers in `state$` and `running$`, every `update()` waits, of any recognizer or `Recognizable`. It applies in a microtask, after every subscriber gets the event, and the later `update()` calls apply after it, in order. So a new `container` from a start handler ends the gesture after its start event. An `update()` from the handler of an event that an `update()` causes, as an end event, applies right after that `update()`. Outside the handlers, `update()` applies at once, unless an `update()` from a handler still waits: it then applies after it.
 
 ## Custom gestures
 
@@ -383,6 +384,8 @@ To make a gesture of your own, extend `Recognizer`. The second argument of `supe
 - `pointerDown$`, `pointerMove$`, `pointerUp$` and `pointerCancel$`: the events of `pointerEvent$` with that type. `pointerMove$` leaves out the releases.
 - `failWithActive$`: `true` while one of the `failWith` sources runs. The streams above ignore `failWith`, so drop your events while it is `true`.
 - `reportFingers(isEnd)`: an operator for your `events$` that reports the fingers of its events in `state$`, until an event for which `isEnd` returns `true`. It shares the events. Without it, `state$` stays 0 and `running$` stays `false`.
+
+The events of `pan$`, and the events that `reportFingers` shares, hold back an `update()` from their handlers, as [Updating a recognizer](#updating-a-recognizer) says. An `update()` from a handler of other events, as from `pointerEvent$` alone, applies at once.
 
 ```ts
 import { filter, map, type Observable, withLatestFrom } from "rxjs";
@@ -439,7 +442,6 @@ So each move of a pressed mouse or pen must have its `buttons`, as in a browser.
 
 ## Known limitations
 
-- A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers. From an end handler, setting the previous container back restarts the gesture without a new press ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A `Recognizable` sets back the `touch-action` and `user-select` it found on its container. So two of them on one element undo each other's styles when one of them leaves.
 
 ## License
