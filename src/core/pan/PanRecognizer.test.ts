@@ -122,6 +122,29 @@ describe("PanRecognizer", () => {
 		]);
 	});
 
+	it("does not jump when a contextmenu ends one of the fingers", async () => {
+		const recognizer = new PanRecognizer({ container });
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			sendPointer(container, "pointerdown", { x: 0, y: 0 }, 1);
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 50, y: 0 }, 1);
+			await waitFor(5);
+			sendPointer(container, "pointerdown", { x: 200, y: 0 }, 2);
+			await waitFor(5);
+			sendPointer(container, "contextmenu", { x: 50, y: 0 }, 1);
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 200, y: 0 }, 2);
+		});
+
+		expect(events).toMatchObject([
+			{ type: "panStart", center: { x: 50 }, deltaX: 0 },
+			{ type: "panMove", center: { x: 125 }, deltaX: 0 },
+			{ type: "panMove", center: { x: 200 }, deltaX: 0 },
+			{ type: "panEnd", deltaX: 0 },
+		]);
+	});
+
 	describe("with numInputs", () => {
 		const twoFingerDrag = async () => {
 			sendPointer(container, "pointerdown", { x: 0, y: 0 }, 1);

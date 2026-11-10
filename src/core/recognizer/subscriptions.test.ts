@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import {
 	createContainer,
 	eventsFor,
+	sendMouse,
 	sendPointer,
 	waitFor,
 } from "../../tests/utils";
@@ -12,7 +13,7 @@ import { PinchRecognizer } from "../pinch/PinchRecognizer";
 import { RotateRecognizer } from "../rotate/RotateRecognizer";
 import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
 import { TapRecognizer } from "../tap/TapRecognizer";
-import type { FailWith } from "./Recognizer";
+import { type FailWith, Recognizer } from "./Recognizer";
 
 /** Counts the listeners added to `target` and not removed since. */
 const countListeners = (target: EventTarget) => {
@@ -36,6 +37,12 @@ const countListeners = (target: EventTarget) => {
 		},
 	};
 };
+
+/**
+ * The listeners that follow a pressed pointer, for `pointerdown`,
+ * `pointermove`, `pointerup`, `pointercancel` and `contextmenu`.
+ */
+const FOLLOW_LISTENERS = 5;
 
 type AnyRecognizer = new (config: {
 	container: HTMLElement;
@@ -87,40 +94,64 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 	});
 
 	it("removes them after gestures", async () => {
-		const recognizer = new Recognizer({ container });
-		const subscription = recognizer.events$.subscribe();
+		const document$ = countListeners(document);
 
-		await waitFor(1);
+		try {
+			const recognizer = new Recognizer({ container });
+			const subscription = recognizer.events$.subscribe();
 
-		// a press that doesn't move
-		sendPointer(container, "pointerdown", { x: 0, y: 0 });
-		await waitFor(5);
-		sendPointer(container, "pointerup", { x: 0, y: 0 });
-		await waitFor(5);
+			await waitFor(1);
 
-		// a drag
-		sendPointer(container, "pointerdown", { x: 0, y: 0 });
-		await waitFor(5);
-		sendPointer(container, "pointermove", { x: 50, y: 0 });
-		await waitFor(5);
-		sendPointer(container, "pointermove", { x: 100, y: 0 });
-		await waitFor(5);
-		sendPointer(container, "pointerup", { x: 100, y: 0 });
-		await waitFor(5);
+			// a press that doesn't move
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 0, y: 0 });
+			await waitFor(5);
 
-		// two fingers
-		await pressTwoFingers();
-		sendPointer(container, "pointerup", { x: 250, y: 50 }, 2);
-		sendPointer(container, "pointerup", { x: 100, y: 0 }, 1);
-		await waitFor(20);
+			// a drag
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 50, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointermove", { x: 100, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointerup", { x: 100, y: 0 });
+			await waitFor(5);
 
-		subscription.unsubscribe();
+			// two fingers
+			await pressTwoFingers();
+			sendPointer(container, "pointerup", { x: 250, y: 50 }, 2);
+			sendPointer(container, "pointerup", { x: 100, y: 0 }, 1);
+			await waitFor(20);
 
-		expect(listeners.count).toBe(0);
+			// mouse drags released without a pointerup
+			for (const release of [
+				() => sendMouse(container, "pointercancel", { x: 100, y: 0 }),
+				() => sendMouse(container, "contextmenu", { x: 100, y: 0 }),
+				() =>
+					sendMouse(container, "pointermove", { x: 150, y: 0 }, { buttons: 0 }),
+			]) {
+				sendMouse(container, "pointerdown", { x: 0, y: 0 });
+				await waitFor(5);
+				sendMouse(container, "pointermove", { x: 100, y: 0 });
+				await waitFor(5);
+				release();
+				await waitFor(20);
+			}
+
+			// nothing follows the released fingers
+			expect(document$.listeners.count).toBe(0);
+
+			subscription.unsubscribe();
+
+			expect(listeners.count).toBe(0);
+		} finally {
+			document$.restore();
+		}
 	});
 
 	it("removes them when unsubscribed during a gesture", async () => {
-		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 
 		try {
 			const recognizer = new Recognizer({ container });
@@ -129,15 +160,14 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			await waitFor(1);
 			await pressTwoFingers();
 
-			// the ones following the pressed fingers
-			expect(window$.listeners.count).toBeGreaterThan(0);
+			expect(document$.listeners.count).toBe(2 * FOLLOW_LISTENERS);
 
 			subscription.unsubscribe();
 
 			expect(listeners.count).toBe(0);
-			expect(window$.listeners.count).toBe(0);
+			expect(document$.listeners.count).toBe(0);
 		} finally {
-			window$.restore();
+			document$.restore();
 		}
 	});
 
@@ -157,7 +187,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 	});
 
 	it("follows a pointer only once after its options were updated", async () => {
-		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 
 		try {
 			const recognizer = new Recognizer({ container });
@@ -172,17 +202,40 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			sendPointer(container, "pointerdown", { x: 0, y: 0 });
 
 			// as before any update, not once more per update
-			expect(window$.listeners.count).toBe(1);
+			expect(document$.listeners.count).toBe(FOLLOW_LISTENERS);
 
 			sendPointer(container, "pointerup", { x: 0, y: 0 });
 			subscription.unsubscribe();
 		} finally {
-			window$.restore();
+			document$.restore();
+		}
+	});
+
+	it("follows a pointer once when it's pressed again before its release", async () => {
+		const document$ = countListeners(document);
+
+		try {
+			const recognizer = new Recognizer({ container });
+			const subscription = recognizer.events$.subscribe();
+
+			await waitFor(1);
+
+			// the page missed the release in between
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			await waitFor(5);
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+
+			expect(document$.listeners.count).toBe(FOLLOW_LISTENERS);
+
+			sendPointer(container, "pointerup", { x: 0, y: 0 });
+			subscription.unsubscribe();
+		} finally {
+			document$.restore();
 		}
 	});
 
 	it("removes them once detached", async () => {
-		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 
 		try {
 			const recognizer = new Recognizer({ container });
@@ -191,17 +244,16 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 			await waitFor(1);
 			await pressTwoFingers();
 
-			// the ones following the pressed fingers
-			expect(window$.listeners.count).toBeGreaterThan(0);
+			expect(document$.listeners.count).toBe(2 * FOLLOW_LISTENERS);
 
 			recognizer.update({ container: null });
 
 			expect(listeners.count).toBe(0);
-			expect(window$.listeners.count).toBe(0);
+			expect(document$.listeners.count).toBe(0);
 
 			subscription.unsubscribe();
 		} finally {
-			window$.restore();
+			document$.restore();
 		}
 	});
 
@@ -220,7 +272,7 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 	});
 
 	it("moves them when its container is updated during a gesture", async () => {
-		const window$ = countListeners(window);
+		const document$ = countListeners(document);
 		const other = createContainer();
 		const otherListeners = countListeners(other).listeners;
 
@@ -235,17 +287,17 @@ describe.each(recognizers)("%s", (_, Recognizer) => {
 
 			// nothing follows the fingers pressed on the previous container
 			expect(listeners.count).toBe(0);
-			expect(window$.listeners.count).toBe(0);
+			expect(document$.listeners.count).toBe(0);
 			expect(otherListeners.count).toBeGreaterThan(0);
 
 			sendPointer(other, "pointerdown", { x: 0, y: 0 });
 
-			expect(window$.listeners.count).toBe(1);
+			expect(document$.listeners.count).toBe(FOLLOW_LISTENERS);
 
 			sendPointer(other, "pointerup", { x: 0, y: 0 });
 			subscription.unsubscribe();
 		} finally {
-			window$.restore();
+			document$.restore();
 		}
 	});
 });
@@ -477,6 +529,34 @@ describe("when subscribed again right after an unsubscribe", () => {
 		});
 
 		// it only knows the second finger, and needs two
+		expect(events).toEqual([]);
+	});
+
+	it("pan$ doesn't follow a finger pressed while only pointerEvent$ was subscribed", async () => {
+		class PointerPanRecognizer extends Recognizer {
+			public events$ = this.pan$;
+			public pointers$ = this.pointerEvent$;
+		}
+
+		const recognizer = new PointerPanRecognizer({ container });
+		const pointers = recognizer.pointers$.subscribe();
+
+		await waitFor(1);
+		sendPointer(container, "pointerdown", { x: 100, y: 100 }, 1);
+		await waitFor(5);
+
+		const events = await eventsFor(recognizer.events$, async () => {
+			for (const x of [130, 160, 200]) {
+				await waitFor(8);
+				sendPointer(container, "pointermove", { x, y: 100 }, 1);
+			}
+
+			await waitFor(8);
+			sendPointer(container, "pointerup", { x: 200, y: 100 }, 1);
+		});
+
+		pointers.unsubscribe();
+
 		expect(events).toEqual([]);
 	});
 

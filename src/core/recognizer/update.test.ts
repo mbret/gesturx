@@ -695,15 +695,7 @@ describe("SwipeRecognizer", () => {
 				sendPointer(container, "pointermove", { x: 100, y: 0 });
 				await waitFor(5);
 				sendPointer(container, "pointermove", { x: 200, y: 0 });
-				const contextMenu = new PointerEvent("contextmenu", {
-					pointerId: 1,
-					clientX: 200,
-					clientY: 0,
-				});
-
-				// happy-dom does not derive them from clientX and clientY
-				Object.assign(contextMenu, { x: 200, y: 0 });
-				window.dispatchEvent(contextMenu);
+				sendPointer(container, "contextmenu", { x: 200, y: 0 });
 				await waitFor(20);
 			}),
 		).toEqual(["swipe"]);

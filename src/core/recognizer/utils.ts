@@ -1,49 +1,33 @@
-import { fromEvent, map, merge } from "rxjs";
-import { fromPointerDown } from "../utils/events";
+import { EMPTY, fromEvent, merge, mergeMap, of } from "rxjs";
+import { followPointer, isPrimaryButtonPress } from "../utils/events";
 
+/**
+ * Each press of the primary button in `container`, then the events of its
+ * pointer until its release, also outside the container.
+ */
 export const getPointerEvents = ({
 	container,
-	afterEventReceived = (event) => event,
+	afterEventReceived,
 }: {
 	container: HTMLElement;
-	afterEventReceived?: (event: PointerEvent) => PointerEvent;
-}) => {
-	const pointerDown$ = fromPointerDown({ afterEventReceived, container });
-	const pointerUp$ = fromEvent<PointerEvent>(container, "pointerup").pipe(
-		map(afterEventReceived),
-	);
-	const pointerMove$ = fromEvent<PointerEvent>(container, "pointermove").pipe(
-		map(afterEventReceived),
-	);
-	/**
-	 * Mostly used to handle cursor leaving window on mouse pointers.
-	 */
-	const pointerLeave$ = fromEvent<PointerEvent>(container, "pointerleave").pipe(
-		map(afterEventReceived),
-	);
-	/**
-	 * Handle things such as contextual menu popup or
-	 * native swipe navigation conflict.
-	 */
-	const pointerCancel$ = fromEvent<PointerEvent>(
-		container,
-		"pointercancel",
-	).pipe(map(afterEventReceived));
+	afterEventReceived: (event: PointerEvent) => PointerEvent;
+}) =>
+	fromEvent<PointerEvent>(container, "pointerdown").pipe(
+		mergeMap((event) => {
+			const pointerDown = afterEventReceived(event);
 
-	const pointerEvents$ = merge(
-		pointerDown$,
-		pointerCancel$,
-		pointerLeave$,
-		pointerUp$,
-		pointerMove$,
-	);
+			if (!isPrimaryButtonPress(pointerDown)) {
+				return EMPTY;
+			}
 
-	return {
-		pointerEvents$,
-		pointerDown$,
-		pointerCancel$,
-		pointerLeave$,
-		pointerUp$,
-		pointerMove$,
-	};
-};
+			return merge(
+				of(pointerDown),
+				followPointer({
+					// the document of the press, as the container can move to another one
+					document: container.ownerDocument,
+					pointerId: event.pointerId,
+					afterEventReceived,
+				}),
+			);
+		}),
+	);

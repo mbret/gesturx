@@ -20,24 +20,13 @@ export const createContainer = () => {
 	return container;
 };
 
-/**
- * Dispatches a touch pointer event on `container`, from the finger `id`.
- */
-export const sendPointer = (
-	container: HTMLElement,
-	type: "pointerdown" | "pointermove" | "pointerup",
+const dispatchPointer = (
+	target: EventTarget,
+	type: string,
 	{ x, y }: Point,
-	id = 1,
+	init: PointerEventInit,
 ) => {
-	const event = new PointerEvent(type, {
-		clientX: x,
-		clientY: y,
-		pointerId: id,
-		pointerType: "touch",
-		// a move presses no button
-		button: type === "pointermove" ? -1 : 0,
-		bubbles: true,
-	});
+	const event = new PointerEvent(type, { clientX: x, clientY: y, ...init });
 
 	// happy-dom does not derive them from clientX and clientY
 	// @ts-expect-error
@@ -45,8 +34,63 @@ export const sendPointer = (
 	// @ts-expect-error
 	event.y = y;
 
-	container.dispatchEvent(event);
+	target.dispatchEvent(event);
 };
+
+/**
+ * Dispatches a touch pointer event on `container`, from the finger `id`.
+ */
+export const sendPointer = (
+	container: HTMLElement,
+	type: "pointerdown" | "pointermove" | "pointerup" | "contextmenu",
+	point: Point,
+	id = 1,
+) =>
+	dispatchPointer(container, type, point, {
+		pointerId: id,
+		pointerType: "touch",
+		// a move presses no button
+		button: type === "pointermove" ? -1 : 0,
+		bubbles: true,
+	});
+
+/**
+ * Dispatches a mouse pointer event on `target`, with the left button pressed
+ * from `pointerdown` until `pointerup` or `pointercancel`. Pass `buttons: 0`
+ * for a move after a release that the page didn't receive, and
+ * `pointerType: "pen"` for a pen.
+ */
+export const sendMouse = (
+	target: EventTarget,
+	type:
+		| "pointerdown"
+		| "pointermove"
+		| "pointerleave"
+		| "pointerup"
+		| "pointercancel"
+		| "contextmenu",
+	point: Point,
+	{
+		buttons = type === "pointerup" || type === "pointercancel" ? 0 : 1,
+		pointerType = "mouse",
+	}: { buttons?: number; pointerType?: "mouse" | "pen" } = {},
+) =>
+	dispatchPointer(target, type, point, {
+		pointerId: 1,
+		pointerType,
+		button: {
+			pointerdown: 0,
+			pointerup: 0,
+			// the right button opens the context menu
+			contextmenu: 2,
+			// a move, a leave or a cancel changes no button
+			pointermove: -1,
+			pointerleave: -1,
+			pointercancel: -1,
+		}[type],
+		buttons,
+		bubbles: type !== "pointerleave",
+	});
 
 /**
  * Everything `events$` emits while `gesture` runs, and shortly after.
