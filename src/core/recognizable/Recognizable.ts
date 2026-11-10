@@ -18,7 +18,8 @@ export type { RecognizableState };
 
 /**
  * Sets `touch-action: none` on the container, and `user-select: none` with
- * `disableTextSelection`. Returns a function that sets them back.
+ * `disableTextSelection`. Returns a function that sets them back, each only
+ * while it still holds the value set here: a value the app set since stays.
  */
 const applyStyles = (container: HTMLElement, disableTextSelection: boolean) => {
 	const { touchAction, userSelect } = container.style;
@@ -38,8 +39,13 @@ const applyStyles = (container: HTMLElement, disableTextSelection: boolean) => {
 	}
 
 	return () => {
-		container.style.touchAction = touchAction;
-		container.style.userSelect = userSelect;
+		if (container.style.touchAction === "none") {
+			container.style.touchAction = touchAction;
+		}
+
+		if (disableTextSelection && container.style.userSelect === "none") {
+			container.style.userSelect = userSelect;
+		}
 	};
 };
 
