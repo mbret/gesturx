@@ -8,7 +8,8 @@ import {
 	timer,
 } from "rxjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { SwipeRecognizer } from "./SwipeRecognizer";
+import { createContainer, sendPointer } from "../../tests/utils";
+import { type SwipeEvent, SwipeRecognizer } from "./SwipeRecognizer";
 
 const waitFor = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));
@@ -273,4 +274,91 @@ describe("SwipeRecognizer", () => {
 
 		expect(values).toMatchObject([]);
 	});
+});
+
+describe("SwipeRecognizer with the speed at the release", () => {
+	/**
+	 * The swipes of a finger that presses at x 0, then moves to each `[time,
+	 * x]` of `moves` and lifts at `[time, x]` of `release`, on a fake `Date`.
+	 */
+	const swipesFor = async (
+		moves: [number, number][],
+		release: [number, number],
+	) => {
+		const container = createContainer();
+		const recognizer = new SwipeRecognizer({ container });
+		const swipes: SwipeEvent[] = [];
+		const subscription = recognizer.events$.subscribe((event) =>
+			swipes.push(event),
+		);
+
+		// the speed comes from Date.now()
+		vi.useFakeTimers({ toFake: ["Date"] });
+
+		try {
+			sendPointer(container, "pointerdown", { x: 0, y: 0 });
+			// the pan starts on a timer
+			await waitFor(1);
+
+			let now = 0;
+
+			for (const [time, x] of moves) {
+				vi.advanceTimersByTime(time - now);
+				now = time;
+				sendPointer(container, "pointermove", { x, y: 0 });
+			}
+
+			vi.advanceTimersByTime(release[0] - now);
+			sendPointer(container, "pointerup", { x: release[1], y: 0 });
+		} finally {
+			vi.useRealTimers();
+			subscription.unsubscribe();
+		}
+
+		return swipes;
+	};
+
+	/** A drag at 0.2 px/ms for 400 ms. */
+	const slowDrag: [number, number][] = [
+		[100, 20],
+		[200, 40],
+		[300, 60],
+		[400, 80],
+	];
+
+	it("swipes at a quick flick after a slow drag", async () => {
+		const swipes = await swipesFor([...slowDrag, [416, 230]], [416, 230]);
+
+		expect(swipes).toMatchObject([{ type: "swipe", angle: 0 }]);
+	});
+
+	it("gives the speed of the last 100 ms in velocityX", async () => {
+		const [swipe] = await swipesFor([...slowDrag, [416, 230]], [416, 230]);
+
+		// from the move at 400 ms: (230 - 80) / 16
+		expect(swipe?.velocityX).toBeCloseTo(9.375);
+		expect(swipe?.velocityY).toBe(0);
+	});
+
+	it("doesn't swipe at a slow drag", async () => {
+		expect(await swipesFor(slowDrag, [416, 83])).toEqual([]);
+	});
+
+	it.each([
+		[40, 1],
+		[41, 0],
+	])(
+		"lifted %i ms after the last move, gives %i swipe",
+		async (stop, count) => {
+			const swipes = await swipesFor(
+				[
+					[16, 150],
+					[32, 300],
+				],
+				[32 + stop, 300],
+			);
+
+			expect(swipes).toHaveLength(count);
+		},
+	);
 });

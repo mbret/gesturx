@@ -245,9 +245,9 @@ rotate.events$.subscribe(({ angle }) => {
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `escapeVelocity` | `0.9` px/ms | The speed on the x axis or the y axis that the move must reach. |
+| `escapeVelocity` | `0.9` px/ms | The speed on the x axis or the y axis that the finger must have when it lifts. |
 
-The speed is the average speed from the press to the release. The event adds `angle`, the direction from the press to the release in degrees: 0 is right, 90 is down, -90 is up, and 180 or -180 is left. `velocityX` and `velocityY` give the speed.
+The speed is measured over the last 100 ms before the finger lifts. A finger that stops for more than 40 ms before it lifts has a speed of 0, so a fast move that stops is no swipe. The event adds `angle`, the direction from the press to the release in degrees: 0 is right, 90 is down, -90 is up, and 180 or -180 is left. `velocityX` and `velocityY` give the speed when the finger lifts.
 
 ```ts
 import { SwipeRecognizer } from "gesturx";
@@ -301,7 +301,7 @@ The events of every recognizer have these fields:
 | `pointers` | The latest `PointerEvent` of each finger that is still pressed. An end event leaves out the finger that lifted, so a one-finger `panEnd` has none. A tap has its last press. |
 | `center` | The center of the fingers, `{ x, y }`, in client coordinates. |
 | `deltaX`, `deltaY` | The distance that the center moved since the start event, in px. They are 0 at the start event, which comes after the threshold. A finger that touches or lifts doesn't change them. |
-| `velocityX`, `velocityY` | `deltaX` and `deltaY` divided by `delay`, in px/ms. They can be negative. |
+| `velocityX`, `velocityY` | `deltaX` and `deltaY` divided by `delay`, in px/ms. They can be negative. A swipe gives the speed when the finger lifts instead. |
 | `delay` | The time since the start event, in ms. |
 | `startTime` | The time of the start event, from `Date.now()`. |
 | `deltaPointersAngle` | The angle that the fingers turned since the previous event, in degrees. It is 0 when the number of fingers changed. |
@@ -439,7 +439,6 @@ So each move of a pressed mouse or pen must have its `buttons`, as in a browser.
 
 ## Known limitations
 
-- A swipe checks the average speed of the move, not the speed at the release ([#141](https://github.com/mbret/gesturx/issues/141)).
 - A new `container`, or `null`, passed to `update()` from a start or move handler of that recognizer breaks its gesture. From a start handler, no end event comes. From a move handler, the other subscribers get the end event before that move. Call `update()` outside those handlers. From an end handler, setting the previous container back restarts the gesture without a new press ([#201](https://github.com/mbret/gesturx/issues/201)).
 - A `Recognizable` sets back the `touch-action` and `user-select` it found on its container. So two of them on one element undo each other's styles when one of them leaves.
 

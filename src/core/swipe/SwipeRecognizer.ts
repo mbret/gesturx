@@ -2,14 +2,20 @@ import {
 	filter,
 	map,
 	type Observable,
+	scan,
 	share,
+	startWith,
 	switchMap,
 	takeUntil,
 	withLatestFrom,
 } from "rxjs";
 import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
 import { calculateDegreeAngleBetweenPoints } from "../utils/geometry";
-import { isRecognizedAsSwipe } from "./operators";
+import {
+	isRecognizedAsSwipe,
+	RELEASE_WINDOW,
+	releaseVelocity,
+} from "./operators";
 import type {
 	SwipeEvent,
 	SwipeRecognizerInterface,
@@ -39,9 +45,27 @@ export class SwipeRecognizer
 						const { escapeVelocity = 0.9 } =
 							this.configSubject.getValue().options ?? {};
 
+						const recentEvents$ = this.panMove$.pipe(
+							scan(
+								(events, move) => [
+									...events.filter(
+										({ delay }) => move.delay - delay <= RELEASE_WINDOW,
+									),
+									move,
+								],
+								[startEvent],
+							),
+							startWith([startEvent]),
+						);
+
 						return this.panEnd$.pipe(
 							// numInputs is 1, so only a container update, null included, ends the pan with a finger still pressed
 							filter((event) => !event.pointers.length),
+							withLatestFrom(recentEvents$),
+							map(([end, events]) => ({
+								...end,
+								...releaseVelocity([...events, end]),
+							})),
 							isRecognizedAsSwipe(escapeVelocity),
 							map((event) => {
 								return {
