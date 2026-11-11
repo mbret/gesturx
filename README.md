@@ -85,7 +85,7 @@ subscription.unsubscribe();
 - `events$` emits `{ event, recognizer }` for the events of all its recognizers.
 - `state$` emits `{ fingers }`: the most fingers that one of its recognizers recognizes at that moment.
 - `update({ container })` sets the element on all its recognizers, and `update({ container: null })` detaches them. Set the options of each recognizer on the recognizer itself.
-- When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events. When the container changes or is `null`, it sets the previous values back.
+- When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events. When the container changes or is `null`, it sets the previous values back, except a value that your app changed since.
 - `disableTextSelection: true` also sets `user-select: none` on the container.
 - Give each recognizer to one `Recognizable` only, because each `Recognizable` writes its config to its recognizers.
 - Overlapping elements with their own recognizers can recognize the same gesture.

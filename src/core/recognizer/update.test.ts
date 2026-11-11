@@ -992,6 +992,21 @@ describe("Recognizable", () => {
 		expect(other.style.touchAction).toBe("");
 	});
 
+	it("leaves a style that the app changed while the container was set", () => {
+		const recognizable = new Recognizable({
+			recognizers: [new PanRecognizer()],
+			container,
+			disableTextSelection: true,
+		});
+
+		container.style.touchAction = "pan-x";
+		container.style.userSelect = "text";
+		recognizable.update({ container: null });
+
+		expect(container.style.touchAction).toBe("pan-x");
+		expect(container.style.userSelect).toBe("text");
+	});
+
 	it("keeps a container set from an end handler for all its recognizers", async () => {
 		const third = createContainer();
 		const pan = new PanRecognizer();
