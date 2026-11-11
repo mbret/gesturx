@@ -16,48 +16,9 @@ import type {
 
 export type { RecognizableState };
 
-/**
- * Sets `touch-action: none` on the container, and `user-select: none` with
- * `disableTextSelection`. Returns a function that sets them back, each only
- * while it still holds the value set here: a value the app set since stays.
- */
-const applyStyles = (container: HTMLElement, disableTextSelection: boolean) => {
-	const { touchAction, userSelect } = container.style;
-
-	/**
-	 * We have to disable touch-action otherwise every events will be followed
-	 * by a cancel event since the browser will try to handle touch.
-	 * @see https://developer.mozilla.org/en-US/docs/Web/CSS/touch-action
-	 */
-	container.style.touchAction = "none";
-
-	/**
-	 *  Disables text selection to improve the dragging gesture. Mainly for desktop browsers.
-	 */
-	if (disableTextSelection) {
-		container.style.userSelect = "none";
-	}
-
-	return () => {
-		if (container.style.touchAction === "none") {
-			container.style.touchAction = touchAction;
-		}
-
-		if (disableTextSelection && container.style.userSelect === "none") {
-			container.style.userSelect = userSelect;
-		}
-	};
-};
-
 // biome-ignore lint/suspicious/noExplicitAny: TODO
 type RecognizableOptions<T extends Recognizer<any, any>[]> = {
 	recognizers: T;
-	/**
-	 * If you don't need to have text selection, set this to true
-	 * to improve dragging gesture. This will prevent accidental
-	 * text selection on your component.
-	 */
-	disableTextSelection?: boolean;
 } & RecognizerConfig<unknown>;
 
 // biome-ignore lint/suspicious/noExplicitAny: TODO
@@ -77,11 +38,6 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 	recognizers: T;
 
 	state$: Observable<RecognizableState>;
-
-	/** The latest container it got, `null` included. */
-	private container: HTMLElement | null = null;
-	private disableTextSelection = false;
-	private restoreStyles = () => {};
 
 	constructor({ recognizers, ...config }: RecognizableOptions<T>) {
 		this.recognizers = recognizers;
@@ -112,35 +68,9 @@ export class Recognizable<T extends Recognizer<any, any>[]>
 		scheduleUpdate(() => this.apply(config));
 	}
 
-	private apply({
-		disableTextSelection,
-		container,
-		...rest
-	}: RecognizableUpdate<T>) {
-		const changesStyles =
-			(container !== undefined && container !== this.container) ||
-			(disableTextSelection !== undefined &&
-				disableTextSelection !== this.disableTextSelection);
-
-		if (container !== undefined) {
-			this.container = container;
-		}
-
-		if (disableTextSelection !== undefined) {
-			this.disableTextSelection = disableTextSelection;
-		}
-
-		if (changesStyles) {
-			this.restoreStyles();
-			this.restoreStyles = this.container
-				? applyStyles(this.container, this.disableTextSelection)
-				: () => {};
-		}
-
+	private apply(config: RecognizableUpdate<T>) {
 		for (const recognizer of this.recognizers) {
-			recognizer.update(
-				container === undefined ? rest : { ...rest, container },
-			);
+			recognizer.update(config);
 		}
 	}
 }

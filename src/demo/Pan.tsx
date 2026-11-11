@@ -17,6 +17,7 @@ export const Pan = ({
 			justifyContent="center"
 			position="relative"
 			overflow="hidden"
+			touchAction="none"
 			ref={containerRef}
 		>
 			<Text color="white">Select me to cancel pan/swipe</Text>

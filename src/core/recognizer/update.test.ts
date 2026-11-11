@@ -845,7 +845,12 @@ describe("Recognizable", () => {
 			"panEnd",
 			"holdEnd",
 		]);
-		expect(other.style.touchAction).toBe("none");
+		// the update moved them to the other container
+		expect(
+			(await eventsFor(recognizable.events$, () => press(other))).map(
+				({ event }) => event.type,
+			),
+		).toEqual(["holdStart", "holdEnd"]);
 	});
 
 	it("updates all its recognizers at once while an end handler's update waits", async () => {
@@ -963,48 +968,17 @@ describe("Recognizable", () => {
 		expect(received).toEqual(["handler", "handler", "handler", "handler"]);
 	});
 
-	it("sets the styles of the container back when it changes", () => {
-		container.style.touchAction = "pan-y";
-
+	it("sets no style on the containers it gets", () => {
 		const recognizable = new Recognizable({
 			recognizers: [new PanRecognizer()],
 			container,
-			disableTextSelection: true,
 		});
 
-		expect(container.style.touchAction).toBe("none");
-		expect(container.style.userSelect).toBe("none");
-
-		// the same container, and disableTextSelection left unset
-		recognizable.update({ container });
-
-		expect(container.style.userSelect).toBe("none");
+		expect(container.getAttribute("style")).toBeNull();
 
 		recognizable.update({ container: other });
 
-		expect(container.style.touchAction).toBe("pan-y");
-		expect(container.style.userSelect).toBe("");
-		expect(other.style.touchAction).toBe("none");
-		expect(other.style.userSelect).toBe("none");
-
-		recognizable.update({ container: null });
-
-		expect(other.style.touchAction).toBe("");
-	});
-
-	it("leaves a style that the app changed while the container was set", () => {
-		const recognizable = new Recognizable({
-			recognizers: [new PanRecognizer()],
-			container,
-			disableTextSelection: true,
-		});
-
-		container.style.touchAction = "pan-x";
-		container.style.userSelect = "text";
-		recognizable.update({ container: null });
-
-		expect(container.style.touchAction).toBe("pan-x");
-		expect(container.style.userSelect).toBe("text");
+		expect(other.getAttribute("style")).toBeNull();
 	});
 
 	it("keeps a container set from an end handler for all its recognizers", async () => {
@@ -1034,8 +1008,6 @@ describe("Recognizable", () => {
 				.filter(({ recognizer }) => recognizer === hold)
 				.map(({ event }) => event.type),
 		).toEqual(["holdStart", "holdEnd", "holdStart", "holdEnd"]);
-		expect(other.style.touchAction).toBe("");
-		expect(third.style.touchAction).toBe("none");
 	});
 
 	it("gives the fields of an end handler that the other fields run to all its recognizers", async () => {
@@ -1165,12 +1137,13 @@ describe("TapRecognizer", () => {
 			recognizers: [new TapRecognizer()],
 			container,
 		});
-		const touchActions: string[] = [];
+		const listenOnOther = vi.spyOn(other, "addEventListener");
+		const listenersOnOtherAtTap: number[] = [];
 		const first = recognizable.events$.subscribe(() =>
 			recognizable.update({ container: other }),
 		);
 		const second = recognizable.events$.subscribe(() =>
-			touchActions.push(container.style.touchAction),
+			listenersOnOtherAtTap.push(listenOnOther.mock.calls.length),
 		);
 
 		await tap(container);
@@ -1178,9 +1151,9 @@ describe("TapRecognizer", () => {
 		first.unsubscribe();
 		second.unsubscribe();
 
-		// the second subscriber got the tap while the container still had it
-		expect(touchActions).toEqual(["none"]);
-		expect(other.style.touchAction).toBe("none");
+		// the second subscriber got the tap before the recognizer moved
+		expect(listenersOnOtherAtTap).toEqual([0]);
+		expect(listenOnOther).toHaveBeenCalled();
 	});
 
 	it("recognizes a running tap with the options it started with", async () => {
