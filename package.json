@@ -28,7 +28,7 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.14",
-		"@chakra-ui/react": "^3.37.0",
+		"@chakra-ui/react": "^3.38.0",
 		"@emotion/react": "^11.14.0",
 		"@microsoft/api-extractor": "^7.59.2",
 		"@types/node": "^26.6.2",
