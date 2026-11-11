@@ -16,7 +16,6 @@ Try the gestures in the [demo](https://gesturx.vercel.app/).
 - [Updating a recognizer](#updating-a-recognizer)
 - [Custom gestures](#custom-gestures)
 - [Notes](#notes)
-- [Known limitations](#known-limitations)
 
 ## Installation
 
@@ -55,6 +54,14 @@ recognizable.events$.subscribe(({ event }) => {
 recognizable.update({ container: document.getElementById("app")! });
 ```
 
+gesturx sets no style on a container. Give it `touch-action: none` from your CSS. Without it, the browser scrolls or zooms on touch screens, and cancels the pointer events. Add `user-select: none` if a drag must not select text.
+
+```css
+#app {
+	touch-action: none;
+}
+```
+
 Recognition starts when `events$` has a subscriber and a container is set. It stops when you unsubscribe, or when you set `container: null`.
 
 ## Recognizable
@@ -66,7 +73,6 @@ import { HoldRecognizer, Recognizable, SwipeRecognizer } from "gesturx";
 
 const recognizable = new Recognizable({
 	container: document.getElementById("app")!,
-	disableTextSelection: true,
 	recognizers: [new SwipeRecognizer(), new HoldRecognizer()],
 });
 
@@ -85,14 +91,12 @@ subscription.unsubscribe();
 - `events$` emits `{ event, recognizer }` for the events of all its recognizers.
 - `state$` emits `{ fingers }`: the most fingers that one of its recognizers recognizes at that moment.
 - `update({ container })` sets the element on all its recognizers, and `update({ container: null })` detaches them. Set the options of each recognizer on the recognizer itself.
-- When it gets a container, it sets `touch-action: none` on it. Without that, the browser scrolls or zooms on touch screens, and cancels the pointer events. When the container changes or is `null`, it sets the previous values back, except a value that your app changed since.
-- `disableTextSelection: true` also sets `user-select: none` on the container.
 - Give each recognizer to one `Recognizable` only, because each `Recognizable` writes its config to its recognizers.
 - Overlapping elements with their own recognizers can recognize the same gesture.
 
 ## Recognizers
 
-A recognizer also works alone, on any element. Alone, it doesn't set `touch-action`: set `touch-action: none` on its container yourself.
+A recognizer also works alone, on any element. Its container needs `touch-action: none` too, as [Quick start](#quick-start) says.
 
 ```ts
 import { PanRecognizer } from "gesturx";
@@ -439,10 +443,6 @@ A `contextmenu` event ends the gesture of its pointer, as a `pointerup` does, bu
 If the page doesn't receive the `pointerup` of a mouse or a pen, the next move of that pointer with no button pressed ends its gesture, and a tap fails. The end event references that `pointermove`. As for a `pointercancel`, `deltaX` and `deltaY` stay as they were in the previous event. A new press of that pointer ends the gesture as a `pointercancel` does, then starts a new one.
 
 So each move of a pressed mouse or pen must have its `buttons`, as in a browser. Set `buttons` in the mouse and pen events that your tests dispatch.
-
-## Known limitations
-
-- A `Recognizable` sets back the `touch-action` and `user-select` it found on its container. So two of them on one element undo each other's styles when one of them leaves.
 
 ## License
 
