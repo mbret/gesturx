@@ -2,7 +2,6 @@ import { resolve } from "node:path";
 import react from "@vitejs/plugin-react";
 import externals from "rollup-plugin-node-externals";
 import { defineConfig } from "vite";
-import dts from "vite-plugin-dts";
 
 export default defineConfig(({ mode }) => {
 	const libMode = process.env.LIB_MODE === "true";
@@ -36,15 +35,6 @@ export default defineConfig(({ mode }) => {
 					devDeps: libMode,
 				}),
 			},
-			libMode &&
-				dts({
-					bundleTypes: {
-						// TypeScript 7 no longer ships lib typings in `typescript/lib`, which
-						// is where the plugin tells api-extractor to look. Unset it so
-						// api-extractor uses the libs of its own bundled compiler.
-						invokeOptions: { typescriptCompilerFolder: undefined },
-					},
-				}),
 		],
 	};
 });
