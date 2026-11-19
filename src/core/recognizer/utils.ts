@@ -1,5 +1,5 @@
 import { EMPTY, fromEvent, merge, mergeMap, of } from "rxjs";
-import { followPointer, isPrimaryButtonPress } from "../utils/events";
+import { followPointer, isPrimaryButtonPress } from "../utils/events.ts";
 
 /**
  * Each press of the primary button in `container`, then the events of its

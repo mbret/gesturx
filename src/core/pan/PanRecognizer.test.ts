@@ -6,9 +6,9 @@ import {
 	type Point,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { HoldRecognizer } from "../hold/HoldRecognizer";
-import { PanRecognizer } from "./PanRecognizer";
+} from "../../tests/utils.ts";
+import { HoldRecognizer } from "../hold/HoldRecognizer.ts";
+import { PanRecognizer } from "./PanRecognizer.ts";
 
 describe("PanRecognizer", () => {
 	let container = createContainer();

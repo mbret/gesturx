@@ -1,6 +1,6 @@
 import { Box } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import type { AppRecognizable } from "../useRecognizable";
+import type { AppRecognizable } from "../useRecognizable.ts";
 
 /**
  * Track center of pointer events by moving a box.

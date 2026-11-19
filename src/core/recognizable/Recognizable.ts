@@ -7,12 +7,12 @@ import {
 	type ObservedValueOf,
 	share,
 } from "rxjs";
-import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer";
-import { scheduleUpdate } from "../recognizer/updates";
+import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer.ts";
+import { scheduleUpdate } from "../recognizer/updates.ts";
 import type {
 	RecognizableInterface,
 	RecognizableState,
-} from "./RecognizableInterface";
+} from "./RecognizableInterface.ts";
 
 export type { RecognizableState };
 

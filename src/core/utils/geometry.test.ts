@@ -6,7 +6,7 @@ import {
 	calculateDegreeAngleBetweenPoints,
 	calculateDistance,
 	calculateRadianAngleBetweenPoints,
-} from "./geometry";
+} from "./geometry.ts";
 
 /** A point at `degrees` on a circle of `radius` around the origin. */
 const onCircle = (degrees: number, radius = 10) => ({

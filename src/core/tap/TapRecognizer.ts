@@ -13,18 +13,21 @@ import {
 	takeUntil,
 	withLatestFrom,
 } from "rxjs";
-import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
-import { scanToRecognizerEvent } from "../recognizer/scanToRecognizerEvent";
-import { shareDelivered } from "../recognizer/updates";
-import { trackPointers } from "../utils/events";
-import { shareLatest } from "../utils/operators";
-import { filterNotEmpty } from "../utils/utils";
-import { takeWhenOutsideThreshold, takeWhenPressedTooLong } from "./operators";
+import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer.ts";
+import { scanToRecognizerEvent } from "../recognizer/scanToRecognizerEvent.ts";
+import { shareDelivered } from "../recognizer/updates.ts";
+import { trackPointers } from "../utils/events.ts";
+import { shareLatest } from "../utils/operators.ts";
+import { filterNotEmpty } from "../utils/utils.ts";
+import {
+	takeWhenOutsideThreshold,
+	takeWhenPressedTooLong,
+} from "./operators.ts";
 import type {
 	TapEvent,
 	TapRecognizerInterface,
 	TapRecognizerOptions,
-} from "./TapRecognizerInterface";
+} from "./TapRecognizerInterface.ts";
 
 export type { TapEvent, TapRecognizerOptions };
 

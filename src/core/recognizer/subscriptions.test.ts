@@ -6,14 +6,14 @@ import {
 	sendMouse,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { HoldRecognizer } from "../hold/HoldRecognizer";
-import { PanRecognizer } from "../pan/PanRecognizer";
-import { PinchRecognizer } from "../pinch/PinchRecognizer";
-import { RotateRecognizer } from "../rotate/RotateRecognizer";
-import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
-import { TapRecognizer } from "../tap/TapRecognizer";
-import { type FailWith, Recognizer } from "./Recognizer";
+} from "../../tests/utils.ts";
+import { HoldRecognizer } from "../hold/HoldRecognizer.ts";
+import { PanRecognizer } from "../pan/PanRecognizer.ts";
+import { PinchRecognizer } from "../pinch/PinchRecognizer.ts";
+import { RotateRecognizer } from "../rotate/RotateRecognizer.ts";
+import { SwipeRecognizer } from "../swipe/SwipeRecognizer.ts";
+import { TapRecognizer } from "../tap/TapRecognizer.ts";
+import { type FailWith, Recognizer } from "./Recognizer.ts";
 
 /** Counts the listeners added to `target` and not removed since. */
 const countListeners = (target: EventTarget) => {

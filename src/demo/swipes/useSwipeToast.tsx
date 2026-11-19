@@ -1,8 +1,8 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { useCallback } from "react";
 import { IoArrowForward } from "react-icons/io5";
-import type { SwipeEvent } from "../../core/swipe/SwipeRecognizerInterface";
-import { toaster } from "../chakra/ui/toaster";
+import type { SwipeEvent } from "../../core/swipe/SwipeRecognizerInterface.ts";
+import { toaster } from "../chakra/ui/toaster.tsx";
 
 export const useSwipeToast = () => {
 	return useCallback((e: SwipeEvent) => {

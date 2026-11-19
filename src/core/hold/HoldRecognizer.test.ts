@@ -5,8 +5,8 @@ import {
 	eventsFor,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { HoldRecognizer } from "./HoldRecognizer";
+} from "../../tests/utils.ts";
+import { HoldRecognizer } from "./HoldRecognizer.ts";
 
 describe("HoldRecognizer", () => {
 	let container = createContainer();

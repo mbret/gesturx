@@ -1,7 +1,7 @@
 import { buffer, first, lastValueFrom, tap, timer } from "rxjs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createContainer, eventsFor, sendPointer } from "../../tests/utils";
-import { TapRecognizer } from "./TapRecognizer";
+import { createContainer, eventsFor, sendPointer } from "../../tests/utils.ts";
+import { TapRecognizer } from "./TapRecognizer.ts";
 
 const waitFor = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));

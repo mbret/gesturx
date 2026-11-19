@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import type { Settings } from "../App";
-import type { AppRecognizable } from "../useRecognizable";
+import type { Settings } from "../App.tsx";
+import type { AppRecognizable } from "../useRecognizable.ts";
 
 export const usePan = ({
 	recognizable,

@@ -1,6 +1,6 @@
 import { map, type Observable, scan } from "rxjs";
-import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
-import type { PinchEvent } from "./PinchRecognizerInterface";
+import type { RecognizerEvent } from "../recognizer/RecognizerEvent.ts";
+import type { PinchEvent } from "./PinchRecognizerInterface.ts";
 
 /**
  * What the scale and distance are measured from: an average distance between

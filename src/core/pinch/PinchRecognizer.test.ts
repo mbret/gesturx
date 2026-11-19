@@ -4,8 +4,8 @@ import {
 	eventsFor,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { PinchRecognizer } from "./PinchRecognizer";
+} from "../../tests/utils.ts";
+import { PinchRecognizer } from "./PinchRecognizer.ts";
 
 describe("PinchRecognizer", () => {
 	let container = createContainer();

@@ -25,14 +25,14 @@ import {
 	isPointerOffEvent,
 	matchPointer,
 	trackPointers,
-} from "../utils/events";
-import { shareLatest } from "../utils/operators";
-import { isWithinPosThreshold, omitUnset } from "../utils/utils";
-import { filterPointerOff } from "./operators";
-import type { RecognizerEvent } from "./RecognizerEvent";
-import { scanToRecognizerEvent } from "./scanToRecognizerEvent";
-import { scheduleUpdate, shareDelivered } from "./updates";
-import { getPointerEvents } from "./utils";
+} from "../utils/events.ts";
+import { shareLatest } from "../utils/operators.ts";
+import { isWithinPosThreshold, omitUnset } from "../utils/utils.ts";
+import { filterPointerOff } from "./operators.ts";
+import type { RecognizerEvent } from "./RecognizerEvent.ts";
+import { scanToRecognizerEvent } from "./scanToRecognizerEvent.ts";
+import { scheduleUpdate, shareDelivered } from "./updates.ts";
+import { getPointerEvents } from "./utils.ts";
 
 export type { RecognizerEvent };
 

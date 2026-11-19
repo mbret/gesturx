@@ -1,12 +1,12 @@
 import { map, type Observable, scan } from "rxjs";
-import { isPointerOffEvent } from "../utils/events";
+import { isPointerOffEvent } from "../utils/events.ts";
 import {
 	calculateAngleDelta,
 	calculateAverageDistance,
 	calculateCentroid,
-} from "../utils/geometry";
-import { calculateVelocity } from "../utils/utils";
-import type { RecognizerEvent } from "./RecognizerEvent";
+} from "../utils/geometry.ts";
+import { calculateVelocity } from "../utils/utils.ts";
+import type { RecognizerEvent } from "./RecognizerEvent.ts";
 
 export interface RecognizerEventInput {
 	event: PointerEvent;

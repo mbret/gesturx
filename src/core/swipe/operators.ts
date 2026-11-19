@@ -1,6 +1,6 @@
 import { filter, type Observable } from "rxjs";
-import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
-import { calculateVelocity } from "../utils/utils";
+import type { RecognizerEvent } from "../recognizer/RecognizerEvent.ts";
+import { calculateVelocity } from "../utils/utils.ts";
 
 /** The time before the release, in ms, whose moves give its speed. */
 export const RELEASE_WINDOW = 100;

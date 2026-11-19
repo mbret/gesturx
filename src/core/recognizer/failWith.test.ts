@@ -5,12 +5,12 @@ import {
 	eventsFor,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { HoldRecognizer } from "../hold/HoldRecognizer";
-import { PanRecognizer } from "../pan/PanRecognizer";
-import { Recognizable } from "../recognizable/Recognizable";
-import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
-import { TapRecognizer } from "../tap/TapRecognizer";
+} from "../../tests/utils.ts";
+import { HoldRecognizer } from "../hold/HoldRecognizer.ts";
+import { PanRecognizer } from "../pan/PanRecognizer.ts";
+import { Recognizable } from "../recognizable/Recognizable.ts";
+import { SwipeRecognizer } from "../swipe/SwipeRecognizer.ts";
+import { TapRecognizer } from "../tap/TapRecognizer.ts";
 
 let container = createContainer();
 let sourceContainer = createContainer();

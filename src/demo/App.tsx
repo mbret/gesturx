@@ -1,14 +1,14 @@
 import { memo, useState } from "react";
-import { Toaster } from "./chakra/ui/toaster";
-import { Controls } from "./controls/Controls";
-import { GesturesBox } from "./gesturesBox/GesturesBox";
-import { useHold } from "./holds/useHold";
-import { Pan } from "./Pan";
-import { useSwipe } from "./swipes/useSwipe";
-import { useTap } from "./taps/useTap";
-import { CenterTracker } from "./trackers/CenterTracker";
-import { useTrackFingers } from "./trackers/useTrackFingers";
-import { useRecognizable } from "./useRecognizable";
+import { Toaster } from "./chakra/ui/toaster.tsx";
+import { Controls } from "./controls/Controls.tsx";
+import { GesturesBox } from "./gesturesBox/GesturesBox.tsx";
+import { useHold } from "./holds/useHold.tsx";
+import { Pan } from "./Pan.tsx";
+import { useSwipe } from "./swipes/useSwipe.tsx";
+import { useTap } from "./taps/useTap.tsx";
+import { CenterTracker } from "./trackers/CenterTracker.tsx";
+import { useTrackFingers } from "./trackers/useTrackFingers.tsx";
+import { useRecognizable } from "./useRecognizable.ts";
 
 export type Settings = {
 	maxTaps: number;

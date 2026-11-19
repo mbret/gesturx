@@ -1,6 +1,6 @@
 import { useEffect } from "react";
-import type { AppRecognizable } from "../useRecognizable";
-import { useSwipeToast } from "./useSwipeToast";
+import type { AppRecognizable } from "../useRecognizable.ts";
+import { useSwipeToast } from "./useSwipeToast.tsx";
 
 export const useSwipe = ({
 	recognizable,
