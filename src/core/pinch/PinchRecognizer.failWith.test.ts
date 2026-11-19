@@ -5,9 +5,9 @@ import {
 	eventsFor,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { RotateRecognizer } from "../rotate/RotateRecognizer";
-import { PinchRecognizer } from "./PinchRecognizer";
+} from "../../tests/utils.ts";
+import { RotateRecognizer } from "../rotate/RotateRecognizer.ts";
+import { PinchRecognizer } from "./PinchRecognizer.ts";
 
 describe("PinchRecognizer with failWith", () => {
 	let container = createContainer();

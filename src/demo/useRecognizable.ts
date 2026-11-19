@@ -9,7 +9,7 @@ import {
 	RotateRecognizer,
 	SwipeRecognizer,
 	TapRecognizer,
-} from "../core";
+} from "../core/index.ts";
 
 export type AppRecognizable = ReturnType<
 	typeof useRecognizable

@@ -15,14 +15,14 @@ import {
 	Recognizer,
 	type RecognizerConfig,
 	type RecognizerPanEvent,
-} from "../recognizer/Recognizer";
-import { shareLatest } from "../utils/operators";
-import { omitUnset } from "../utils/utils";
+} from "../recognizer/Recognizer.ts";
+import { shareLatest } from "../utils/operators.ts";
+import { omitUnset } from "../utils/utils.ts";
 import type {
 	RotateEvent,
 	RotateRecognizerInterface,
 	RotateRecognizerOptions,
-} from "./RotateRecognizerInterface";
+} from "./RotateRecognizerInterface.ts";
 
 export type { RotateEvent, RotateRecognizerOptions };
 

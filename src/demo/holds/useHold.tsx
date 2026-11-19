@@ -1,8 +1,8 @@
 import { useEffect } from "react";
-import type { Settings } from "../App";
-import { toaster } from "../chakra/ui/toaster";
+import type { Settings } from "../App.tsx";
+import { toaster } from "../chakra/ui/toaster.tsx";
 // import { ToastId, useToast } from "@chakra-ui/react"
-import type { AppRecognizable } from "../useRecognizable";
+import type { AppRecognizable } from "../useRecognizable.ts";
 
 export const useHold = ({
 	recognizable,

@@ -1,11 +1,14 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
-import { PanRecognizer } from "../../core";
-import type { Settings } from "../App";
-import { Field } from "../chakra/ui/field";
-import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input";
-import { ControlBox } from "../controls/ControlBox";
-import type { AppRecognizable } from "../useRecognizable";
+import { PanRecognizer } from "../../core/index.ts";
+import type { Settings } from "../App.tsx";
+import { Field } from "../chakra/ui/field.tsx";
+import {
+	NumberInputField,
+	NumberInputRoot,
+} from "../chakra/ui/number-input.tsx";
+import { ControlBox } from "../controls/ControlBox.tsx";
+import type { AppRecognizable } from "../useRecognizable.ts";
 
 export const PanControl = ({
 	recognizable,

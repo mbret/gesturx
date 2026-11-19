@@ -1,13 +1,13 @@
 import { firstValueFrom, type Observable } from "rxjs";
 import { beforeEach, describe, expect, it } from "vitest";
-import { createContainer, sendPointer, waitFor } from "../../tests/utils";
-import { HoldRecognizer } from "../hold/HoldRecognizer";
-import { PanRecognizer } from "../pan/PanRecognizer";
-import { PinchRecognizer } from "../pinch/PinchRecognizer";
-import { Recognizable } from "../recognizable/Recognizable";
-import { RotateRecognizer } from "../rotate/RotateRecognizer";
-import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
-import { TapRecognizer } from "../tap/TapRecognizer";
+import { createContainer, sendPointer, waitFor } from "../../tests/utils.ts";
+import { HoldRecognizer } from "../hold/HoldRecognizer.ts";
+import { PanRecognizer } from "../pan/PanRecognizer.ts";
+import { PinchRecognizer } from "../pinch/PinchRecognizer.ts";
+import { Recognizable } from "../recognizable/Recognizable.ts";
+import { RotateRecognizer } from "../rotate/RotateRecognizer.ts";
+import { SwipeRecognizer } from "../swipe/SwipeRecognizer.ts";
+import { TapRecognizer } from "../tap/TapRecognizer.ts";
 
 type AnyRecognizer = new (config: {
 	container: HTMLElement;

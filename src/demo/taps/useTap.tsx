@@ -1,8 +1,8 @@
 import { Stack, Text } from "@chakra-ui/react";
 import { useEffect } from "react";
-import { TapRecognizer } from "../../core";
-import { toaster } from "../chakra/ui/toaster";
-import type { AppRecognizable } from "../useRecognizable";
+import { TapRecognizer } from "../../core/index.ts";
+import { toaster } from "../chakra/ui/toaster.tsx";
+import type { AppRecognizable } from "../useRecognizable.ts";
 
 export const useTap = ({
 	maxTaps,

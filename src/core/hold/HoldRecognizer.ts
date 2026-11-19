@@ -9,13 +9,13 @@ import {
 	takeUntil,
 	withLatestFrom,
 } from "rxjs";
-import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
-import { omitUnset } from "../utils/utils";
+import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer.ts";
+import { omitUnset } from "../utils/utils.ts";
 import type {
 	HoldEvent,
 	HoldRecognizerInterface,
 	HoldRecognizerOptions,
-} from "./HoldRecognizerInterface";
+} from "./HoldRecognizerInterface.ts";
 
 export type { HoldEvent, HoldRecognizerOptions };
 

@@ -1,18 +1,18 @@
 import { AccordionItemContent, Box } from "@chakra-ui/react";
 import type { ReactNode } from "react";
-import type { Settings } from "../App";
+import type { Settings } from "../App.tsx";
 import {
 	AccordionItem,
 	AccordionItemTrigger,
 	AccordionRoot,
-} from "../chakra/ui/accordion";
-import { PanControl } from "../gesturesBox/PanControls";
-import { PinchControls } from "../gesturesBox/PinchControls";
-import { RotateControls } from "../gesturesBox/RotateControls";
-import { HoldControls } from "../holds/HoldControls";
-import { TapControls } from "../taps/TapControls";
-import type { AppRecognizable } from "../useRecognizable";
-import { ControlBox } from "./ControlBox";
+} from "../chakra/ui/accordion.tsx";
+import { PanControl } from "../gesturesBox/PanControls.tsx";
+import { PinchControls } from "../gesturesBox/PinchControls.tsx";
+import { RotateControls } from "../gesturesBox/RotateControls.tsx";
+import { HoldControls } from "../holds/HoldControls.tsx";
+import { TapControls } from "../taps/TapControls.tsx";
+import type { AppRecognizable } from "../useRecognizable.ts";
+import { ControlBox } from "./ControlBox.tsx";
 
 const AccordionControlButton = ({ children }: { children: ReactNode }) => {
 	return (

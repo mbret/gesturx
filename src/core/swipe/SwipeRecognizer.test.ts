@@ -8,8 +8,8 @@ import {
 	timer,
 } from "rxjs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createContainer, sendPointer } from "../../tests/utils";
-import { type SwipeEvent, SwipeRecognizer } from "./SwipeRecognizer";
+import { createContainer, sendPointer } from "../../tests/utils.ts";
+import { type SwipeEvent, SwipeRecognizer } from "./SwipeRecognizer.ts";
 
 const waitFor = (time: number) =>
 	new Promise((resolve) => setTimeout(resolve, time));

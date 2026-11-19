@@ -12,6 +12,7 @@ Run these before you push:
 - `npm run check:readme`: the type check of the examples in `README.md`.
 - `npm run build`: the demo build.
 - `npm run build:lib`: the published build. It needs Node 24 or later. `.nvmrc` sets Node 26.
+- `npm run check:package`: the types of the packed package, after `npm run build:lib`.
 
 ## Documentation
 

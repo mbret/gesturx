@@ -1,5 +1,5 @@
 import type { Observable, ObservedValueOf } from "rxjs";
-import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer";
+import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer.ts";
 
 export type RecognizableState = {
 	/**

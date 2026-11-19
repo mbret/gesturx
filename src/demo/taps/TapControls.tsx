@@ -1,7 +1,10 @@
 import { Stack } from "@chakra-ui/react";
-import { Field } from "../chakra/ui/field";
-import { NumberInputField, NumberInputRoot } from "../chakra/ui/number-input";
-import { ControlBox } from "../controls/ControlBox";
+import { Field } from "../chakra/ui/field.tsx";
+import {
+	NumberInputField,
+	NumberInputRoot,
+} from "../chakra/ui/number-input.tsx";
+import { ControlBox } from "../controls/ControlBox.tsx";
 
 export const TapControls = ({
 	value,

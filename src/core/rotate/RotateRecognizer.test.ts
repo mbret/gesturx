@@ -5,8 +5,8 @@ import {
 	eventsFor,
 	sendPointer,
 	waitFor,
-} from "../../tests/utils";
-import { RotateRecognizer } from "./RotateRecognizer";
+} from "../../tests/utils.ts";
+import { RotateRecognizer } from "./RotateRecognizer.ts";
 
 /** A point at `degrees` on a circle of radius 100 around (200, 200). */
 const onCircle = (degrees: number) => ({

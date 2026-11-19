@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { calculateCentroid, type Point } from "./geometry";
-import { omitUnset } from "./utils";
+import { calculateCentroid, type Point } from "./geometry.ts";
+import { omitUnset } from "./utils.ts";
 
 describe("calculateCentroid", () => {
 	it("calculates the correct center for a list of pointer events", () => {

@@ -11,13 +11,13 @@ import {
 	tap,
 	withLatestFrom,
 } from "rxjs";
-import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
-import { omitUnset } from "../utils/utils";
+import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer.ts";
+import { omitUnset } from "../utils/utils.ts";
 import type {
 	PanEvent,
 	PanRecognizerInterface,
 	PanRecognizerOptions,
-} from "./PanRecognizerInterface";
+} from "./PanRecognizerInterface.ts";
 
 export type { PanEvent, PanRecognizerOptions };
 

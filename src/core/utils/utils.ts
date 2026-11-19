@@ -1,5 +1,5 @@
 import { filter, type Observable } from "rxjs";
-import { calculateCentroid } from "./geometry";
+import { calculateCentroid } from "./geometry.ts";
 
 export function isDefined<T>(
 	arg: T | null | undefined,

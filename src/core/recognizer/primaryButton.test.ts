@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { eventsFor } from "../../tests/utils";
-import { PanRecognizer } from "../pan/PanRecognizer";
-import { TapRecognizer } from "../tap/TapRecognizer";
+import { eventsFor } from "../../tests/utils.ts";
+import { PanRecognizer } from "../pan/PanRecognizer.ts";
+import { TapRecognizer } from "../tap/TapRecognizer.ts";
 
 /**
  * A gesture starts on a press of the primary button: a left click, a finger

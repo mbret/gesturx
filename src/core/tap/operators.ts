@@ -6,9 +6,9 @@ import {
 	takeWhile,
 	timer,
 } from "rxjs";
-import { filterPointerOff } from "../recognizer/operators";
-import { isPointerOffEvent, matchPointer } from "../utils/events";
-import { isWithinPosThreshold } from "../utils/utils";
+import { filterPointerOff } from "../recognizer/operators.ts";
+import { isPointerOffEvent, matchPointer } from "../utils/events.ts";
+import { isWithinPosThreshold } from "../utils/utils.ts";
 
 export const takeWhenPressedTooLong =
 	({

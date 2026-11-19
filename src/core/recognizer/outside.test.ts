@@ -6,12 +6,12 @@ import {
 	type Point,
 	sendMouse,
 	waitFor,
-} from "../../tests/utils";
-import { HoldRecognizer } from "../hold/HoldRecognizer";
-import { PanRecognizer } from "../pan/PanRecognizer";
-import { SwipeRecognizer } from "../swipe/SwipeRecognizer";
-import { TapRecognizer } from "../tap/TapRecognizer";
-import { Recognizer } from "./Recognizer";
+} from "../../tests/utils.ts";
+import { HoldRecognizer } from "../hold/HoldRecognizer.ts";
+import { PanRecognizer } from "../pan/PanRecognizer.ts";
+import { SwipeRecognizer } from "../swipe/SwipeRecognizer.ts";
+import { TapRecognizer } from "../tap/TapRecognizer.ts";
+import { Recognizer } from "./Recognizer.ts";
 
 let container = createContainer();
 let outside = createContainer();

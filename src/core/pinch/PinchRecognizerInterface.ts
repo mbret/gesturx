@@ -1,6 +1,6 @@
 import type { Observable } from "rxjs";
-import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer";
-import type { RecognizerEvent } from "../recognizer/RecognizerEvent";
+import type { Recognizer, RecognizerConfig } from "../recognizer/Recognizer.ts";
+import type { RecognizerEvent } from "../recognizer/RecognizerEvent.ts";
 
 export interface PinchEvent extends RecognizerEvent {
 	type: "pinchStart" | "pinchMove" | "pinchEnd";

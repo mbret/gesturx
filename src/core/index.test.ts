@@ -1,5 +1,5 @@
 import { describe, expect, expectTypeOf, it } from "vitest";
-import * as gesturx from "./index";
+import * as gesturx from "./index.ts";
 
 describe("gesturx", () => {
 	it.each([

@@ -9,18 +9,18 @@ import {
 	takeUntil,
 	withLatestFrom,
 } from "rxjs";
-import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
-import { calculateDegreeAngleBetweenPoints } from "../utils/geometry";
+import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer.ts";
+import { calculateDegreeAngleBetweenPoints } from "../utils/geometry.ts";
 import {
 	isRecognizedAsSwipe,
 	RELEASE_WINDOW,
 	releaseVelocity,
-} from "./operators";
+} from "./operators.ts";
 import type {
 	SwipeEvent,
 	SwipeRecognizerInterface,
 	SwipeRecognizerOptions,
-} from "./SwipeRecognizerInterface";
+} from "./SwipeRecognizerInterface.ts";
 
 export type { SwipeEvent, SwipeRecognizerOptions };
 

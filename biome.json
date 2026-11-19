@@ -24,5 +24,17 @@
 		"formatter": {
 			"quoteStyle": "double"
 		}
-	}
+	},
+	"overrides": [
+		{
+			"includes": ["src/**"],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"useImportExtensions": "error"
+					}
+				}
+			}
+		}
+	]
 }

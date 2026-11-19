@@ -1,9 +1,9 @@
 import { Box } from "@chakra-ui/react";
-import type { Settings } from "../App";
-import type { AppRecognizable } from "../useRecognizable";
-import { usePan } from "./usePan";
-import { usePinch } from "./usePinch";
-import { useRotate } from "./useRotate";
+import type { Settings } from "../App.tsx";
+import type { AppRecognizable } from "../useRecognizable.ts";
+import { usePan } from "./usePan.tsx";
+import { usePinch } from "./usePinch.tsx";
+import { useRotate } from "./useRotate.tsx";
 
 export const GesturesBox = ({
 	recognizable,

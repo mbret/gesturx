@@ -25,6 +25,7 @@ npm install gesturx rxjs
 
 - rxjs 7 is a peer dependency. If your app doesn't use rxjs yet, it adds rxjs to your bundle.
 - gesturx is published as ES modules only.
+- Its types need TypeScript 5.0 or later.
 - It needs a browser with Pointer Events. The build targets Chrome 87, Edge 88, Firefox 78 and Safari 14.
 
 ## Quick start

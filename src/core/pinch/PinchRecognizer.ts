@@ -13,19 +13,19 @@ import {
 	tap,
 	withLatestFrom,
 } from "rxjs";
-import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer";
-import { shareLatest } from "../utils/operators";
+import { Recognizer, type RecognizerConfig } from "../recognizer/Recognizer.ts";
+import { shareLatest } from "../utils/operators.ts";
 import type {
 	PinchEvent,
 	PinchRecognizerInterface,
 	PinchRecognizerOptions,
-} from "./PinchRecognizerInterface";
-import { scanPanEventToPinchEvent } from "./scanPanEventToPinchEvent";
+} from "./PinchRecognizerInterface.ts";
+import { scanPanEventToPinchEvent } from "./scanPanEventToPinchEvent.ts";
 
 export type {
 	PinchEvent,
 	PinchRecognizerOptions,
-} from "./PinchRecognizerInterface";
+} from "./PinchRecognizerInterface.ts";
 
 export class PinchRecognizer
 	extends Recognizer<PinchRecognizerOptions, PinchEvent>
