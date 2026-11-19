@@ -27,7 +27,7 @@
 		"preview": "vite preview",
 		"check": "npx @biomejs/biome check .",
 		"check:readme": "node scripts/check-readme.mjs",
-		"check:package": "attw --pack . --profile esm-only",
+		"check:package": "node -e \"require('node:fs').accessSync(require('./package.json').types)\" && attw --pack . --profile esm-only",
 		"test": "vitest",
 		"coverage": "vitest run --coverage",
 		"prepare": "husky"
